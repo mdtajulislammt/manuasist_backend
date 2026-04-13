@@ -51,25 +51,32 @@ enum EmailOtpPurpose {
   EMAIL_CHANGE
 }
 
-model User {
-  id               String    @id @default(uuid()) @db.Uuid
-  platform         String?   @map("platform")
-  appleUserId      String?   @unique @map("apple_user_id")
-  googleUserId     String?   @unique @map("google_user_id")
-  email            String?   @unique @map("email")
-  passwordHash     String?   @map("password_hash")
-  emailVerifiedAt  DateTime? @map("email_verified_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  lastActiveAt     DateTime? @map("last_active_at")
+enum OtpChannel {
+  EMAIL
+  SMS
+}
 
-  profile       UserProfile?
-  preferences   Preferences?
-  subscription  Subscription?
-  menuScans     MenuScan[]
-  foodLogs      UserFoodLog[]
-  naiDaily      NaiDaily[]
-  emailOtpTokens EmailOtpToken[]
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  platform          String?   @map("platform")
+  appleUserId       String?   @unique @map("apple_user_id")
+  googleUserId      String?   @unique @map("google_user_id")
+  email             String?   @unique @map("email")
+  phone             String?   @unique @map("phone")
+  passwordHash      String?   @map("password_hash")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  phoneVerifiedAt   DateTime? @map("phone_verified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastActiveAt      DateTime? @map("last_active_at")
+
+  profile        UserProfile?
+  preferences    Preferences?
+  subscription   Subscription?
+  menuScans      MenuScan[]
+  foodLogs       UserFoodLog[]
+  naiDaily       NaiDaily[]
+  authOtpTokens  AuthOtpToken[]
 
   @@map("users")
 }
@@ -78,7 +85,6 @@ model UserProfile {
   userId                    String    @id @map("user_id") @db.Uuid
   fullName                  String?   @map("full_name")
   displayName               String?   @map("display_name")
-  phone                     String?   @unique @map("phone")
   avatarUrl                 String?   @map("avatar_url")
   locale                    String?   @map("locale")
   timezone                  String?   @map("timezone")
@@ -93,10 +99,11 @@ model UserProfile {
   @@map("user_profiles")
 }
 
-model EmailOtpToken {
+model AuthOtpToken {
   id         String          @id @default(uuid()) @db.Uuid
   userId     String          @map("user_id") @db.Uuid
   codeHash   String          @map("code_hash")
+  channel    OtpChannel      @map("channel")
   purpose    EmailOtpPurpose @map("purpose")
   expiresAt  DateTime        @map("expires_at")
   consumedAt DateTime?       @map("consumed_at")
@@ -106,8 +113,9 @@ model EmailOtpToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, purpose])
+  @@index([userId, channel])
   @@index([expiresAt])
-  @@map("email_otp_tokens")
+  @@map("auth_otp_tokens")
 }
 
 model Preferences {
