@@ -56,6 +56,27 @@ enum OtpChannel {
   SMS
 }
 
+enum OnboardingFlowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OnboardingStepType {
+  WELCOME_INFO
+  SINGLE_SELECT
+  MULTI_SELECT
+  SLIDER_GROUP
+  MULTI_SLIDER_DISCRETE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_SAY
+}
+
 model User {
   id                String    @id @default(uuid()) @db.Uuid
   platform          String?   @map("platform")
@@ -77,6 +98,7 @@ model User {
   foodLogs       UserFoodLog[]
   naiDaily       NaiDaily[]
   authOtpTokens  AuthOtpToken[]
+  onboardingAnswers UserOnboardingAnswer[]
 
   @@map("users")
 }
@@ -86,6 +108,10 @@ model UserProfile {
   fullName                  String?   @map("full_name")
   displayName               String?   @map("display_name")
   avatarUrl                 String?   @map("avatar_url")
+  gender                    Gender?   @map("gender")
+  heightCm                  Int?      @map("height_cm")
+  weightKg                  Int?      @map("weight_kg")
+  ageYears                  Int?      @map("age_years")
   locale                    String?   @map("locale")
   timezone                  String?   @map("timezone")
   deletedAt                 DateTime? @map("deleted_at")
@@ -118,6 +144,81 @@ model AuthOtpToken {
   @@map("auth_otp_tokens")
 }
 
+model OnboardingFlow {
+  id          String               @id @default(uuid()) @db.Uuid
+  name        String               @map("name")
+  status      OnboardingFlowStatus @default(DRAFT) @map("status")
+  version     Int                  @map("version")
+  isActive    Boolean              @default(false) @map("is_active")
+  publishedAt DateTime?            @map("published_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  steps OnboardingStep[]
+
+  @@unique([name, version])
+  @@index([status, isActive])
+  @@map("onboarding_flows")
+}
+
+model OnboardingStep {
+  id         String             @id @default(uuid()) @db.Uuid
+  flowId     String             @map("flow_id") @db.Uuid
+  orderIndex Int                @map("order_index")
+  type       OnboardingStepType @map("type")
+  title      String             @map("title")
+  subtitle   String?            @map("subtitle")
+  uiConfig   Json?              @map("ui_config")
+  resultKey  String?            @map("result_key")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  flow    OnboardingFlow        @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  options OnboardingOption[]
+  answers UserOnboardingAnswer[]
+
+  @@unique([flowId, orderIndex])
+  @@index([flowId, type])
+  @@map("onboarding_steps")
+}
+
+model OnboardingOption {
+  id         String    @id @default(uuid()) @db.Uuid
+  stepId     String    @map("step_id") @db.Uuid
+  orderIndex Int       @map("order_index")
+  label      String    @map("label")
+  value      String    @map("value")
+  iconUrl    String?   @map("icon_url")
+  iconKey    String?   @map("icon_key")
+  metadata   Json?     @map("metadata")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  step OnboardingStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, orderIndex])
+  @@index([stepId, value])
+  @@map("onboarding_options")
+}
+
+model UserOnboardingAnswer {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  stepId      String   @map("step_id") @db.Uuid
+  flowVersion Int      @map("flow_version")
+  value       Json     @map("value")
+  answeredAt  DateTime @default(now()) @map("answered_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step OnboardingStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stepId])
+  @@index([userId, answeredAt])
+  @@index([stepId])
+  @@map("user_onboarding_answers")
+}
+
 model Preferences {
   id                      String      @id @default(uuid()) @db.Uuid
   userId                  String      @unique @map("user_id") @db.Uuid
@@ -128,6 +229,8 @@ model Preferences {
   spiceLevel              SpiceLevel? @map("spice_level")
   nutritionalPriorities   Json?       @map("nutritional_priorities")
   weightGoal              WeightGoal? @map("weight_goal")
+  healthGoalKey           String?     @map("health_goal_key")
+  secondaryGoals          Json?       @map("secondary_goals")
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
 
