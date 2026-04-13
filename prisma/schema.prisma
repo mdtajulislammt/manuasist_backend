@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +8,188 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum MenuScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DishCategory {
+  RECOMMENDED
+  CAUTION
+  AVOID
+}
+
+enum SpiceLevel {
+  NONE
+  MILD
+  MEDIUM
+  HOT
+  EXTRA_HOT
+}
+
+enum WeightGoal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  platform     String?   @map("platform")
+  appleUserId  String?   @unique @map("apple_user_id")
+  googleUserId String?   @unique @map("google_user_id")
+  email        String?   @map("email")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastActiveAt DateTime? @map("last_active_at")
+
+  preferences  Preferences?
+  subscription Subscription?
+  menuScans    MenuScan[]
+  foodLogs     UserFoodLog[]
+  naiDaily     NaiDaily[]
+
+  @@map("users")
+}
+
+model Preferences {
+  id                      String      @id @default(uuid()) @db.Uuid
+  userId                  String      @unique @map("user_id") @db.Uuid
+  dietType                String?     @map("diet_type")
+  allergies               Json?       @map("allergies")
+  cuisines                Json?       @map("cuisines")
+  calorieTarget           Int?        @map("calorie_target")
+  spiceLevel              SpiceLevel? @map("spice_level")
+  nutritionalPriorities   Json?       @map("nutritional_priorities")
+  weightGoal              WeightGoal? @map("weight_goal")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("preferences")
+}
+
+model Subscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @unique @map("user_id") @db.Uuid
+  status                 SubscriptionStatus @map("status")
+  trialEndDate           DateTime?          @map("trial_end_date")
+  currentPeriodEnd       DateTime?          @map("current_period_end")
+  platform               String?            @map("platform")
+  productId              String?            @map("product_id")
+  originalTransactionId  String?            @map("original_transaction_id")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Restaurant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @map("name")
+  lat       Float    @map("lat")
+  lon       Float    @map("lon")
+  address   String?  @map("address")
+  placeId   String?  @unique @map("place_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  menuScans MenuScan[]
+
+  @@index([lat, lon])
+  @@map("restaurants")
+}
+
+model MenuScan {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  restaurantId String?        @map("restaurant_id") @db.Uuid
+  imageUrl     String         @map("image_url")
+  status       MenuScanStatus @map("status")
+  scanTime     DateTime       @default(now()) @map("scan_time")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  dishes     Dish[]
+
+  @@index([userId])
+  @@index([restaurantId])
+  @@index([status])
+  @@map("menu_scans")
+}
+
+model Dish {
+  id            String       @id @default(uuid()) @db.Uuid
+  scanId        String       @map("scan_id") @db.Uuid
+  name          String       @map("name")
+  calories      Int          @map("calories")
+  allergenFlags Json?       @map("allergen_flags")
+  dietScore     Int          @map("diet_score")
+  category      DishCategory @map("category")
+  macros        Json?        @map("macros")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  scan     MenuScan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  foodLogs UserFoodLog[]
+
+  @@index([scanId])
+  @@index([category])
+  @@map("dishes")
+}
+
+model UserFoodLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  dishId      String   @map("dish_id") @db.Uuid
+  portionSize String?  @map("portion_size")
+  consumedAt  DateTime @default(now()) @map("consumed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt])
+  @@index([dishId])
+  @@map("user_food_log")
+}
+
+model NaiDaily {
+  userId         String   @map("user_id") @db.Uuid
+  date           DateTime @db.Date @map("date")
+  nai            Int      @map("nai")
+  dc             Int      @map("dc")
+  cb             Int      @map("cb")
+  mb             Int      @map("mb")
+  allergenSafety Int      @map("as")
+  mealTiming     Int      @map("mt")
+  foodQuality    Int      @map("fq")
+  moodEnergy     Int      @map("me")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+  @@index([userId])
+  @@map("nai_daily")
 }
