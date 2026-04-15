@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/ai-ingestion-service"
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../libs/contracts/src/**/*.ts",
+    "../../libs/messaging/src/**/*.ts"
+  ]
+}

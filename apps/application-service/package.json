@@ -1,0 +1,22 @@
+{
+  "name": "@menu-assist/application-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build application-service",
+    "start": "nest start application-service",
+    "start:dev": "nest start application-service --watch",
+    "prisma:generate": "prisma generate --schema ./prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@menu-assist/contracts": "workspace:*",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  }
+}

@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ADMIN_DATABASE_URL")
+}
+
+enum OnboardingFlowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model OnboardingFlow {
+  id          String               @id @default(uuid()) @db.Uuid
+  name        String
+  status      OnboardingFlowStatus @default(DRAFT)
+  version     Int
+  isActive    Boolean              @default(false) @map("is_active")
+  publishedAt DateTime?            @map("published_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  steps OnboardingStep[]
+
+  @@unique([name, version])
+  @@map("admin_onboarding_flows")
+}
+
+model OnboardingStep {
+  id         String   @id @default(uuid()) @db.Uuid
+  flowId     String   @map("flow_id") @db.Uuid
+  orderIndex Int      @map("order_index")
+  type       String
+  title      String
+  subtitle   String?
+  uiConfig   Json?    @map("ui_config")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  flow OnboardingFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@unique([flowId, orderIndex])
+  @@map("admin_onboarding_steps")
+}

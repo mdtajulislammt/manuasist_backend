@@ -4,31 +4,43 @@
   "description": "",
   "author": "",
   "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "build": "npm run build:application && npm run build:auth && npm run build:admin && npm run build:ai",
+    "build:application": "nest build application-service",
+    "build:auth": "nest build auth-service",
+    "build:admin": "nest build admin-service",
+    "build:ai": "nest build ai-ingestion-service",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start application-service",
+    "start:application": "nest start application-service",
+    "start:auth": "nest start auth-service",
+    "start:admin": "nest start admin-service",
+    "start:ai": "nest start ai-ingestion-service",
+    "start:dev": "nest start application-service --watch",
+    "start:dev:application": "nest start application-service --watch",
+    "start:dev:auth": "nest start auth-service --watch",
+    "start:dev:admin": "nest start admin-service --watch",
+    "start:dev:ai": "nest start ai-ingestion-service --watch",
+    "start:debug": "nest start application-service --debug --watch",
+    "start:prod": "node dist/apps/application-service/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
-  },
-  "dependencies": {
-    "@nestjs/common": "^11.0.1",
-    "@nestjs/core": "^11.0.1",
-    "@nestjs/platform-express": "^11.0.1",
-    "@prisma/adapter-pg": "^7.7.0",
-    "@prisma/client": "^7.7.0",
-    "dotenv": "^17.4.1",
-    "pg": "^8.20.0",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:phase1": "jest --config ./test/jest-phase1.json",
+    "prisma:generate:application": "prisma generate --schema apps/application-service/prisma/schema.prisma",
+    "prisma:generate:auth": "prisma generate --schema apps/auth-service/prisma/schema.prisma",
+    "prisma:generate:admin": "prisma generate --schema apps/admin-service/prisma/schema.prisma",
+    "prisma:generate:ai": "prisma generate --schema apps/ai-ingestion-service/prisma/schema.prisma",
+    "prisma:generate:all": "npm run prisma:generate:application && npm run prisma:generate:auth && npm run prisma:generate:admin && npm run prisma:generate:ai"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -36,10 +48,10 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
-    "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -63,15 +75,23 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
+    "roots": [
+      "<rootDir>/apps/application-service/src"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+      "^@messaging/(.*)$": "<rootDir>/libs/messaging/src/$1"
+    },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/**/*.(t|j)s",
+      "!**/*.spec.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node"
   }
 }

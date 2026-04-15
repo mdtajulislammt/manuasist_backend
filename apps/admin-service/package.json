@@ -1,0 +1,17 @@
+{
+  "name": "@menu-assist/admin-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build admin-service",
+    "start": "nest start admin-service",
+    "start:dev": "nest start admin-service --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@menu-assist/messaging",
+  "version": "0.0.1",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@menu-assist/contracts": "workspace:*",
+    "@nestjs/microservices": "^11.0.1"
+  }
+}

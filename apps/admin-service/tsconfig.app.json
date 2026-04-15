@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/admin-service"
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../libs/contracts/src/**/*.ts"
+  ]
+}

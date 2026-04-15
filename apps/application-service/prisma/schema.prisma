@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("APPLICATION_DATABASE_URL")
+}
+
+enum WeightGoal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+enum SpiceLevel {
+  NONE
+  MILD
+  MEDIUM
+  HOT
+  EXTRA_HOT
+}
+
+model UserProfile {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @unique @map("user_id") @db.Uuid
+  fullName              String?   @map("full_name")
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("application_user_profiles")
+}
+
+model Preferences {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @unique @map("user_id") @db.Uuid
+  dietType      String?     @map("diet_type")
+  calorieTarget Int?        @map("calorie_target")
+  spiceLevel    SpiceLevel? @map("spice_level")
+  weightGoal    WeightGoal? @map("weight_goal")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("application_preferences")
+}
+
+model UserOnboardingAnswer {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  stepKey     String   @map("step_key")
+  flowVersion Int      @map("flow_version")
+  value       Json     @map("value")
+  answeredAt  DateTime @default(now()) @map("answered_at")
+
+  @@unique([userId, stepKey])
+  @@index([userId, answeredAt])
+  @@map("application_user_onboarding_answers")
+}

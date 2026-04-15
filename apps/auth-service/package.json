@@ -1,0 +1,17 @@
+{
+  "name": "@menu-assist/auth-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build auth-service",
+    "start": "nest start auth-service",
+    "start:dev": "nest start auth-service --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  }
+}
