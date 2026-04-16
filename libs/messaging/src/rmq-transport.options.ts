@@ -1,5 +1,8 @@
 import type { RmqOptions } from '@nestjs/microservices';
 import { getRabbitmqUrl } from '@contracts/env';
+
+/** Inner broker config for RMQ (Nest 11 nests these under `RmqOptions.options`). */
+export type RmqBrokerOptions = NonNullable<RmqOptions['options']>;
 import {
   RMQ_AI_INGESTION_QUEUE,
   RMQ_EVENTS_EXCHANGE,
@@ -10,7 +13,7 @@ function baseUrls(): string[] {
   return [getRabbitmqUrl()];
 }
 
-export function createRmqPublisherOptions(queueSuffix: string): RmqOptions {
+export function createRmqPublisherOptions(queueSuffix: string): RmqBrokerOptions {
   return {
     urls: baseUrls(),
     queue: rmqPublisherQueueName(queueSuffix),
@@ -21,7 +24,7 @@ export function createRmqPublisherOptions(queueSuffix: string): RmqOptions {
   };
 }
 
-export function createRmqMicroserviceOptions(): RmqOptions {
+export function createRmqMicroserviceOptions(): RmqBrokerOptions {
   return {
     urls: baseUrls(),
     queue: RMQ_AI_INGESTION_QUEUE,

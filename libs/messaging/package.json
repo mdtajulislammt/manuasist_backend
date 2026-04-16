@@ -6,6 +6,8 @@
   "types": "src/index.ts",
   "dependencies": {
     "@menu-assist/contracts": "workspace:*",
-    "@nestjs/microservices": "^11.0.1"
+    "@nestjs/microservices": "^11.0.1",
+    "amqp-connection-manager": "^4.0.0",
+    "amqplib": "^0.10.9"
   }
 }

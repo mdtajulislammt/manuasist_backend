@@ -8,6 +8,8 @@ export class EventsListenerController {
 
   @EventPattern(EVENT_PATTERNS.SYSTEM_PING_V1)
   onSystemPing(@Payload() payload: unknown) {
-    this.logger.log(`RMQ event ${EVENT_PATTERNS.SYSTEM_PING_V1}: ${JSON.stringify(payload)}`);
+    this.logger.log(
+      `RMQ event ${EVENT_PATTERNS.SYSTEM_PING_V1}: ${JSON.stringify(payload)}`,
+    );
   }
 }

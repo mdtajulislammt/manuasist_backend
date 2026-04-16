@@ -1,4 +1,8 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { createRmqPublisherOptions } from './rmq-transport.options';
 import { RMQ_EVENT_CLIENT } from './tokens';
 

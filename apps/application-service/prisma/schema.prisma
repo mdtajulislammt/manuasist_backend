@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("APPLICATION_DATABASE_URL")
 }
 
 enum WeightGoal {
