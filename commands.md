@@ -20,6 +20,14 @@ cp apps/ai-ingestion-service/.env.example apps/ai-ingestion-service/.env
 
 Ensure `DATABASE_URL` / `*_DATABASE_URL` values in those `.env` files match Postgres (see [docker/postgres/init/01-create-service-databases.sql](docker/postgres/init/01-create-service-databases.sql)).
 
+After Postgres is up, apply the **auth-service** schema (creates `auth_roles` and related tables):
+
+```bash
+pnpm run prisma:migrate:auth
+```
+
+This runs `prisma migrate deploy` in `apps/auth-service` using `AUTH_DATABASE_URL` from `apps/auth-service/.env` (loaded automatically by Prisma from that folder).
+
 ## Database and messaging (Docker)
 
 Start **Postgres** and **RabbitMQ** only (typical for local Nest development):
@@ -28,7 +36,7 @@ Start **Postgres** and **RabbitMQ** only (typical for local Nest development):
 docker compose up -d postgres rabbitmq
 ```
 
-- Postgres: `localhost:5432` (user/password `postgres` / `postgres` per [docker-compose.yml](docker-compose.yml)).
+- Postgres: `localhost:5433` (host port mapped to container 5432; user/password `postgres` / `postgres` per [docker-compose.yml](docker-compose.yml)).
 - RabbitMQ AMQP: `5672`; management UI: [http://localhost:15672](http://localhost:15672) (`guest` / `guest`).
 
 Stop:

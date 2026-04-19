@@ -9,8 +9,10 @@
     "prisma:generate": "prisma generate --schema ./prisma/schema.prisma"
   },
   "dependencies": {
+    "@menu-assist/api-auth": "workspace:*",
     "@menu-assist/contracts": "workspace:*",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/adapter-pg": "^7.7.0",

@@ -11,9 +11,9 @@
  */
 
 import * as process from 'node:process'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
+/** Nest CJS: replace import.meta dirname hack (see `scripts/patch-prisma-client-cjs.mjs`). */
+declare const __dirname: string
+globalThis['__dirname'] = __dirname
 
 import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
@@ -46,6 +46,26 @@ export { Prisma }
  * 
  */
 export type AuthUser = Prisma.AuthUserModel
+/**
+ * Model AuthIdentity
+ * OIDC subject bound to a user (issuer + sub unique per IdP account).
+ */
+export type AuthIdentity = Prisma.AuthIdentityModel
+/**
+ * Model AuthRefreshToken
+ * 
+ */
+export type AuthRefreshToken = Prisma.AuthRefreshTokenModel
+/**
+ * Model Role
+ * 
+ */
+export type Role = Prisma.RoleModel
+/**
+ * Model UserRole
+ * 
+ */
+export type UserRole = Prisma.UserRoleModel
 /**
  * Model AuthOtpToken
  * 

@@ -16,7 +16,8 @@
     "baseUrl": "./",
     "paths": {
       "@contracts/*": ["libs/contracts/src/*"],
-      "@messaging/*": ["libs/messaging/src/*"]
+      "@messaging/*": ["libs/messaging/src/*"],
+      "@api-auth/*": ["libs/api-auth/src/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

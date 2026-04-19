@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../dist/apps/auth-service"
+    "outDir": "../../dist/apps/auth-service",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false
   },
-  "include": [
-    "src/**/*.ts",
-    "../../libs/contracts/src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "generated/**/*.ts", "../../libs/contracts/src/**/*.ts"]
 }

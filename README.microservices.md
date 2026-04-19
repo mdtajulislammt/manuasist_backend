@@ -23,6 +23,7 @@ Dependency ownership is per service package. Root tooling stays at the workspace
 - **`RABBITMQ_URL`** — AMQP URL. Default in code: `amqp://guest:guest@127.0.0.1:5672`. In Docker Compose: `amqp://guest:guest@rabbitmq:5672`.
 - **Ports** — override with `API_GATEWAY_PORT`, `AUTH_SERVICE_PORT`, `APPLICATION_SERVICE_PORT`, `ADMIN_SERVICE_PORT`, `AI_INGESTION_SERVICE_PORT`.
 - **Gateway upstream URLs** — `AUTH_SERVICE_URL`, `APPLICATION_SERVICE_URL`, `ADMIN_SERVICE_URL`, `AI_INGESTION_SERVICE_URL`.
+- **Postgres (from the host)** — `localhost:5433` in [docker-compose.yml](docker-compose.yml) maps to port 5432 inside the container; use `...@127.0.0.1:5433/...` in local `.env` files when services run on the host.
 
 Postgres startup creates one database per service via `docker/postgres/init/01-create-service-databases.sql`.
 

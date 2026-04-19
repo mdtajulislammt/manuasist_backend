@@ -9,5 +9,9 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/AuthUser.js'
+export type * from './models/AuthIdentity.js'
+export type * from './models/AuthRefreshToken.js'
+export type * from './models/Role.js'
+export type * from './models/UserRole.js'
 export type * from './models/AuthOtpToken.js'
 export type * from './commonInputTypes.js'

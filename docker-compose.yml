@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
@@ -62,9 +62,18 @@ services:
       AUTH_SERVICE_PORT: 5001
       AUTH_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_auth_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_ISSUER: http://auth-service:5001
+      JWT_AUDIENCE: menu-assist-api
+      JWT_KID: menu-assist-rs256
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_SECONDS: 604800
+      OIDC_REDIRECT_URI: http://localhost:5000/v1/auth/oauth/callback
+      OIDC_SCOPES: openid profile email
+      # Set OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY via env file or host env before compose up
     ports:
       - '5001:5001'
     depends_on:
+      - postgres
       - rabbitmq
 
   application-service:
@@ -75,6 +84,9 @@ services:
       APPLICATION_SERVICE_PORT: 5002
       APPLICATION_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_application_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:5001
+      AUTH_JWT_AUDIENCE: menu-assist-api
     ports:
       - '5002:5002'
     depends_on:
@@ -89,6 +101,9 @@ services:
       ADMIN_SERVICE_PORT: 5003
       ADMIN_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_admin_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:5001
+      AUTH_JWT_AUDIENCE: menu-assist-api
     ports:
       - '5003:5003'
     depends_on:

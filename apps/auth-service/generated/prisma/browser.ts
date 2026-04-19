@@ -23,6 +23,26 @@ export * from './enums.js';
  */
 export type AuthUser = Prisma.AuthUserModel
 /**
+ * Model AuthIdentity
+ * OIDC subject bound to a user (issuer + sub unique per IdP account).
+ */
+export type AuthIdentity = Prisma.AuthIdentityModel
+/**
+ * Model AuthRefreshToken
+ * 
+ */
+export type AuthRefreshToken = Prisma.AuthRefreshTokenModel
+/**
+ * Model Role
+ * 
+ */
+export type Role = Prisma.RoleModel
+/**
+ * Model UserRole
+ * 
+ */
+export type UserRole = Prisma.UserRoleModel
+/**
  * Model AuthOtpToken
  * 
  */
