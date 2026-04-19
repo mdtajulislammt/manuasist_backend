@@ -9,6 +9,8 @@ import { OidcService } from './oidc.service';
 import { PkceStateStore } from './pkce-state.store';
 import { PrismaModule } from './prisma.module';
 import { RefreshTokenService } from './refresh-token.service';
+import { RegistrationController } from './registration.controller';
+import { RegistrationService } from './registration.service';
 import { RolesSeedService } from './roles-seed.service';
 import { UserSyncService } from './user-sync.service';
 import { WellKnownController } from './well-known.controller';
@@ -30,6 +32,7 @@ const envFilePaths = [
     HealthController,
     OAuthController,
     AuthTokensController,
+    RegistrationController,
     WellKnownController,
   ],
   providers: [
@@ -38,6 +41,7 @@ const envFilePaths = [
     PkceStateStore,
     UserSyncService,
     RefreshTokenService,
+    RegistrationService,
     OidcService,
   ],
 })
