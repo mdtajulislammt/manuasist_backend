@@ -10,6 +10,7 @@
     "@menu-assist/api-auth": "workspace:*",
     "@menu-assist/contracts": "workspace:*",
     "@menu-assist/messaging": "workspace:*",
+    "@nestjs/swagger": "^11.3.1",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "bcrypt": "^6.0.0",
@@ -19,7 +20,8 @@
     "jose": "^5.9.6",
     "nodemailer": "^8.0.5",
     "openid-client": "^6.1.7",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "scripts": {
     "build": "pnpm run build:gateway && pnpm run build:application && pnpm run build:auth && pnpm run build:admin && pnpm run build:ai",

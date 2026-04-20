@@ -8,6 +8,16 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -35,11 +45,18 @@ function callbackUrlFromRequest(req: Request): URL {
 }
 
 @Controller('')
+@ApiTags('Auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) { }
 
   @Post('register')
   @HttpCode(201)
+  @ApiOperation({ summary: 'Register user with identifier and password' })
+  @ApiBody({ type: RegisterDto })
+  @ApiCreatedResponse({
+    description: 'User registered. Returns pending OTP verification state.',
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input or identifier format.' })
   register(@Body() body: RegisterDto) {
     return this.auth.registerWithPassword({
       identifier: body.identifier,
@@ -50,6 +67,10 @@ export class AuthController {
 
   @Post('otp/request')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Request OTP for signup or password reset' })
+  @ApiBody({ type: OtpRequestDto })
+  @ApiOkResponse({ description: 'OTP generated and dispatched.' })
+  @ApiBadRequestResponse({ description: 'Invalid identifier or OTP type.' })
   otpRequest(@Body() body: OtpRequestDto) {
     return this.auth.requestOtp({
       identifier: body.identifier,
@@ -59,6 +80,14 @@ export class AuthController {
 
   @Post('otp/verify')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Verify OTP for signup or password reset' })
+  @ApiBody({ type: OtpVerifyDto })
+  @ApiOkResponse({
+    description:
+      'Returns token pair for signup verification, or success status for password reset.',
+  })
+  @ApiBadRequestResponse({ description: 'Invalid OTP payload.' })
+  @ApiUnauthorizedResponse({ description: 'OTP invalid, expired, or exceeded attempts.' })
   otpVerify(@Body() body: OtpVerifyDto) {
     return this.auth.verifyOtp({
       identifier: body.identifier,
@@ -71,6 +100,11 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Login with identifier and password' })
+  @ApiBody({ type: LoginDto })
+  @ApiOkResponse({ description: 'Authenticated successfully. Returns token pair.' })
+  @ApiBadRequestResponse({ description: 'Invalid input payload.' })
+  @ApiUnauthorizedResponse({ description: 'Credentials invalid or identifier not verified.' })
   login(@Body() body: LoginDto) {
     return this.auth.login({
       identifier: body.identifier,
@@ -80,28 +114,41 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Rotate refresh token and issue new token pair' })
+  @ApiBody({ type: RefreshBodyDto })
+  @ApiOkResponse({ description: 'Refresh successful. Returns new token pair.' })
+  @ApiUnauthorizedResponse({ description: 'Refresh token invalid, expired, or reused.' })
   async refresh(@Body() body: RefreshBodyDto) {
     return this.auth.rotate(body.refreshToken);
   }
 
   @Post('logout')
   @HttpCode(204)
+  @ApiOperation({ summary: 'Revoke refresh token family (logout)' })
+  @ApiBody({ type: RefreshBodyDto })
+  @ApiNoContentResponse({ description: 'Logout successful.' })
   async logout(@Body() body: RefreshBodyDto) {
     await this.auth.revoke(body.refreshToken);
   }
 }
 
 @Controller('oauth')
+@ApiTags('OAuth')
 export class OAuthController {
   constructor(private readonly auth: AuthService) { }
 
   @Get('authorize')
+  @ApiOperation({ summary: 'Start OAuth authorization redirect flow' })
+  @ApiOkResponse({ description: 'Redirect response to identity provider.' })
   async authorize(@Res() res: Response) {
     const href = await this.auth.buildAuthorizationRedirect();
     return res.redirect(302, href);
   }
 
   @Get('callback')
+  @ApiOperation({ summary: 'OAuth callback endpoint' })
+  @ApiOkResponse({ description: 'OAuth callback success. Returns token pair.' })
+  @ApiBadRequestResponse({ description: 'OAuth callback contains error or invalid state.' })
   async callback(@Req() req: Request, @Res() res: Response) {
     const err = req.query['error'];
     if (typeof err === 'string') {
@@ -117,10 +164,13 @@ export class OAuthController {
 }
 
 @Controller('.well-known')
+@ApiTags('Well-Known')
 export class WellKnownController {
   constructor(private readonly auth: AuthService) { }
 
   @Get('jwks.json')
+  @ApiOperation({ summary: 'Return JWKS for JWT verification' })
+  @ApiOkResponse({ description: 'JWKS document returned.' })
   jwks() {
     return this.auth.getJwks();
   }
