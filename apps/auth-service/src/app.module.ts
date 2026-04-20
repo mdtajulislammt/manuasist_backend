@@ -1,19 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'node:path';
-import { AccessJwtService } from './access-jwt.service';
-import { AuthTokensController } from './auth-tokens.controller';
+import {
+  AuthController,
+  OAuthController,
+  WellKnownController,
+} from './auth.controller';
+import { AuthService } from './auth.service';
 import { HealthController } from './health.controller';
-import { OAuthController } from './oauth.controller';
-import { OidcService } from './oidc.service';
-import { PkceStateStore } from './pkce-state.store';
 import { PrismaModule } from './prisma.module';
-import { RefreshTokenService } from './refresh-token.service';
-import { RegistrationController } from './registration.controller';
-import { RegistrationService } from './registration.service';
-import { RolesSeedService } from './roles-seed.service';
-import { UserSyncService } from './user-sync.service';
-import { WellKnownController } from './well-known.controller';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -30,19 +25,10 @@ const envFilePaths = [
   ],
   controllers: [
     HealthController,
+    AuthController,
     OAuthController,
-    AuthTokensController,
-    RegistrationController,
     WellKnownController,
   ],
-  providers: [
-    RolesSeedService,
-    AccessJwtService,
-    PkceStateStore,
-    UserSyncService,
-    RefreshTokenService,
-    RegistrationService,
-    OidcService,
-  ],
+  providers: [AuthService],
 })
 export class AppModule { }
