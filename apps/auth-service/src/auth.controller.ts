@@ -34,7 +34,7 @@ function callbackUrlFromRequest(req: Request): URL {
   return new URL(path, base);
 }
 
-@Controller('auth')
+@Controller('')
 export class AuthController {
   constructor(private readonly auth: AuthService) { }
 
