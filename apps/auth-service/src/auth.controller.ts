@@ -8,38 +8,11 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-
-// --- DTOs ---
-
-class RegisterDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  @MinLength(8)
-  @MaxLength(128)
-  password!: string;
-
-  @IsString()
-  @MinLength(8)
-  @MaxLength(128)
-  confirmPassword!: string;
-}
-
-class RefreshBodyDto {
-  @IsString()
-  @IsNotEmpty()
-  refreshToken!: string;
-}
+import { RegisterDto } from './dto/register.dto';
+import { RefreshBodyDto } from './dto/refresh-body.dto';
+import { LoginDto } from './dto/login.dto';
 
 function callbackUrlFromRequest(req: Request): URL {
   const forwardedProto = req.headers['x-forwarded-proto'];
@@ -61,16 +34,25 @@ function callbackUrlFromRequest(req: Request): URL {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Post('register')
   @HttpCode(201)
   register(@Body() body: RegisterDto) {
-    return this.auth.registerWithEmailPassword(
-      body.email,
-      body.password,
-      body.confirmPassword,
-    );
+    return this.auth.registerWithPassword({
+      identifier: body.identifier,
+      password: body.password,
+      confirmPassword: body.confirmPassword,
+    });
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  login(@Body() body: LoginDto) {
+    return this.auth.login({
+      identifier: body.identifier,
+      password: body.password,
+    });
   }
 
   @Post('refresh')
@@ -88,7 +70,7 @@ export class AuthController {
 
 @Controller('oauth')
 export class OAuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Get('authorize')
   async authorize(@Res() res: Response) {
@@ -113,7 +95,7 @@ export class OAuthController {
 
 @Controller('.well-known')
 export class WellKnownController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Get('jwks.json')
   jwks() {

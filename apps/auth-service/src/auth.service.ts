@@ -10,8 +10,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+// @ts-ignore
 import { decodeJwt } from 'jose';
+// @ts-ignore
 import { exportJWK, importPKCS8, importSPKI, SignJWT } from 'jose';
+// @ts-ignore
 import type { JWK } from 'jose';
 import type { Configuration } from 'openid-client';
 import {
@@ -44,6 +47,25 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
+function normalizeIdentifier(identifier: string): { email?: string; phone?: string } {
+  const value = identifier.trim();
+  if (!value) {
+    return {};
+  }
+
+  const phonePattern = /^\+[1-9]\d{7,14}$/;
+  if (phonePattern.test(value)) {
+    return { phone: value };
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailPattern.test(value)) {
+    return { email: value.toLowerCase() };
+  }
+
+  return {};
+}
+
 export type TokenPairResponse = {
   access_token: string;
   token_type: 'Bearer';
@@ -68,7 +90,7 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     await this.seedRoles();
@@ -258,35 +280,51 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  // --- Email/password registration (from RegistrationService) ---
+  // --- Password registration/login ---
 
-  async registerWithEmailPassword(
-    email: string,
-    password: string,
-    confirmPassword: string,
-  ): Promise<TokenPairResponse> {
+  async registerWithPassword(input: {
+    identifier: string;
+    password: string;
+    confirmPassword: string;
+  }): Promise<TokenPairResponse> {
+    const { password, confirmPassword } = input;
     if (password !== confirmPassword) {
       throw new BadRequestException(
         'Password and confirm password do not match',
       );
     }
 
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) {
-      throw new BadRequestException('Email is required');
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(input.identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
     }
 
-    const existing = await this.prisma.authUser.findUnique({
-      where: { email: normalized },
-    });
-    if (existing) {
-      throw new ConflictException('An account with this email already exists');
+    if (normalizedEmail) {
+      const existingEmail = await this.prisma.authUser.findUnique({
+        where: { email: normalizedEmail },
+      });
+      if (existingEmail) {
+        throw new ConflictException('An account with this email already exists');
+      }
+    }
+
+    if (normalizedPhone) {
+      const existingPhone = await this.prisma.authUser.findUnique({
+        where: { phone: normalizedPhone },
+      });
+      if (existingPhone) {
+        throw new ConflictException('An account with this phone already exists');
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await this.prisma.authUser.create({
       data: {
-        email: normalized,
+        email: normalizedEmail,
+        phone: normalizedPhone,
         passwordHash,
         roles: {
           create: {
@@ -295,6 +333,42 @@ export class AuthService implements OnModuleInit {
         },
       },
     });
+
+    return this.issuePairForUser(user.id);
+  }
+
+
+  async login(input: {
+    identifier: string;
+    password: string;
+  }): Promise<TokenPairResponse> {
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(input.identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      input.password,
+      user.passwordHash ?? '',
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     return this.issuePairForUser(user.id);
   }
