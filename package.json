@@ -58,7 +58,10 @@
     "prisma:generate:all": "npm run prisma:generate:application && npm run prisma:generate:auth && npm run prisma:generate:admin && npm run prisma:generate:ai",
     "prisma:migrate:auth": "pnpm --dir apps/auth-service exec prisma migrate deploy",
     "prisma:migrate:admin": "pnpm exec prisma migrate deploy --config apps/admin-service/prisma.config.ts",
-    "prisma:migrate:application": "pnpm exec prisma migrate deploy --config apps/application-service/prisma.config.ts"
+    "prisma:migrate:application": "pnpm exec prisma migrate deploy --config apps/application-service/prisma.config.ts",
+    "seed:auth": "pnpm run build:auth && node dist/apps/auth-service/apps/auth-service/src/seed.js",
+    "seed:admin": "pnpm run build:admin && node dist/apps/admin-service/apps/admin-service/src/seed.js",
+    "seed:all": "pnpm run seed:auth && pnpm run seed:admin"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

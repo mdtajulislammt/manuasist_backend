@@ -31,7 +31,7 @@ export type AdminActiveFlowPayload = {
 
 @Injectable()
 export class AdminInternalClientService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) { }
 
   async getActiveFlow(): Promise<AdminActiveFlowPayload> {
     const base = this.config
@@ -49,6 +49,8 @@ export class AdminInternalClientService {
         `Could not reach admin-service: ${String(e)}`,
       );
     }
+    console.log('fuck you');
+
     if (res.status === 404) {
       throw new NotFoundException('No active onboarding flow is configured');
     }
