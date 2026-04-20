@@ -1,3 +1,4 @@
+import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { NestFactory } from '@nestjs/core';
 import {
   ExpressAdapter,
@@ -20,6 +21,7 @@ async function bootstrap() {
     new ExpressAdapter(expressApp),
     { bodyParser: false },
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const proxy = app.get(GatewayProxyService);
 

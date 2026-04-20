@@ -1,4 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -11,6 +12,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
   await app.listen(process.env.APPLICATION_SERVICE_PORT ?? 5002);
 }
 

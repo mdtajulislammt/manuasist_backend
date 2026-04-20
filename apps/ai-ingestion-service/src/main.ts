@@ -1,3 +1,4 @@
+import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { createRmqMicroserviceOptions } from '@messaging/rmq-transport.options';
@@ -5,6 +6,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: createRmqMicroserviceOptions(),

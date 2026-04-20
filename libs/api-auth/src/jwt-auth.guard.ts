@@ -11,6 +11,17 @@ import { IS_PUBLIC_KEY } from './constants';
 import type { MenuAssistJwtPayload } from './jwt-payload';
 import { API_AUTH_OPTIONS, type ApiAuthModuleOptions } from './tokens';
 
+function hasJoseCode(
+  error: unknown,
+): error is { code: string; message?: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code: unknown }).code === 'string'
+  );
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   private jwks?: ReturnType<typeof createRemoteJWKSet>;
@@ -50,10 +61,26 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    const { payload } = await jwtVerify(token, this.getJwks(), {
-      issuer: this.options.issuer,
-      audience: this.options.audience,
-    });
+    let payload: unknown;
+    try {
+      const verified = await jwtVerify(token, this.getJwks(), {
+        issuer: this.options.issuer,
+        audience: this.options.audience,
+      });
+      payload = verified.payload;
+    } catch (error) {
+      if (hasJoseCode(error) && error.code === 'ERR_JWT_EXPIRED') {
+        throw new UnauthorizedException('Token expired');
+      }
+      if (
+        hasJoseCode(error) &&
+        (error.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' ||
+          error.code === 'ERR_JWT_INVALID')
+      ) {
+        throw new UnauthorizedException('Invalid bearer token');
+      }
+      throw new UnauthorizedException('Token verification failed');
+    }
 
     req.user = payload as MenuAssistJwtPayload;
     return true;

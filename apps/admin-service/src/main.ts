@@ -1,4 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Menu Assist Admin Service')
