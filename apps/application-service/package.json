@@ -2,11 +2,12 @@
   "name": "@menu-assist/application-service",
   "version": "0.0.1",
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "build": "nest build application-service",
     "start": "nest start application-service",
     "start:dev": "nest start application-service --watch",
-    "prisma:generate": "prisma generate --schema ./prisma/schema.prisma"
+    "prisma:generate": "prisma generate --schema ./prisma/schema.prisma && node ../../scripts/patch-prisma-client-cjs.mjs ."
   },
   "dependencies": {
     "@menu-assist/api-auth": "workspace:*",

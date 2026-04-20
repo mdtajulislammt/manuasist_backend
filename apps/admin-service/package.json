@@ -2,6 +2,7 @@
   "name": "@menu-assist/admin-service",
   "version": "0.0.1",
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "build": "nest build admin-service",
     "start": "nest start admin-service",
