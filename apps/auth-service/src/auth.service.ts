@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 // @ts-ignore
 import { decodeJwt } from 'jose';
 // @ts-ignore
@@ -72,6 +72,28 @@ export type TokenPairResponse = {
   expires_in: number;
   refresh_token: string;
 };
+
+export type RegisterPendingVerificationResponse = {
+  status: 'PENDING_VERIFICATION';
+  channel: 'email' | 'sms';
+  identifier: string;
+  expires_in_seconds: number;
+};
+
+export type ForgotPasswordRequestResponse = {
+  status: 'OTP_SENT';
+  channel: 'email' | 'sms';
+  identifier: string;
+  expires_in_seconds: number;
+};
+
+export type PasswordResetResponse = {
+  status: 'PASSWORD_RESET_SUCCESS';
+};
+
+export type OtpType = 'SIGNUP' | 'PASSWORD_RESET';
+
+export type OtpVerifyResponse = TokenPairResponse | PasswordResetResponse;
 
 type PkceEntry = { codeVerifier: string; createdAt: number };
 
@@ -175,6 +197,61 @@ export class AuthService implements OnModuleInit {
 
   private accessTtlSec(): number {
     return this.config.get<number>('ACCESS_TOKEN_TTL_SECONDS') ?? 900;
+  }
+
+  private signupOtpTtlSec(): number {
+    return this.config.get<number>('SIGNUP_OTP_TTL_SECONDS') ?? 600;
+  }
+
+  private passwordResetOtpTtlSec(): number {
+    return this.config.get<number>('PASSWORD_RESET_OTP_TTL_SECONDS') ?? 600;
+  }
+
+  private generateOtp6(): string {
+    return randomInt(0, 1_000_000).toString().padStart(6, '0');
+  }
+
+  private async createOtpChallenge(
+    userId: string,
+    channel: 'EMAIL' | 'SMS',
+    purpose: 'SIGNUP' | 'PASSWORD_RESET',
+    identifier: string,
+    expiresInSeconds: number,
+  ): Promise<void> {
+    const otp = this.generateOtp6();
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+
+    await this.prisma.authOtpToken.updateMany({
+      where: {
+        userId,
+        purpose,
+        channel,
+        consumedAt: null,
+      },
+      data: {
+        consumedAt: new Date(),
+      },
+    });
+
+    await this.prisma.authOtpToken.create({
+      data: {
+        userId,
+        codeHash: sha256Hex(otp),
+        channel,
+        purpose,
+        expiresAt,
+      },
+    });
+
+    // TODO: replace with real provider integration (email/SMS sender).
+    this.logger.log(`${purpose} OTP for ${identifier}: ${otp}`);
+  }
+
+  private async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.authRefreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
   }
 
   async issuePairForUser(userId: string): Promise<TokenPairResponse> {
@@ -286,7 +363,7 @@ export class AuthService implements OnModuleInit {
     identifier: string;
     password: string;
     confirmPassword: string;
-  }): Promise<TokenPairResponse> {
+  }): Promise<RegisterPendingVerificationResponse> {
     const { password, confirmPassword } = input;
     if (password !== confirmPassword) {
       throw new BadRequestException(
@@ -334,7 +411,299 @@ export class AuthService implements OnModuleInit {
       },
     });
 
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const targetIdentifier = normalizedPhone ?? normalizedEmail!;
+    const expiresInSeconds = this.signupOtpTtlSec();
+    await this.createOtpChallenge(
+      user.id,
+      channel,
+      'SIGNUP',
+      targetIdentifier,
+      expiresInSeconds,
+    );
+
+    return {
+      status: 'PENDING_VERIFICATION',
+      channel: channel === 'SMS' ? 'sms' : 'email',
+      identifier: targetIdentifier,
+      expires_in_seconds: expiresInSeconds,
+    };
+  }
+
+  async requestOtp(input: {
+    identifier: string;
+    type: OtpType;
+  }): Promise<ForgotPasswordRequestResponse> {
+    const { identifier, type } = input;
+
+    if (type === 'PASSWORD_RESET') {
+      return this.requestPasswordReset(identifier);
+    }
+
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Account not found for signup verification');
+    }
+
+    if (normalizedEmail && user.emailVerifiedAt) {
+      throw new BadRequestException('Email is already verified');
+    }
+    if (normalizedPhone && user.phoneVerifiedAt) {
+      throw new BadRequestException('Phone is already verified');
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const targetIdentifier = normalizedPhone ?? normalizedEmail!;
+    const expiresInSeconds = this.signupOtpTtlSec();
+    await this.createOtpChallenge(
+      user.id,
+      channel,
+      'SIGNUP',
+      targetIdentifier,
+      expiresInSeconds,
+    );
+
+    return {
+      status: 'OTP_SENT',
+      channel: channel === 'SMS' ? 'sms' : 'email',
+      identifier: targetIdentifier,
+      expires_in_seconds: expiresInSeconds,
+    };
+  }
+
+  async verifyOtp(input: {
+    identifier: string;
+    type: OtpType;
+    otp: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  }): Promise<OtpVerifyResponse> {
+    const { identifier, type, otp } = input;
+    if (type === 'SIGNUP') {
+      return this.verifySignupOtp(identifier, otp);
+    }
+
+    if (!input.newPassword || !input.confirmPassword) {
+      throw new BadRequestException(
+        'newPassword and confirmPassword are required for PASSWORD_RESET',
+      );
+    }
+
+    return this.resetPasswordWithOtp({
+      identifier,
+      otp,
+      newPassword: input.newPassword,
+      confirmPassword: input.confirmPassword,
+    });
+  }
+
+  async requestPasswordReset(
+    identifier: string,
+  ): Promise<ForgotPasswordRequestResponse> {
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const targetIdentifier = normalizedPhone ?? normalizedEmail!;
+    const expiresInSeconds = this.passwordResetOtpTtlSec();
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+
+    if (user?.passwordHash) {
+      await this.createOtpChallenge(
+        user.id,
+        channel,
+        'PASSWORD_RESET',
+        targetIdentifier,
+        expiresInSeconds,
+      );
+    }
+
+    return {
+      status: 'OTP_SENT',
+      channel: channel === 'SMS' ? 'sms' : 'email',
+      identifier: targetIdentifier,
+      expires_in_seconds: expiresInSeconds,
+    };
+  }
+
+  async verifySignupOtp(
+    identifier: string,
+    otp: string,
+  ): Promise<TokenPairResponse> {
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const otpRow = await this.prisma.authOtpToken.findFirst({
+      where: {
+        userId: user.id,
+        channel,
+        purpose: 'SIGNUP',
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRow || otpRow.expiresAt < new Date()) {
+      throw new UnauthorizedException('OTP expired or invalid');
+    }
+
+    if (otpRow.attempts >= 5) {
+      throw new UnauthorizedException('OTP attempt limit exceeded');
+    }
+
+    const codeHash = sha256Hex(otp);
+    if (otpRow.codeHash !== codeHash) {
+      await this.prisma.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { consumedAt: new Date() },
+      });
+
+      await tx.authUser.update({
+        where: { id: user.id },
+        data: normalizedPhone
+          ? { phoneVerifiedAt: new Date() }
+          : { emailVerifiedAt: new Date() },
+      });
+    });
+
     return this.issuePairForUser(user.id);
+  }
+
+  async resetPasswordWithOtp(input: {
+    identifier: string;
+    otp: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): Promise<PasswordResetResponse> {
+    const { identifier, otp, newPassword, confirmPassword } = input;
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
+    }
+
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const otpRow = await this.prisma.authOtpToken.findFirst({
+      where: {
+        userId: user.id,
+        channel,
+        purpose: 'PASSWORD_RESET',
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRow || otpRow.expiresAt < new Date()) {
+      throw new UnauthorizedException('OTP expired or invalid');
+    }
+
+    if (otpRow.attempts >= 5) {
+      throw new UnauthorizedException('OTP attempt limit exceeded');
+    }
+
+    const codeHash = sha256Hex(otp);
+    if (otpRow.codeHash !== codeHash) {
+      await this.prisma.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { consumedAt: new Date() },
+      });
+
+      await tx.authUser.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          ...(normalizedPhone
+            ? { phoneVerifiedAt: new Date() }
+            : { emailVerifiedAt: new Date() }),
+        },
+      });
+    });
+
+    await this.revokeAllUserRefreshTokens(user.id);
+    return { status: 'PASSWORD_RESET_SUCCESS' };
   }
 
 
@@ -360,6 +729,13 @@ export class AuthService implements OnModuleInit {
     });
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (normalizedPhone && !user.phoneVerifiedAt) {
+      throw new UnauthorizedException('Phone not verified');
+    }
+    if (normalizedEmail && !user.emailVerifiedAt) {
+      throw new UnauthorizedException('Email not verified');
     }
 
     const isPasswordValid = await bcrypt.compare(

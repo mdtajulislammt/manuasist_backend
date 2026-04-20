@@ -1,19 +1,13 @@
 // @ts-ignore
-import {
-    IsNotEmpty,
-    IsString,
-    MaxLength,
-    MinLength,
-    // @ts-ignore
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class LoginDto {
-    @IsString()
-    @IsNotEmpty()
-    identifier!: string;
+  @IsString()
+  @IsNotEmpty()
+  identifier!: string;
 
-    @IsString()
-    @MinLength(8)
-    @MaxLength(128)
-    password!: string;
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  password!: string;
 }

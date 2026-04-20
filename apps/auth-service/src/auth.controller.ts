@@ -13,6 +13,10 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshBodyDto } from './dto/refresh-body.dto';
 import { LoginDto } from './dto/login.dto';
+// @ts-ignore
+import { OtpRequestDto } from './dto/otp-request.dto';
+// @ts-ignore
+import { OtpVerifyDto } from './dto/otp-verify.dto';
 
 function callbackUrlFromRequest(req: Request): URL {
   const forwardedProto = req.headers['x-forwarded-proto'];
@@ -30,8 +34,6 @@ function callbackUrlFromRequest(req: Request): URL {
   return new URL(path, base);
 }
 
-// --- Controllers (single module file; Nest requires one @Controller per class) ---
-
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) { }
@@ -42,6 +44,27 @@ export class AuthController {
     return this.auth.registerWithPassword({
       identifier: body.identifier,
       password: body.password,
+      confirmPassword: body.confirmPassword,
+    });
+  }
+
+  @Post('otp/request')
+  @HttpCode(200)
+  otpRequest(@Body() body: OtpRequestDto) {
+    return this.auth.requestOtp({
+      identifier: body.identifier,
+      type: body.type,
+    });
+  }
+
+  @Post('otp/verify')
+  @HttpCode(200)
+  otpVerify(@Body() body: OtpVerifyDto) {
+    return this.auth.verifyOtp({
+      identifier: body.identifier,
+      type: body.type,
+      otp: body.otp,
+      newPassword: body.newPassword,
       confirmPassword: body.confirmPassword,
     });
   }

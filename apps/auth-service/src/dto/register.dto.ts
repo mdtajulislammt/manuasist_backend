@@ -1,11 +1,5 @@
 // @ts-ignore
-import {
-  IsString,
-  IsNotEmpty,
-  MaxLength,
-  MinLength,
-  // @ts-ignore
-} from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
