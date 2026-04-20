@@ -83,6 +83,8 @@ services:
     environment:
       APPLICATION_SERVICE_PORT: 5002
       APPLICATION_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_application_service
+      ADMIN_SERVICE_URL: http://admin-service:5003
+      ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
       AUTH_JWT_ISSUER: http://auth-service:5001
@@ -92,6 +94,7 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+      - admin-service
 
   admin-service:
     build:
@@ -100,6 +103,7 @@ services:
     environment:
       ADMIN_SERVICE_PORT: 5003
       ADMIN_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_admin_service
+      ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
       AUTH_JWT_ISSUER: http://auth-service:5001
@@ -107,6 +111,7 @@ services:
     ports:
       - '5003:5003'
     depends_on:
+      - postgres
       - rabbitmq
 
 volumes:

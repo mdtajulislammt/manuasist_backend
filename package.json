@@ -54,7 +54,9 @@
     "prisma:generate:admin": "prisma generate --schema apps/admin-service/prisma/schema.prisma",
     "prisma:generate:ai": "prisma generate --schema apps/ai-ingestion-service/prisma/schema.prisma",
     "prisma:generate:all": "npm run prisma:generate:application && npm run prisma:generate:auth && npm run prisma:generate:admin && npm run prisma:generate:ai",
-    "prisma:migrate:auth": "pnpm --dir apps/auth-service exec prisma migrate deploy"
+    "prisma:migrate:auth": "pnpm --dir apps/auth-service exec prisma migrate deploy",
+    "prisma:migrate:admin": "pnpm exec prisma migrate deploy --config apps/admin-service/prisma.config.ts",
+    "prisma:migrate:application": "pnpm exec prisma migrate deploy --config apps/application-service/prisma.config.ts"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

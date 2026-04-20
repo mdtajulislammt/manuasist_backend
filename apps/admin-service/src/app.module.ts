@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
 import { HealthController } from './health.controller';
+import { OnboardingModule } from './onboarding/onboarding.module';
+import { PrismaModule } from './prisma.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -15,6 +17,7 @@ const envFilePaths = [
       isGlobal: true,
       envFilePath: envFilePaths,
     }),
+    PrismaModule,
     ApiAuthModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -24,6 +27,7 @@ const envFilePaths = [
       }),
       inject: [ConfigService],
     }),
+    OnboardingModule,
   ],
   controllers: [HealthController],
   providers: [],

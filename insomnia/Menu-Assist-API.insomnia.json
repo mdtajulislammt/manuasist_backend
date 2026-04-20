@@ -18,11 +18,13 @@
       "data": {
         "gateway_url": "http://localhost:5000",
         "auth_direct_url": "http://localhost:5001",
+        "admin_direct_url": "http://localhost:5003",
+        "admin_internal_api_key": "dev-internal-onboarding-key",
         "access_token": "",
         "refresh_token": ""
       },
       "dataPropertyOrder": {
-        "&": ["gateway_url", "auth_direct_url", "access_token", "refresh_token"]
+        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "admin_internal_api_key", "access_token", "refresh_token"]
       },
       "color": null,
       "isPrivate": false,
@@ -409,6 +411,183 @@
       "settingFollowRedirects": "global"
     },
     {
+      "_id": "req_v1_app_onboarding_active_flow",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET onboarding/active-flow",
+      "description": "Requires Bearer access_token. Proxies to application-service, which reads the active flow from admin-service.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/active-flow",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_profile_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET users/me/profile",
+      "description": "Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/users/me/profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_profile_patch",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PATCH users/me/profile",
+      "description": "Body: { \"fullName\": \"...\" }",
+      "url": "{{ gateway_url }}/v1/app/users/me/profile",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"fullName\": \"Test User\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -995,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_prefs_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET users/me/preferences",
+      "description": "Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/users/me/preferences",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -994,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_prefs_patch",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PATCH users/me/preferences",
+      "description": "Optional fields: dietType, calorieTarget, spiceLevel, weightGoal.",
+      "url": "{{ gateway_url }}/v1/app/users/me/preferences",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"spiceLevel\": \"MILD\",\n  \"weightGoal\": \"MAINTAIN\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -993,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_onboarding_answers_put",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PUT users/me/onboarding/answers",
+      "description": "Set flowVersion to match active flow; stepKey = step id from GET onboarding/active-flow.",
+      "url": "{{ gateway_url }}/v1/app/users/me/onboarding/answers",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"flowVersion\": 1,\n  \"answers\": [\n    {\n      \"stepKey\": \"00000000-0000-0000-0000-000000000000\",\n      \"value\": { \"dietType\": \"vegan\", \"spiceLevel\": \"MILD\" }\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -992,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
       "_id": "fld_v1_admin",
       "parentId": "wrk_menu_assist",
       "_type": "request_group",
@@ -452,6 +631,91 @@
       "headers": [],
       "authentication": {},
       "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_admin_onboarding_flows_post",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "POST onboarding/flows",
+      "description": "Requires JWT with admin role. Creates a draft flow (version auto if omitted).",
+      "url": "{{ gateway_url }}/v1/admin/onboarding/flows",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"default\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_admin_onboarding_flows_list",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET onboarding/flows",
+      "description": "Requires JWT with admin role.",
+      "url": "{{ gateway_url }}/v1/admin/onboarding/flows",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_admin_internal_active_flow",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET internal/onboarding/active-flow (direct admin)",
+      "description": "Not JWT: uses x-internal-api-key. Call admin_direct_url (bypass gateway).",
+      "url": "{{ admin_direct_url }}/internal/onboarding/active-flow",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "x-internal-api-key",
+          "value": "{{ admin_internal_api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,
