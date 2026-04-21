@@ -27,3 +27,8 @@ export type MenuScan = Prisma.MenuScanModel
  * 
  */
 export type Dish = Prisma.DishModel
+/**
+ * Model NutritionCache
+ * 
+ */
+export type NutritionCache = Prisma.NutritionCacheModel

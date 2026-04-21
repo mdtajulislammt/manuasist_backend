@@ -11,9 +11,9 @@
  */
 
 import * as process from 'node:process'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
+/** Nest CJS: replace import.meta dirname hack (see `scripts/patch-prisma-client-cjs.mjs`). */
+declare const __dirname: string
+globalThis['__dirname'] = __dirname
 
 import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
@@ -51,3 +51,8 @@ export type MenuScan = Prisma.MenuScanModel
  * 
  */
 export type Dish = Prisma.DishModel
+/**
+ * Model NutritionCache
+ * 
+ */
+export type NutritionCache = Prisma.NutritionCacheModel

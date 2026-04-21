@@ -19,12 +19,14 @@
         "gateway_url": "http://localhost:5000",
         "auth_direct_url": "http://localhost:5001",
         "admin_direct_url": "http://localhost:5003",
+        "ingestion_direct_url": "http://localhost:5004",
         "admin_internal_api_key": "dev-internal-onboarding-key",
+        "ingestion_internal_api_key": "dev-internal-ingestion-key",
         "access_token": "",
         "refresh_token": ""
       },
       "dataPropertyOrder": {
-        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "admin_internal_api_key", "access_token", "refresh_token"]
+        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "ingestion_direct_url", "admin_internal_api_key", "ingestion_internal_api_key", "access_token", "refresh_token"]
       },
       "color": null,
       "isPrivate": false,
@@ -827,6 +829,91 @@
       "headers": [],
       "authentication": {},
       "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scans_post",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "POST scans",
+      "description": "Bearer access_token. Body: { \"imageUrl\": \"https://...\" }",
+      "url": "{{ gateway_url }}/v1/ingestion/scans",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"imageUrl\": \"https://example.com/menu-sample.jpg\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scans_get",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET scans",
+      "description": "Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/ingestion/scans",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_internal_recent",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET internal/scans/recent",
+      "description": "Header x-internal-api-key. Lists recent scans (ops).",
+      "url": "{{ gateway_url }}/v1/ingestion/internal/scans/recent?limit=20",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "x-internal-api-key",
+          "value": "{{ ingestion_internal_api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

@@ -8,10 +8,10 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/AuthUser.js'
-export type * from './models/AuthIdentity.js'
-export type * from './models/AuthRefreshToken.js'
-export type * from './models/Role.js'
-export type * from './models/UserRole.js'
-export type * from './models/AuthOtpToken.js'
-export type * from './commonInputTypes.js'
+export type * from './models/AuthUser'
+export type * from './models/AuthIdentity'
+export type * from './models/AuthRefreshToken'
+export type * from './models/Role'
+export type * from './models/UserRole'
+export type * from './models/AuthOtpToken'
+export type * from './commonInputTypes'

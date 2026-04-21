@@ -12,7 +12,7 @@ Dependency ownership is per service package. Root tooling stays at the workspace
 | `auth-service`          | 5001 | Stub (health only until you add routes)   |
 | `application-service`   | 5002 | Migrated app from root `src/` + Prisma    |
 | `admin-service`         | 5003 | Stub (health only)                       |
-| `ai-ingestion-service`  | 5004 | HTTP health + **RabbitMQ** consumer stub |
+| `ai-ingestion-service`  | 5004 | Menu scans (`/scans`), RMQ `scan.submitted.v1` processor, internal ops (`/internal/scans/*`), optional LLM/USDA |
 
 ## Environment and database ownership
 
@@ -66,4 +66,5 @@ Starts Postgres, RabbitMQ (management UI on **15672**), and all four services. `
 
 - Topic exchange: **`menu_assist.events`** (see [`libs/messaging`](libs/messaging)).
 - Event names: [`libs/contracts/src/events.ts`](libs/contracts/src/events.ts).
-- `ai-ingestion-service` listens for **`system.ping.v1`** as a placeholder; add publishers with `createRmqEventClientProvider` when you implement domains.
+- `ai-ingestion-service` consumes **`scan.submitted.v1`** (and still **`system.ping.v1`**) on `menu_assist.ai_ingestion.events`. HTTP handlers publish scan events via `createRmqEventClientProvider('ai-ingestion-http')`.
+- Run **`pnpm run prisma:migrate:ai`** after setting `AI_INGESTION_DATABASE_URL`. Swagger: `http://localhost:5004/docs`.

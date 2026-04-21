@@ -10,4 +10,5 @@
  */
 export type * from './models/MenuScan.js'
 export type * from './models/Dish.js'
+export type * from './models/NutritionCache.js'
 export type * from './commonInputTypes.js'

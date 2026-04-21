@@ -385,7 +385,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   MenuScan: 'MenuScan',
-  Dish: 'Dish'
+  Dish: 'Dish',
+  NutritionCache: 'NutritionCache'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -401,7 +402,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "menuScan" | "dish"
+    modelProps: "menuScan" | "dish" | "nutritionCache"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -553,6 +554,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    NutritionCache: {
+      payload: Prisma.$NutritionCachePayload<ExtArgs>
+      fields: Prisma.NutritionCacheFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NutritionCacheFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NutritionCacheFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        findFirst: {
+          args: Prisma.NutritionCacheFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NutritionCacheFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        findMany: {
+          args: Prisma.NutritionCacheFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>[]
+        }
+        create: {
+          args: Prisma.NutritionCacheCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        createMany: {
+          args: Prisma.NutritionCacheCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NutritionCacheCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>[]
+        }
+        delete: {
+          args: Prisma.NutritionCacheDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        update: {
+          args: Prisma.NutritionCacheUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        deleteMany: {
+          args: Prisma.NutritionCacheDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NutritionCacheUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NutritionCacheUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>[]
+        }
+        upsert: {
+          args: Prisma.NutritionCacheUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NutritionCachePayload>
+        }
+        aggregate: {
+          args: Prisma.NutritionCacheAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNutritionCache>
+        }
+        groupBy: {
+          args: Prisma.NutritionCacheGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NutritionCacheGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NutritionCacheCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NutritionCacheCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -598,6 +673,9 @@ export const MenuScanScalarFieldEnum = {
   imageUrl: 'imageUrl',
   status: 'status',
   scanTime: 'scanTime',
+  rawOcrText: 'rawOcrText',
+  parseError: 'parseError',
+  parseMetadata: 'parseMetadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -614,11 +692,26 @@ export const DishScalarFieldEnum = {
   category: 'category',
   allergenFlags: 'allergenFlags',
   macros: 'macros',
+  nutritionSource: 'nutritionSource',
+  nutritionConfidence: 'nutritionConfidence',
+  embedding: 'embedding',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type DishScalarFieldEnum = (typeof DishScalarFieldEnum)[keyof typeof DishScalarFieldEnum]
+
+
+export const NutritionCacheScalarFieldEnum = {
+  id: 'id',
+  queryKey: 'queryKey',
+  provider: 'provider',
+  payload: 'payload',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -635,6 +728,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -711,6 +811,20 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -735,20 +849,6 @@ export type EnumDishCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'DishCategory[]'
  */
 export type ListEnumDishCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DishCategory[]'>
-    
-
-
-/**
- * Reference to a field of type 'Json'
- */
-export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-/**
- * Reference to a field of type 'QueryMode'
- */
-export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -862,6 +962,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   menuScan?: Prisma.MenuScanOmit
   dish?: Prisma.DishOmit
+  nutritionCache?: Prisma.NutritionCacheOmit
 }
 
 /* Types for Logging */

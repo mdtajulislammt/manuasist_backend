@@ -30,6 +30,8 @@ export type MenuScanMinAggregateOutputType = {
   imageUrl: string | null
   status: $Enums.MenuScanStatus | null
   scanTime: Date | null
+  rawOcrText: string | null
+  parseError: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +42,8 @@ export type MenuScanMaxAggregateOutputType = {
   imageUrl: string | null
   status: $Enums.MenuScanStatus | null
   scanTime: Date | null
+  rawOcrText: string | null
+  parseError: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +54,9 @@ export type MenuScanCountAggregateOutputType = {
   imageUrl: number
   status: number
   scanTime: number
+  rawOcrText: number
+  parseError: number
+  parseMetadata: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +69,8 @@ export type MenuScanMinAggregateInputType = {
   imageUrl?: true
   status?: true
   scanTime?: true
+  rawOcrText?: true
+  parseError?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +81,8 @@ export type MenuScanMaxAggregateInputType = {
   imageUrl?: true
   status?: true
   scanTime?: true
+  rawOcrText?: true
+  parseError?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +93,9 @@ export type MenuScanCountAggregateInputType = {
   imageUrl?: true
   status?: true
   scanTime?: true
+  rawOcrText?: true
+  parseError?: true
+  parseMetadata?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +179,9 @@ export type MenuScanGroupByOutputType = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime: Date
+  rawOcrText: string | null
+  parseError: string | null
+  parseMetadata: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: MenuScanCountAggregateOutputType | null
@@ -196,6 +213,9 @@ export type MenuScanWhereInput = {
   imageUrl?: Prisma.StringFilter<"MenuScan"> | string
   status?: Prisma.EnumMenuScanStatusFilter<"MenuScan"> | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
+  rawOcrText?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  parseError?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  parseMetadata?: Prisma.JsonNullableFilter<"MenuScan">
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
@@ -207,6 +227,9 @@ export type MenuScanOrderByWithRelationInput = {
   imageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scanTime?: Prisma.SortOrder
+  rawOcrText?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseError?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseMetadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   dishes?: Prisma.DishOrderByRelationAggregateInput
@@ -221,6 +244,9 @@ export type MenuScanWhereUniqueInput = Prisma.AtLeast<{
   imageUrl?: Prisma.StringFilter<"MenuScan"> | string
   status?: Prisma.EnumMenuScanStatusFilter<"MenuScan"> | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
+  rawOcrText?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  parseError?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  parseMetadata?: Prisma.JsonNullableFilter<"MenuScan">
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
@@ -232,6 +258,9 @@ export type MenuScanOrderByWithAggregationInput = {
   imageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scanTime?: Prisma.SortOrder
+  rawOcrText?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseError?: Prisma.SortOrderInput | Prisma.SortOrder
+  parseMetadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.MenuScanCountOrderByAggregateInput
@@ -248,6 +277,9 @@ export type MenuScanScalarWhereWithAggregatesInput = {
   imageUrl?: Prisma.StringWithAggregatesFilter<"MenuScan"> | string
   status?: Prisma.EnumMenuScanStatusWithAggregatesFilter<"MenuScan"> | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeWithAggregatesFilter<"MenuScan"> | Date | string
+  rawOcrText?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
+  parseError?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
+  parseMetadata?: Prisma.JsonNullableWithAggregatesFilter<"MenuScan">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"MenuScan"> | Date | string
 }
@@ -258,6 +290,9 @@ export type MenuScanCreateInput = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishCreateNestedManyWithoutScanInput
@@ -269,6 +304,9 @@ export type MenuScanUncheckedCreateInput = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishUncheckedCreateNestedManyWithoutScanInput
@@ -280,6 +318,9 @@ export type MenuScanUpdateInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUpdateManyWithoutScanNestedInput
@@ -291,6 +332,9 @@ export type MenuScanUncheckedUpdateInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUncheckedUpdateManyWithoutScanNestedInput
@@ -302,6 +346,9 @@ export type MenuScanCreateManyInput = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -312,6 +359,9 @@ export type MenuScanUpdateManyMutationInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -322,6 +372,9 @@ export type MenuScanUncheckedUpdateManyInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,6 +385,9 @@ export type MenuScanCountOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scanTime?: Prisma.SortOrder
+  rawOcrText?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
+  parseMetadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -342,6 +398,8 @@ export type MenuScanMaxOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scanTime?: Prisma.SortOrder
+  rawOcrText?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -352,6 +410,8 @@ export type MenuScanMinOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   scanTime?: Prisma.SortOrder
+  rawOcrText?: Prisma.SortOrder
+  parseError?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -371,6 +431,10 @@ export type EnumMenuScanStatusFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
 }
 
 export type MenuScanCreateNestedOneWithoutDishesInput = {
@@ -393,6 +457,9 @@ export type MenuScanCreateWithoutDishesInput = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -403,6 +470,9 @@ export type MenuScanUncheckedCreateWithoutDishesInput = {
   imageUrl: string
   status: $Enums.MenuScanStatus
   scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -429,6 +499,9 @@ export type MenuScanUpdateWithoutDishesInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -439,6 +512,9 @@ export type MenuScanUncheckedUpdateWithoutDishesInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
   scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -480,6 +556,9 @@ export type MenuScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   imageUrl?: boolean
   status?: boolean
   scanTime?: boolean
+  rawOcrText?: boolean
+  parseError?: boolean
+  parseMetadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
@@ -492,6 +571,9 @@ export type MenuScanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   imageUrl?: boolean
   status?: boolean
   scanTime?: boolean
+  rawOcrText?: boolean
+  parseError?: boolean
+  parseMetadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["menuScan"]>
@@ -502,6 +584,9 @@ export type MenuScanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   imageUrl?: boolean
   status?: boolean
   scanTime?: boolean
+  rawOcrText?: boolean
+  parseError?: boolean
+  parseMetadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["menuScan"]>
@@ -512,11 +597,14 @@ export type MenuScanSelectScalar = {
   imageUrl?: boolean
   status?: boolean
   scanTime?: boolean
+  rawOcrText?: boolean
+  parseError?: boolean
+  parseMetadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MenuScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "imageUrl" | "status" | "scanTime" | "createdAt" | "updatedAt", ExtArgs["result"]["menuScan"]>
+export type MenuScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "imageUrl" | "status" | "scanTime" | "rawOcrText" | "parseError" | "parseMetadata" | "createdAt" | "updatedAt", ExtArgs["result"]["menuScan"]>
 export type MenuScanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
   _count?: boolean | Prisma.MenuScanCountOutputTypeDefaultArgs<ExtArgs>
@@ -535,6 +623,9 @@ export type $MenuScanPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     imageUrl: string
     status: $Enums.MenuScanStatus
     scanTime: Date
+    rawOcrText: string | null
+    parseError: string | null
+    parseMetadata: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["menuScan"]>
@@ -966,6 +1057,9 @@ export interface MenuScanFieldRefs {
   readonly imageUrl: Prisma.FieldRef<"MenuScan", 'String'>
   readonly status: Prisma.FieldRef<"MenuScan", 'MenuScanStatus'>
   readonly scanTime: Prisma.FieldRef<"MenuScan", 'DateTime'>
+  readonly rawOcrText: Prisma.FieldRef<"MenuScan", 'String'>
+  readonly parseError: Prisma.FieldRef<"MenuScan", 'String'>
+  readonly parseMetadata: Prisma.FieldRef<"MenuScan", 'Json'>
   readonly createdAt: Prisma.FieldRef<"MenuScan", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"MenuScan", 'DateTime'>
 }

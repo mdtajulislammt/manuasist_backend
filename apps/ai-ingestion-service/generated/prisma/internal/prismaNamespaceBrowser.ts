@@ -52,7 +52,8 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   MenuScan: 'MenuScan',
-  Dish: 'Dish'
+  Dish: 'Dish',
+  NutritionCache: 'NutritionCache'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -77,6 +78,9 @@ export const MenuScanScalarFieldEnum = {
   imageUrl: 'imageUrl',
   status: 'status',
   scanTime: 'scanTime',
+  rawOcrText: 'rawOcrText',
+  parseError: 'parseError',
+  parseMetadata: 'parseMetadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -93,11 +97,26 @@ export const DishScalarFieldEnum = {
   category: 'category',
   allergenFlags: 'allergenFlags',
   macros: 'macros',
+  nutritionSource: 'nutritionSource',
+  nutritionConfidence: 'nutritionConfidence',
+  embedding: 'embedding',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type DishScalarFieldEnum = (typeof DishScalarFieldEnum)[keyof typeof DishScalarFieldEnum]
+
+
+export const NutritionCacheScalarFieldEnum = {
+  id: 'id',
+  queryKey: 'queryKey',
+  provider: 'provider',
+  payload: 'payload',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -114,6 +133,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
