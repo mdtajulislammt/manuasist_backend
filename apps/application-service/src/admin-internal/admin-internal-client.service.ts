@@ -33,7 +33,7 @@ export type AdminActiveFlowPayload = {
 export class AdminInternalClientService {
   constructor(private readonly config: ConfigService) { }
 
-  async getActiveFlow(): Promise<AdminActiveFlowPayload> {
+  async getActiveFlow(): Promise<{ success: boolean, message: string, data: AdminActiveFlowPayload }> {
     const base = this.config
       .getOrThrow<string>('ADMIN_SERVICE_URL')
       .replace(/\/$/, '');
@@ -49,7 +49,6 @@ export class AdminInternalClientService {
         `Could not reach admin-service: ${String(e)}`,
       );
     }
-    console.log('fuck you');
 
     if (res.status === 404) {
       throw new NotFoundException('No active onboarding flow is configured');
@@ -60,6 +59,24 @@ export class AdminInternalClientService {
         `admin-service returned ${res.status}: ${text.slice(0, 500)}`,
       );
     }
-    return res.json() as Promise<AdminActiveFlowPayload>;
+    const body = (await res.json()) as {
+      success?: boolean;
+      message?: string;
+      data?: AdminActiveFlowPayload;
+    };
+    if (!body.data || typeof body.data.version !== 'number') {
+      throw new BadGatewayException(
+        'admin-service active-flow response missing data.version',
+      );
+    }
+    const { data } = body;
+    return {
+      success: true,
+      message: 'Active flow retrieved successfully',
+      data: {
+        ...data,
+        steps: Array.isArray(data.steps) ? data.steps : [],
+      } as AdminActiveFlowPayload
+    }
   }
 }

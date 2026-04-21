@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { SpiceLevel, WeightGoal } from '../../generated/prisma/enums';
 import type { AdminActiveFlowPayload } from '../admin-internal/admin-internal-client.service';
@@ -53,7 +53,7 @@ export class UsersMeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly admin: AdminInternalClientService,
-  ) {}
+  ) { }
 
   async getProfile(userId: string) {
     await this.ensureUserRows(userId);
@@ -102,54 +102,62 @@ export class UsersMeService {
   }
 
   async putOnboardingAnswers(userId: string, dto: PutOnboardingAnswersDto) {
-    const flow = await this.admin.getActiveFlow();
-    if (flow.version !== dto.flowVersion) {
-      throw new BadRequestException(
-        `flowVersion ${dto.flowVersion} does not match active flow (${flow.version})`,
-      );
-    }
-    const stepIds = new Set(flow.steps.map((s) => s.id));
-    for (const a of dto.answers) {
-      if (!stepIds.has(a.stepKey)) {
-        throw new BadRequestException(`Unknown step: ${a.stepKey}`);
+    try {
+      const flow = await this.admin.getActiveFlow();
+      if (flow.data.version !== dto.flowVersion) {
+        throw new BadRequestException(
+          `flowVersion ${dto.flowVersion} does not match active flow (${flow.data.version})`,
+        );
       }
-    }
-
-    const prefUpdates = dto.answers.map((a) =>
-      projectPreferencesFromValue(a.value),
-    );
-    const prefMerged = mergePreferenceUpdates(prefUpdates);
-
-    await this.prisma.$transaction(async (tx) => {
-      await this.ensureUserRowsTx(userId, tx);
+      const stepIds = new Set(flow.data.steps.map((s) => s.id));
       for (const a of dto.answers) {
-        await tx.userOnboardingAnswer.upsert({
-          where: {
-            userId_stepKey: { userId, stepKey: a.stepKey },
-          },
-          create: {
-            userId,
-            stepKey: a.stepKey,
-            flowVersion: dto.flowVersion,
-            value: a.value as Prisma.InputJsonValue,
-          },
-          update: {
-            flowVersion: dto.flowVersion,
-            value: a.value as Prisma.InputJsonValue,
-            answeredAt: new Date(),
-          },
-        });
+        if (!stepIds.has(a.stepKey)) {
+          throw new BadRequestException(`Unknown step: ${a.stepKey}`);
+        }
       }
-      if (Object.keys(prefMerged).length > 0) {
-        await tx.preferences.update({
-          where: { userId },
-          data: prefMerged,
-        });
-      }
-      await this.maybeCompleteOnboarding(userId, flow, dto.flowVersion, tx);
-    });
 
-    return { ok: true };
+      const prefUpdates = dto.answers.map((a) =>
+        projectPreferencesFromValue(a.value),
+      );
+      const prefMerged = mergePreferenceUpdates(prefUpdates);
+
+      await this.prisma.$transaction(async (tx) => {
+        await this.ensureUserRowsTx(userId, tx);
+        for (const a of dto.answers) {
+          await tx.userOnboardingAnswer.upsert({
+            where: {
+              userId_stepKey: { userId, stepKey: a.stepKey },
+            },
+            create: {
+              userId,
+              stepKey: a.stepKey,
+              flowVersion: dto.flowVersion,
+              value: a.value as Prisma.InputJsonValue,
+            },
+            update: {
+              flowVersion: dto.flowVersion,
+              value: a.value as Prisma.InputJsonValue,
+              answeredAt: new Date(),
+            },
+          });
+        }
+        if (Object.keys(prefMerged).length > 0) {
+          await tx.preferences.update({
+            where: { userId },
+            data: prefMerged,
+          });
+        }
+        await this.maybeCompleteOnboarding(userId, flow.data, dto.flowVersion, tx);
+      });
+
+      return { success: true, message: 'Onboarding answers updated successfully' };
+    } catch (error) {
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update onboarding answers');
+    }
   }
 
   private isStepRequired(uiConfig: unknown): boolean {
