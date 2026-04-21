@@ -101,9 +101,3 @@ Apply migrations from a service directory when you add them (example):
 cd apps/application-service && pnpm exec prisma migrate dev
 ```
 
-## Tests
-
-```bash
-pnpm test
-pnpm run test:e2e
-```
