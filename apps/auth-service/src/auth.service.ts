@@ -14,9 +14,9 @@ import * as nodemailer from 'nodemailer';
 // @ts-ignore
 import { decodeJwt } from 'jose';
 // @ts-ignore
-import { exportJWK, importPKCS8, importSPKI, SignJWT } from 'jose';
+import { exportJWK, importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose';
 // @ts-ignore
-import type { JWK } from 'jose';
+import type { JWK, KeyLike } from 'jose';
 import type { Configuration } from 'openid-client';
 import {
   authorizationCodeGrant,
@@ -103,6 +103,7 @@ export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
 
   private privateKey!: CryptoKey;
+  private publicKey!: KeyLike;
   private jwksBody!: { keys: JWK[] };
 
   private oidcConfiguration?: Promise<Configuration>;
@@ -160,6 +161,7 @@ export class AuthService implements OnModuleInit {
     const publicPem = this.config.getOrThrow<string>('JWT_PUBLIC_KEY');
     this.privateKey = await importPKCS8(privatePem, 'RS256');
     const pub = await importSPKI(publicPem, 'RS256');
+    this.publicKey = pub;
     const jwk = (await exportJWK(pub)) as JWK;
     const kid = this.config.get<string>('JWT_KID') ?? 'menu-assist-rs256';
     jwk.kid = kid;
@@ -807,6 +809,73 @@ export class AuthService implements OnModuleInit {
     }
 
     return this.issuePairForUser(user.id);
+  }
+
+  /**
+   * Verifies an access JWT issued by this service (same issuer/audience as login).
+   */
+  async verifyAccessToken(token: string): Promise<{ sub: string }> {
+    const issuer = this.config.getOrThrow<string>('JWT_ISSUER');
+    const audience = this.config.getOrThrow<string>('JWT_AUDIENCE');
+    try {
+      const { payload } = await jwtVerify(token, this.publicKey, {
+        issuer,
+        audience,
+      });
+      const sub = typeof payload.sub === 'string' ? payload.sub : undefined;
+      if (!sub) {
+        throw new UnauthorizedException('Invalid token');
+      }
+      return { sub };
+    } catch (e) {
+      if (e instanceof UnauthorizedException) {
+        throw e;
+      }
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
+  async updatePasswordForUser(
+    userId: string,
+    input: {
+      currentPassword: string;
+      newPassword: string;
+      confirmPassword: string;
+    },
+  ): Promise<{ status: 'PASSWORD_UPDATED' }> {
+    const { currentPassword, newPassword, confirmPassword } = input;
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
+    }
+    if (newPassword === currentPassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
+    }
+
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: userId },
+    });
+    if (!user?.passwordHash) {
+      throw new BadRequestException(
+        'Password change is not available for this account (e.g. social login only)',
+      );
+    }
+
+    const currentOk = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!currentOk) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.authUser.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    await this.revokeAllUserRefreshTokens(userId);
+    return { status: 'PASSWORD_UPDATED' };
   }
 
   // --- OIDC user sync (from UserSyncService) ---

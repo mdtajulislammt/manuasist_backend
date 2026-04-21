@@ -307,6 +307,39 @@
       "settingFollowRedirects": "global"
     },
     {
+      "_id": "req_v1_auth_password_patch",
+      "parentId": "fld_v1_auth_tokens",
+      "_type": "request",
+      "name": "PATCH auth/password",
+      "description": "Bearer access_token. Body: currentPassword, newPassword, confirmPassword. Revokes refresh tokens.",
+      "url": "{{ gateway_url }}/v1/auth/password",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"currentPassword\": \"User@123456\",\n  \"newPassword\": \"NewUser@123456\",\n  \"confirmPassword\": \"NewUser@123456\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
       "_id": "fld_v1_auth_jwks",
       "parentId": "fld_v1_auth",
       "_type": "request_group",

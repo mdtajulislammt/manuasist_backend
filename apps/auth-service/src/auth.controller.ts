@@ -3,13 +3,17 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
+  Patch,
   Post,
   Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -27,6 +31,15 @@ import { LoginDto } from './dto/login.dto';
 import { OtpRequestDto } from './dto/otp-request.dto';
 // @ts-ignore
 import { OtpVerifyDto } from './dto/otp-verify.dto';
+// @ts-ignore
+import { UpdatePasswordDto } from './dto/update-password.dto';
+
+function bearerTokenFromAuthorization(header: string | undefined): string {
+  if (!header || !header.startsWith('Bearer ')) {
+    throw new UnauthorizedException('Missing bearer token');
+  }
+  return header.slice(7);
+}
 
 function callbackUrlFromRequest(req: Request): URL {
   const forwardedProto = req.headers['x-forwarded-proto'];
@@ -129,6 +142,41 @@ export class AuthController {
   @ApiNoContentResponse({ description: 'Logout successful.' })
   async logout(@Body() body: RefreshBodyDto) {
     await this.auth.revoke(body.refreshToken);
+  }
+
+  @Patch('password')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change password while authenticated',
+    description:
+      'Requires a valid access token. Verifies current password, sets a new hash, and revokes all refresh tokens (other sessions must sign in again).',
+  })
+  @ApiBody({ type: UpdatePasswordDto })
+  @ApiOkResponse({
+    description: 'Password updated.',
+    schema: {
+      type: 'object',
+      properties: { status: { type: 'string', example: 'PASSWORD_UPDATED' } },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error, passwords mismatch, or account has no password.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing/invalid token or wrong current password.',
+  })
+  async updatePassword(
+    @Headers('authorization') authorization: string | undefined,
+    @Body() body: UpdatePasswordDto,
+  ) {
+    const token = bearerTokenFromAuthorization(authorization);
+    const { sub } = await this.auth.verifyAccessToken(token);
+    return this.auth.updatePasswordForUser(sub, {
+      currentPassword: body.currentPassword,
+      newPassword: body.newPassword,
+      confirmPassword: body.confirmPassword,
+    });
   }
 }
 

@@ -19,7 +19,9 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Menu Assist Auth Service')
-    .setDescription('Authentication, OTP, OAuth, and JWKS endpoints')
+    .setDescription(
+      'Authentication, OTP, OAuth, JWKS, and authenticated password change (PATCH /password).',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
