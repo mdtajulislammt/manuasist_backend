@@ -56,49 +56,96 @@ export class UsersMeService {
   ) { }
 
   async getProfile(userId: string) {
-    await this.ensureUserRows(userId);
-    const profile = await this.prisma.userProfile.findUniqueOrThrow({
-      where: { userId },
-    });
-    return profile;
+    try {
+      await this.ensureUserRows(userId);
+      const profile = await this.prisma.userProfile.findUniqueOrThrow({
+        where: { userId },
+      });
+      return {
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: profile,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get profile');
+    }
   }
 
   async patchProfile(userId: string, dto: PatchProfileDto) {
-    await this.ensureUserRows(userId);
-    return this.prisma.userProfile.update({
-      where: { userId },
-      data: {
-        ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
-      },
-    });
+    try {
+      await this.ensureUserRows(userId);
+      const updatedProfile = await this.prisma.userProfile.update({
+        where: { userId },
+        data: {
+          ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
+        },
+      });
+      return {
+        success: true,
+        message: 'Profile updated successfully',
+        data: updatedProfile,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update profile');
+    }
   }
 
   async getPreferences(userId: string) {
-    await this.ensureUserRows(userId);
-    return this.prisma.preferences.findUniqueOrThrow({
-      where: { userId },
-    });
+    try {
+      await this.ensureUserRows(userId);
+      const preferences = await this.prisma.preferences.findUniqueOrThrow({
+        where: { userId },
+      });
+      return {
+        success: true,
+        message: 'Preferences retrieved successfully',
+        data: preferences,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get preferences');
+    }
   }
 
   async patchPreferences(userId: string, dto: PatchPreferencesDto) {
-    await this.ensureUserRows(userId);
-    const data: Prisma.PreferencesUpdateInput = {};
-    if (dto.dietType !== undefined) {
-      data.dietType = dto.dietType;
+    try {
+      await this.ensureUserRows(userId);
+      const data: Prisma.PreferencesUpdateInput = {};
+      if (dto.dietType !== undefined) {
+        data.dietType = dto.dietType;
+      }
+      if (dto.calorieTarget !== undefined) {
+        data.calorieTarget = dto.calorieTarget;
+      }
+      if (dto.spiceLevel !== undefined) {
+        data.spiceLevel = dto.spiceLevel;
+      }
+      if (dto.weightGoal !== undefined) {
+        data.weightGoal = dto.weightGoal;
+      }
+      const updatedPreferences = await this.prisma.preferences.update({
+        where: { userId },
+        data,
+      });
+      return {
+        success: true,
+        message: 'Preferences updated successfully',
+        data: updatedPreferences,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update preferences');
     }
-    if (dto.calorieTarget !== undefined) {
-      data.calorieTarget = dto.calorieTarget;
-    }
-    if (dto.spiceLevel !== undefined) {
-      data.spiceLevel = dto.spiceLevel;
-    }
-    if (dto.weightGoal !== undefined) {
-      data.weightGoal = dto.weightGoal;
-    }
-    return this.prisma.preferences.update({
-      where: { userId },
-      data,
-    });
   }
 
   async putOnboardingAnswers(userId: string, dto: PutOnboardingAnswersDto) {
