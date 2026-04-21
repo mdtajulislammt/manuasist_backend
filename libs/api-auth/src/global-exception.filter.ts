@@ -8,13 +8,11 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-type ErrorBody = {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  method: string;
-  error: string;
-  message: string | string[];
+/** Standard error envelope for all HTTP services. */
+export type ApiErrorBody = {
+  success: false;
+  message: string;
+  status: number;
 };
 
 @Catch()
@@ -26,31 +24,27 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    // If there is no HTTP response context, bubble up.
     if (!response || typeof response.status !== 'function') {
       throw exception;
     }
 
-    const statusCode = this.resolveStatusCode(exception);
-    const { message, error } = this.resolveMessageAndError(exception, statusCode);
+    const status = this.resolveStatusCode(exception);
+    const message = this.resolveMessage(exception, status);
 
-    const body: ErrorBody = {
-      statusCode,
-      timestamp: new Date().toISOString(),
-      path: request?.url ?? '',
-      method: request?.method ?? '',
-      error,
+    const body: ApiErrorBody = {
+      success: false,
       message,
+      status,
     };
 
-    const context = `${body.method} ${body.path} -> ${statusCode}`;
-    if (statusCode >= 500) {
+    const context = `${request?.method ?? ''} ${request?.url ?? ''} -> ${status}`;
+    if (status >= 500) {
       this.logger.error(context, exception instanceof Error ? exception.stack : undefined);
     } else {
-      this.logger.warn(`${context}: ${Array.isArray(message) ? message.join(', ') : message}`);
+      this.logger.warn(`${context}: ${message}`);
     }
 
-    response.status(statusCode).json(body);
+    response.status(status).json(body);
   }
 
   private resolveStatusCode(exception: unknown): number {
@@ -60,43 +54,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
-  private resolveMessageAndError(
-    exception: unknown,
-    statusCode: number,
-  ): { message: string | string[]; error: string } {
+  private resolveMessage(exception: unknown, status: number): string {
     if (exception instanceof HttpException) {
-      const response = exception.getResponse();
-      if (typeof response === 'string') {
-        return {
-          message: response,
-          error: exception.name,
-        };
+      const res = exception.getResponse();
+      if (typeof res === 'string') {
+        return res;
       }
-      if (typeof response === 'object' && response !== null) {
-        const maybeMessage = (response as { message?: unknown }).message;
-        const maybeError = (response as { error?: unknown }).error;
-        return {
-          message:
-            typeof maybeMessage === 'string' || Array.isArray(maybeMessage)
-              ? (maybeMessage as string | string[])
-              : exception.message,
-          error: typeof maybeError === 'string' ? maybeError : exception.name,
-        };
+      if (typeof res === 'object' && res !== null) {
+        const maybeMessage = (res as { message?: unknown }).message;
+        if (typeof maybeMessage === 'string') {
+          return maybeMessage;
+        }
+        if (Array.isArray(maybeMessage)) {
+          return maybeMessage.map(String).join(', ');
+        }
       }
-      return { message: exception.message, error: exception.name };
+      return exception.message;
     }
 
     if (exception instanceof Error) {
-      return {
-        message:
-          statusCode >= 500 ? 'Internal server error' : exception.message,
-        error: exception.name,
-      };
+      return status >= 500 ? 'Internal server error' : exception.message;
     }
 
-    return {
-      message: 'Internal server error',
-      error: 'Error',
-    };
+    return 'Internal server error';
   }
 }

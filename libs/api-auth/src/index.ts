@@ -5,6 +5,6 @@ export { Roles } from './roles.decorator';
 export { JwtAuthGuard } from './jwt-auth.guard';
 export { RolesGuard } from './roles.guard';
 export { CompositeAuthGuard } from './composite-auth.guard';
-export { GlobalExceptionFilter } from './global-exception.filter';
+export { GlobalExceptionFilter, type ApiErrorBody } from './global-exception.filter';
 export { API_AUTH_OPTIONS, type ApiAuthModuleOptions } from './tokens';
 export type { MenuAssistJwtPayload } from './jwt-payload';
