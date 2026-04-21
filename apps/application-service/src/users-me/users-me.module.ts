@@ -7,5 +7,6 @@ import { UsersMeService } from './users-me.service';
   imports: [AdminInternalModule],
   controllers: [UsersMeController],
   providers: [UsersMeService],
+  exports: [UsersMeService],
 })
 export class UsersMeModule {}

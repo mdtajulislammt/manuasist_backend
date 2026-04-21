@@ -437,6 +437,32 @@
       "settingFollowRedirects": "global"
     },
     {
+      "_id": "req_v1_app_onboarding_progress_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET onboarding/progress",
+      "description": "Resume state: answered vs total steps, personalizationPercent, nextStep, canResume. Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/progress",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
       "_id": "req_v1_app_users_me_profile_get",
       "parentId": "fld_v1_app",
       "_type": "request",
@@ -499,9 +525,9 @@
       "_id": "req_v1_app_users_me_prefs_get",
       "parentId": "fld_v1_app",
       "_type": "request",
-      "name": "GET users/me/preferences",
-      "description": "Bearer access_token.",
-      "url": "{{ gateway_url }}/v1/app/users/me/preferences",
+      "name": "GET onboarding/preferences",
+      "description": "Same preferences row as onboarding; Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/preferences",
       "method": "GET",
       "body": {},
       "parameters": [],
@@ -525,9 +551,9 @@
       "_id": "req_v1_app_users_me_prefs_patch",
       "parentId": "fld_v1_app",
       "_type": "request",
-      "name": "PATCH users/me/preferences",
+      "name": "PATCH onboarding/preferences",
       "description": "Optional fields: dietType, calorieTarget, spiceLevel, weightGoal.",
-      "url": "{{ gateway_url }}/v1/app/users/me/preferences",
+      "url": "{{ gateway_url }}/v1/app/onboarding/preferences",
       "method": "PATCH",
       "body": {
         "mimeType": "application/json",
@@ -558,9 +584,9 @@
       "_id": "req_v1_app_users_me_onboarding_answers_put",
       "parentId": "fld_v1_app",
       "_type": "request",
-      "name": "PUT users/me/onboarding/answers",
+      "name": "PUT onboarding/answers",
       "description": "Set flowVersion to match active flow; stepKey = step id from GET onboarding/active-flow.",
-      "url": "{{ gateway_url }}/v1/app/users/me/onboarding/answers",
+      "url": "{{ gateway_url }}/v1/app/onboarding/answers",
       "method": "PUT",
       "body": {
         "mimeType": "application/json",

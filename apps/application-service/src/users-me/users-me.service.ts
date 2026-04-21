@@ -115,6 +115,92 @@ export class UsersMeService {
     }
   }
 
+  async getOnboardingProgress(userId: string) {
+    try {
+      await this.ensureUserRows(userId);
+      const wrapped = await this.admin.getActiveFlow();
+      const flow = wrapped.data;
+      const flowVersion = flow.version;
+      const steps = [...(flow.steps ?? [])].sort(
+        (a, b) => a.orderIndex - b.orderIndex,
+      );
+
+      const answers = await this.prisma.userOnboardingAnswer.findMany({
+        where: { userId, flowVersion },
+      });
+      const answered = new Set(answers.map((a) => a.stepKey));
+
+      const totalSteps = steps.length;
+      const answeredSteps = steps.filter((s) => answered.has(s.id)).length;
+
+      const requiredSteps = steps.filter((s) =>
+        this.isStepRequired(s.uiConfig),
+      );
+      const requiredTotal = requiredSteps.length;
+      const answeredRequiredSteps = requiredSteps.filter((s) =>
+        answered.has(s.id),
+      ).length;
+
+      const profile = await this.prisma.userProfile.findUnique({
+        where: { userId },
+      });
+
+      const personalizationPercent =
+        totalSteps === 0
+          ? 100
+          : Math.min(100, Math.round((answeredSteps / totalSteps) * 100));
+
+      const completedStepIds = steps
+        .filter((s) => answered.has(s.id))
+        .map((s) => s.id);
+      const pendingStepIds = steps
+        .filter((s) => !answered.has(s.id))
+        .map((s) => s.id);
+
+      const next = steps.find((s) => !answered.has(s.id));
+
+      const onboardingCompleted = !!profile?.onboardingCompletedAt;
+      const canResume = !onboardingCompleted && next !== undefined;
+
+      return {
+        success: true,
+        message: 'Onboarding progress retrieved successfully',
+        data: {
+          flowVersion,
+          flowId: flow.id,
+          flowName: flow.name,
+          totalSteps,
+          answeredSteps,
+          requiredTotal,
+          answeredRequiredSteps,
+          personalizationPercent,
+          completedStepIds,
+          pendingStepIds,
+          nextStep: next
+            ? {
+                id: next.id,
+                orderIndex: next.orderIndex,
+                type: next.type,
+                title: next.title,
+                subtitle: next.subtitle,
+                uiConfig: next.uiConfig,
+              }
+            : null,
+          onboardingCompleted,
+          onboardingCompletedAt: profile?.onboardingCompletedAt ?? null,
+          canResume,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to get onboarding progress',
+      );
+    }
+  }
+
   async patchPreferences(userId: string, dto: PatchPreferencesDto) {
     try {
       await this.ensureUserRows(userId);

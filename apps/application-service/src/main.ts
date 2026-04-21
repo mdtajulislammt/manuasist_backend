@@ -18,7 +18,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Menu Assist Application Service')
     .setDescription(
-      'User profile, preferences, and onboarding answers. Protected routes expect a Bearer JWT (same issuer/audience as auth-service). When called via the API gateway, paths are typically prefixed (e.g. /v1/app).',
+      'Profile under /users/me/profile. Onboarding (active flow, preferences, step answers) under /onboarding/*. Protected routes expect a Bearer JWT. Via the gateway, paths are often prefixed (e.g. /v1/app).',
     )
     .setVersion('1.0')
     .addBearerAuth()
