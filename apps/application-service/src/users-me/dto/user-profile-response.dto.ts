@@ -10,6 +10,18 @@ export class UserProfileResponseDto {
   @ApiProperty({ nullable: true, description: 'Display name' })
   fullName!: string | null;
 
+  @ApiProperty({ nullable: true, description: 'Verified email from auth-service' })
+  email!: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Verified/registered phone from auth-service' })
+  phone!: string | null;
+
+  @ApiProperty({ description: 'True when email is verified' })
+  emailVerified!: boolean;
+
+  @ApiProperty({ description: 'True when phone is verified' })
+  phoneVerified!: boolean;
+
   @ApiProperty({
     nullable: true,
     format: 'date-time',

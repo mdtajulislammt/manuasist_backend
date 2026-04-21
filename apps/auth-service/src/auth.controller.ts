@@ -5,14 +5,17 @@ import {
   Get,
   Headers,
   HttpCode,
+  Param,
   Patch,
   Post,
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiHeader,
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
@@ -23,6 +26,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
+import { Public } from '@menu-assist/api-auth';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshBodyDto } from './dto/refresh-body.dto';
@@ -33,6 +37,7 @@ import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
 // @ts-ignore
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { InternalApiKeyGuard } from './internal-api-key.guard';
 
 function bearerTokenFromAuthorization(header: string | undefined): string {
   if (!header || !header.startsWith('Bearer ')) {
@@ -221,5 +226,25 @@ export class WellKnownController {
   @ApiOkResponse({ description: 'JWKS document returned.' })
   jwks() {
     return this.auth.getJwks();
+  }
+}
+
+@Controller('internal/auth')
+@ApiTags('Internal Auth')
+@Public()
+@UseGuards(InternalApiKeyGuard)
+@ApiHeader({
+  name: 'x-internal-api-key',
+  required: true,
+})
+export class InternalAuthController {
+  constructor(private readonly auth: AuthService) {}
+
+  @Get('users/:userId/contact')
+  @ApiOperation({ summary: 'Get auth contact/verification by user id (internal)' })
+  @ApiOkResponse({ description: 'Contact payload returned.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  getUserContact(@Param('userId') userId: string) {
+    return this.auth.getUserContactById(userId);
   }
 }

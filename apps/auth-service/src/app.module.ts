@@ -3,11 +3,13 @@ import { ConfigModule } from '@nestjs/config';
 import { join } from 'node:path';
 import {
   AuthController,
+  InternalAuthController,
   OAuthController,
   WellKnownController,
 } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HealthController } from './health.controller';
+import { InternalApiKeyGuard } from './internal-api-key.guard';
 import { PrismaModule } from './prisma.module';
 
 const envFilePaths = [
@@ -26,9 +28,10 @@ const envFilePaths = [
   controllers: [
     HealthController,
     AuthController,
+    InternalAuthController,
     OAuthController,
     WellKnownController,
   ],
-  providers: [AuthService],
+  providers: [AuthService, InternalApiKeyGuard],
 })
 export class AppModule { }

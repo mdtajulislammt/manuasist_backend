@@ -878,6 +878,29 @@ export class AuthService implements OnModuleInit {
     return { status: 'PASSWORD_UPDATED' };
   }
 
+  async getUserContactById(userId: string) {
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        emailVerifiedAt: true,
+        phoneVerifiedAt: true,
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      emailVerified: !!user.emailVerifiedAt,
+      phoneVerified: !!user.phoneVerifiedAt,
+    };
+  }
+
   // --- OIDC user sync (from UserSyncService) ---
 
   async upsertOidcUser(

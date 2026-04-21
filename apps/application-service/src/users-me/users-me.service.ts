@@ -1,8 +1,9 @@
-import { BadRequestException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { SpiceLevel, WeightGoal } from '../../generated/prisma/enums';
 import type { AdminActiveFlowPayload } from '../admin-internal/admin-internal-client.service';
 import { AdminInternalClientService } from '../admin-internal/admin-internal-client.service';
+import { AuthInternalClientService } from '../auth-internal/auth-internal-client.service';
 import { PrismaService } from '../prisma.service';
 import { PatchPreferencesDto } from './dto/patch-preferences.dto';
 import { PatchProfileDto } from './dto/patch-profile.dto';
@@ -50,9 +51,12 @@ function mergePreferenceUpdates(
 
 @Injectable()
 export class UsersMeService {
+  private readonly logger = new Logger(UsersMeService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly admin: AdminInternalClientService,
+    private readonly authInternal: AuthInternalClientService,
   ) { }
 
   async getProfile(userId: string) {
@@ -61,10 +65,17 @@ export class UsersMeService {
       const profile = await this.prisma.userProfile.findUniqueOrThrow({
         where: { userId },
       });
+      const contact = await this.getUserContactSafe(userId);
       return {
         success: true,
         message: 'Profile retrieved successfully',
-        data: profile,
+        data: {
+          ...profile,
+          email: contact.email,
+          phone: contact.phone,
+          emailVerified: contact.emailVerified,
+          phoneVerified: contact.phoneVerified,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -83,10 +94,17 @@ export class UsersMeService {
           ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
         },
       });
+      const contact = await this.getUserContactSafe(userId);
       return {
         success: true,
         message: 'Profile updated successfully',
-        data: updatedProfile,
+        data: {
+          ...updatedProfile,
+          email: contact.email,
+          phone: contact.phone,
+          emailVerified: contact.emailVerified,
+          phoneVerified: contact.phoneVerified,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -330,6 +348,23 @@ export class UsersMeService {
 
   private async ensureUserRows(userId: string) {
     await this.ensureUserRowsTx(userId, this.prisma);
+  }
+
+  private async getUserContactSafe(userId: string) {
+    try {
+      return await this.authInternal.getUserContact(userId);
+    } catch (e) {
+      this.logger.warn(
+        `Auth contact lookup failed for user ${userId}: ${String(e)}`,
+      );
+      return {
+        userId,
+        email: null,
+        phone: null,
+        emailVerified: false,
+        phoneVerified: false,
+      };
+    }
   }
 
   private async ensureUserRowsTx(
