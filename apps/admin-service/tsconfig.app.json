@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/admin-service",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "generated/**/*.ts",
+    "../../libs/contracts/src/**/*.ts"
+  ]
+}

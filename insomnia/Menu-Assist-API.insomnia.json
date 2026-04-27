@@ -1,0 +1,1181 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-18T00:00:00.000Z",
+  "__export_source": "menu-assist.workspace",
+  "resources": [
+    {
+      "_id": "wrk_menu_assist",
+      "_type": "workspace",
+      "name": "Menu Assist",
+      "description": "API Gateway (5000) and upstream services. Set gateway_url / auth_direct_url in the Base environment."
+    },
+    {
+      "_id": "env_menu_assist_base",
+      "_type": "environment",
+      "parentId": "wrk_menu_assist",
+      "name": "Base",
+      "data": {
+        "gateway_url": "http://localhost:5000",
+        "auth_direct_url": "http://localhost:5001",
+        "admin_direct_url": "http://localhost:5003",
+        "ingestion_direct_url": "http://localhost:5004",
+        "admin_internal_api_key": "dev-internal-onboarding-key",
+        "ingestion_internal_api_key": "dev-internal-ingestion-key",
+        "access_token": "",
+        "refresh_token": ""
+      },
+      "dataPropertyOrder": {
+        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "ingestion_direct_url", "admin_internal_api_key", "ingestion_internal_api_key", "access_token", "refresh_token"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_gateway",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "API Gateway (direct)",
+      "description": "Gateway process only — not proxied.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_gw_health",
+      "parentId": "fld_gateway",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ gateway_url }}/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gw_ready",
+      "parentId": "fld_gateway",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ gateway_url }}/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_auth",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "v1 / Auth (via gateway)",
+      "description": "Proxied to AUTH_SERVICE_URL. Path after /v1/auth is forwarded to the auth service.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -900
+    },
+    {
+      "_id": "fld_v1_auth_health",
+      "parentId": "fld_v1_auth",
+      "_type": "request_group",
+      "name": "Health",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_v1_auth_health",
+      "parentId": "fld_v1_auth_health",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/auth/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_auth_ready",
+      "parentId": "fld_v1_auth_health",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/auth/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_auth_oauth",
+      "parentId": "fld_v1_auth",
+      "_type": "request_group",
+      "name": "OAuth / OIDC",
+      "description": "authorize: 302 redirect to IdP. callback: paste full redirect URL from IdP (code & state) or use Send from browser devtools.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -99
+    },
+    {
+      "_id": "req_v1_auth_oauth_authorize",
+      "parentId": "fld_v1_auth_oauth",
+      "_type": "request",
+      "name": "GET oauth/authorize",
+      "description": "Redirects (302) to the configured OIDC issuer. Use a browser or disable auto-follow redirects to inspect Location.",
+      "url": "{{ gateway_url }}/v1/auth/oauth/authorize",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "off"
+    },
+    {
+      "_id": "req_v1_auth_oauth_callback",
+      "parentId": "fld_v1_auth_oauth",
+      "_type": "request",
+      "name": "GET oauth/callback",
+      "description": "Query: code, state (from IdP redirect). Replace URL with your real callback URL if testing manually.",
+      "url": "{{ gateway_url }}/v1/auth/oauth/callback",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "code",
+          "value": "",
+          "description": "Authorization code from IdP",
+          "disabled": false
+        },
+        {
+          "name": "state",
+          "value": "",
+          "description": "PKCE state",
+          "disabled": false
+        }
+      ],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_auth_tokens",
+      "parentId": "fld_v1_auth",
+      "_type": "request_group",
+      "name": "Tokens",
+      "description": "Refresh rotation and logout.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -98
+    },
+    {
+      "_id": "req_v1_auth_register",
+      "parentId": "fld_v1_auth_tokens",
+      "_type": "request",
+      "name": "POST auth/register",
+      "description": "email, password, confirmPassword (min 8 chars). 201 — access_token, refresh_token, expires_in.",
+      "url": "{{ gateway_url }}/v1/auth/auth/register",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-password\",\n  \"confirmPassword\": \"your-password\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1001,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_auth_refresh",
+      "parentId": "fld_v1_auth_tokens",
+      "_type": "request",
+      "name": "POST auth/refresh",
+      "description": "Body: { \"refreshToken\": \"...\" }. Returns new access + refresh tokens.",
+      "url": "{{ gateway_url }}/v1/auth/auth/refresh",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"{{ refresh_token }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_auth_logout",
+      "parentId": "fld_v1_auth_tokens",
+      "_type": "request",
+      "name": "POST auth/logout",
+      "description": "204 No Content. Revokes refresh token family.",
+      "url": "{{ gateway_url }}/v1/auth/auth/logout",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"{{ refresh_token }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_auth_password_patch",
+      "parentId": "fld_v1_auth_tokens",
+      "_type": "request",
+      "name": "PATCH auth/password",
+      "description": "Bearer access_token. Body: currentPassword, newPassword, confirmPassword. Revokes refresh tokens.",
+      "url": "{{ gateway_url }}/v1/auth/password",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"currentPassword\": \"User@123456\",\n  \"newPassword\": \"NewUser@123456\",\n  \"confirmPassword\": \"NewUser@123456\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_auth_jwks",
+      "parentId": "fld_v1_auth",
+      "_type": "request_group",
+      "name": "JWKS",
+      "description": "Public keys for JWT verification (RS256).",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -97
+    },
+    {
+      "_id": "req_v1_auth_jwks",
+      "parentId": "fld_v1_auth_jwks",
+      "_type": "request",
+      "name": "GET .well-known/jwks.json",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/auth/.well-known/jwks.json",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_app",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "v1 / Application (via gateway)",
+      "description": "Proxied to APPLICATION_SERVICE_URL. App root is JWT-protected unless marked @Public.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_v1_app_root",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET / (hello)",
+      "description": "Currently @Public in AppController. Add Authorization: Bearer {{ access_token }} to test JWT path.",
+      "url": "{{ gateway_url }}/v1/app/",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_health",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/app/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_ready",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/app/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -998,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_onboarding_active_flow",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET onboarding/active-flow",
+      "description": "Requires Bearer access_token. Proxies to application-service, which reads the active flow from admin-service.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/active-flow",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_onboarding_progress_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET onboarding/progress",
+      "description": "Resume state: answered vs total steps, personalizationPercent, nextStep, canResume. Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/progress",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_profile_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET users/me/profile",
+      "description": "Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/users/me/profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_profile_patch",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PATCH users/me/profile",
+      "description": "Body: { \"fullName\": \"...\" }",
+      "url": "{{ gateway_url }}/v1/app/users/me/profile",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"fullName\": \"Test User\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -995,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_prefs_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET onboarding/preferences",
+      "description": "Same preferences row as onboarding; Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/preferences",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -994,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_prefs_patch",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PATCH onboarding/preferences",
+      "description": "Optional fields: dietType, calorieTarget, spiceLevel, weightGoal.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/preferences",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"spiceLevel\": \"MILD\",\n  \"weightGoal\": \"MAINTAIN\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -993,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_users_me_onboarding_answers_put",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "PUT onboarding/answers",
+      "description": "Set flowVersion to match active flow; stepKey = step id from GET onboarding/active-flow.",
+      "url": "{{ gateway_url }}/v1/app/onboarding/answers",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"flowVersion\": 1,\n  \"answers\": [\n    {\n      \"stepKey\": \"00000000-0000-0000-0000-000000000000\",\n      \"value\": { \"dietType\": \"vegan\", \"spiceLevel\": \"MILD\" }\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -992,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_admin",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "v1 / Admin (via gateway)",
+      "description": "Proxied to ADMIN_SERVICE_URL.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_v1_admin_health",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/admin/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_admin_ready",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/admin/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_admin_onboarding_flows_post",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "POST onboarding/flows",
+      "description": "Requires JWT with admin role. Creates a draft flow (version auto if omitted).",
+      "url": "{{ gateway_url }}/v1/admin/onboarding/flows",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"default\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_admin_onboarding_flows_list",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET onboarding/flows",
+      "description": "Requires JWT with admin role.",
+      "url": "{{ gateway_url }}/v1/admin/onboarding/flows",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_admin_internal_active_flow",
+      "parentId": "fld_v1_admin",
+      "_type": "request",
+      "name": "GET internal/onboarding/active-flow (direct admin)",
+      "description": "Not JWT: uses x-internal-api-key. Call admin_direct_url (bypass gateway).",
+      "url": "{{ admin_direct_url }}/internal/onboarding/active-flow",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "x-internal-api-key",
+          "value": "{{ admin_internal_api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_v1_ingestion",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "v1 / AI Ingestion (via gateway)",
+      "description": "Proxied to AI_INGESTION_SERVICE_URL. RMQ events are not HTTP.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_v1_ing_health",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/ingestion/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_ready",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ gateway_url }}/v1/ingestion/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scans_post",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "POST scans",
+      "description": "Bearer access_token. Body: { \"imageUrl\": \"https://...\" }",
+      "url": "{{ gateway_url }}/v1/ingestion/scans",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"imageUrl\": \"https://example.com/menu-sample.jpg\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -998,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scans_get",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET scans",
+      "description": "Bearer access_token.",
+      "url": "{{ gateway_url }}/v1/ingestion/scans",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_internal_recent",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET internal/scans/recent",
+      "description": "Header x-internal-api-key. Lists recent scans (ops).",
+      "url": "{{ gateway_url }}/v1/ingestion/internal/scans/recent?limit=20",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "x-internal-api-key",
+          "value": "{{ ingestion_internal_api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_auth_direct",
+      "parentId": "wrk_menu_assist",
+      "_type": "request_group",
+      "name": "Auth service (direct, no gateway)",
+      "description": "Same routes as v1/auth but on AUTH_SERVICE_PORT (default 5001). Use when calling the service directly.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -500
+    },
+    {
+      "_id": "fld_auth_direct_h",
+      "parentId": "fld_auth_direct",
+      "_type": "request_group",
+      "name": "Health",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_ad_health",
+      "parentId": "fld_auth_direct_h",
+      "_type": "request",
+      "name": "GET health",
+      "description": "",
+      "url": "{{ auth_direct_url }}/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_ad_ready",
+      "parentId": "fld_auth_direct_h",
+      "_type": "request",
+      "name": "GET ready",
+      "description": "",
+      "url": "{{ auth_direct_url }}/ready",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_auth_direct_oauth",
+      "parentId": "fld_auth_direct",
+      "_type": "request_group",
+      "name": "OAuth",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -99
+    },
+    {
+      "_id": "req_ad_oauth_auth",
+      "parentId": "fld_auth_direct_oauth",
+      "_type": "request",
+      "name": "GET oauth/authorize",
+      "description": "",
+      "url": "{{ auth_direct_url }}/oauth/authorize",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "off"
+    },
+    {
+      "_id": "req_ad_oauth_cb",
+      "parentId": "fld_auth_direct_oauth",
+      "_type": "request",
+      "name": "GET oauth/callback",
+      "description": "",
+      "url": "{{ auth_direct_url }}/oauth/callback",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "code",
+          "value": "",
+          "description": "",
+          "disabled": false
+        },
+        {
+          "name": "state",
+          "value": "",
+          "description": "",
+          "disabled": false
+        }
+      ],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_auth_direct_tokens",
+      "parentId": "fld_auth_direct",
+      "_type": "request_group",
+      "name": "Tokens",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -98
+    },
+    {
+      "_id": "req_ad_register",
+      "parentId": "fld_auth_direct_tokens",
+      "_type": "request",
+      "name": "POST auth/register",
+      "description": "",
+      "url": "{{ auth_direct_url }}/auth/register",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-password\",\n  \"confirmPassword\": \"your-password\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1001,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_ad_refresh",
+      "parentId": "fld_auth_direct_tokens",
+      "_type": "request",
+      "name": "POST auth/refresh",
+      "description": "",
+      "url": "{{ auth_direct_url }}/auth/refresh",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"{{ refresh_token }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_ad_logout",
+      "parentId": "fld_auth_direct_tokens",
+      "_type": "request",
+      "name": "POST auth/logout",
+      "description": "",
+      "url": "{{ auth_direct_url }}/auth/logout",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"{{ refresh_token }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -999,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_auth_direct_jwks",
+      "parentId": "fld_auth_direct",
+      "_type": "request_group",
+      "name": "JWKS",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -97
+    },
+    {
+      "_id": "req_ad_jwks",
+      "parentId": "fld_auth_direct_jwks",
+      "_type": "request",
+      "name": "GET .well-known/jwks.json",
+      "description": "",
+      "url": "{{ auth_direct_url }}/.well-known/jwks.json",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    }
+  ]
+}

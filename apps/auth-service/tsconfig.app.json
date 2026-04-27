@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/auth-service",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false,
+    "baseUrl": "../../",
+    "paths": {
+      "jose": ["node_modules/jose/dist/types/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "generated/**/*.ts", "../../libs/contracts/src/**/*.ts"]
+}

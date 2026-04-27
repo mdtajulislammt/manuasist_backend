@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MenuScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DishCategory {
+  RECOMMENDED
+  CAUTION
+  AVOID
+}
+
+model MenuScan {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  imageUrl       String         @map("image_url")
+  status         MenuScanStatus
+  scanTime       DateTime       @default(now()) @map("scan_time")
+  rawOcrText     String?        @map("raw_ocr_text")
+  parseError     String?        @map("parse_error")
+  parseMetadata  Json?          @map("parse_metadata")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  dishes Dish[]
+
+  @@index([userId, scanTime])
+  @@map("ingestion_menu_scans")
+}
+
+model Dish {
+  id                  String       @id @default(uuid()) @db.Uuid
+  scanId              String       @map("scan_id") @db.Uuid
+  name                String
+  calories            Int
+  dietScore           Int          @map("diet_score")
+  category            DishCategory
+  allergenFlags       Json?        @map("allergen_flags")
+  macros              Json?
+  nutritionSource     String?      @map("nutrition_source")
+  nutritionConfidence Float?       @map("nutrition_confidence")
+  embedding           Json?
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  scan MenuScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@map("ingestion_dishes")
+}
+
+model NutritionCache {
+  id         String   @id @default(uuid()) @db.Uuid
+  queryKey   String   @unique @map("query_key")
+  provider   String
+  payload    Json
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("ingestion_nutrition_cache")
+}
