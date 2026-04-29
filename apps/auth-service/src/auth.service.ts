@@ -445,6 +445,57 @@ export class AuthService implements OnModuleInit {
     });
   }
 
+  private async verifyOtpResponse(identifier: string, otp: string): Promise<any> {
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const otpRow = await this.prisma.authOtpToken.findFirst({
+      where: {
+        userId: user.id,
+        channel,
+        purpose: 'PASSWORD_RESET',
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRow || otpRow.expiresAt < new Date()) {
+      throw new UnauthorizedException('OTP expired or invalid');
+    }
+
+    if (otpRow.attempts >= 5) {
+      throw new UnauthorizedException('OTP attempt limit exceeded');
+    }
+
+    const codeHash = sha256Hex(otp);
+    if (otpRow.codeHash !== codeHash) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    return {
+      success: true,
+      message: 'OTP verified successfully.',
+    };
+  }
+
   // --- Password registration/login ---
 
   async registerWithPassword(input: {
@@ -601,22 +652,14 @@ export class AuthService implements OnModuleInit {
       };
     }
 
-    if (!input.newPassword || !input.confirmPassword) {
-      throw new BadRequestException(
-        'newPassword and confirmPassword are required for PASSWORD_RESET',
-      );
-    }
 
-    const passwordReset = await this.resetPasswordWithOtp({
-      identifier,
-      otp,
-      newPassword: input.newPassword,
-      confirmPassword: input.confirmPassword,
-    });
+    const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
+    if (!verifyOtpResponse.success) {
+      throw new UnauthorizedException(verifyOtpResponse.message);
+    }
     return {
       success: true,
-      message: passwordReset.message,
-      passwordReset,
+      message: verifyOtpResponse.message,
     };
   }
 

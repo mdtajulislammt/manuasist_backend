@@ -37,6 +37,8 @@ import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
 // @ts-ignore
 import { UpdatePasswordDto } from './dto/update-password.dto';
+// @ts-ignore
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { InternalApiKeyGuard } from './internal-api-key.guard';
 
 function bearerTokenFromAuthorization(header: string | undefined): string {
@@ -110,6 +112,24 @@ export class AuthController {
     return this.auth.verifyOtp({
       identifier: body.identifier,
       type: body.type,
+      otp: body.otp,
+      newPassword: body.newPassword,
+      confirmPassword: body.confirmPassword,
+    });
+  }
+
+
+  // Reset Password after forgot password
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Reset password after forgot password' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({ description: 'Password reset successful.' })
+  @ApiBadRequestResponse({ description: 'Invalid input payload.' })
+  @ApiUnauthorizedResponse({ description: 'OTP invalid, expired, or exceeded attempts.' })
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.auth.resetPasswordWithOtp({
+      identifier: body.identifier,
       otp: body.otp,
       newPassword: body.newPassword,
       confirmPassword: body.confirmPassword,
