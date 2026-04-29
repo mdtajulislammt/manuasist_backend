@@ -68,6 +68,8 @@ function normalizeIdentifier(identifier: string): { email?: string; phone?: stri
 }
 
 export type TokenPairResponse = {
+  success: boolean;
+  message: string;
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
@@ -75,6 +77,8 @@ export type TokenPairResponse = {
 };
 
 export type RegisterPendingVerificationResponse = {
+  success: boolean;
+  message: string;
   status: 'PENDING_VERIFICATION';
   channel: 'email' | 'sms';
   identifier: string;
@@ -82,6 +86,8 @@ export type RegisterPendingVerificationResponse = {
 };
 
 export type ForgotPasswordRequestResponse = {
+  success: boolean;
+  message: string;
   status: 'OTP_SENT';
   channel: 'email' | 'sms';
   identifier: string;
@@ -89,12 +95,19 @@ export type ForgotPasswordRequestResponse = {
 };
 
 export type PasswordResetResponse = {
+  success: boolean;
+  message: string;
   status: 'PASSWORD_RESET_SUCCESS';
 };
 
 export type OtpType = 'SIGNUP' | 'PASSWORD_RESET';
 
-export type OtpVerifyResponse = TokenPairResponse | PasswordResetResponse;
+export type OtpVerifyResponse = {
+  success: boolean;
+  message: string;
+  tokenPair?: TokenPairResponse;
+  passwordReset?: PasswordResetResponse;
+};
 
 type PkceEntry = { codeVerifier: string; createdAt: number };
 
@@ -316,7 +329,10 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  async issuePairForUser(userId: string): Promise<TokenPairResponse> {
+  async issuePairForUser(
+    userId: string,
+    message = 'Login successful.',
+  ): Promise<TokenPairResponse> {
     const user = await this.prisma.authUser.findUniqueOrThrow({
       where: { id: userId },
       include: { roles: { include: { role: true } } },
@@ -325,6 +341,8 @@ export class AuthService implements OnModuleInit {
     const access_token = await this.signAccessToken(userId, roleNames);
     const refresh_token = await this.createRefreshToken(userId, randomUUID());
     return {
+      success: true,
+      message,
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -394,6 +412,8 @@ export class AuthService implements OnModuleInit {
 
     const access_token = await this.signAccessToken(userId, roleNames);
     return {
+      success: true,
+      message: 'Refresh successful.',
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -401,15 +421,21 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  async revoke(refreshRaw: string): Promise<void> {
+  async revoke(
+    refreshRaw: string,
+  ): Promise<{ success: boolean; message: string }> {
     const tokenLookup = sha256Hex(refreshRaw);
     const row = await this.prisma.authRefreshToken.findUnique({
       where: { tokenLookup },
     });
     if (!row) {
-      return;
+      return {
+        success: true,
+        message: 'No matching refresh token; already logged out or unknown token.',
+      };
     }
     await this.revokeFamily(row.familyId);
+    return { success: true, message: 'Logged out successfully. Refresh token family revoked.' };
   }
 
   private async revokeFamily(familyId: string) {
@@ -485,6 +511,11 @@ export class AuthService implements OnModuleInit {
     );
 
     return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'Account created. A verification code was sent to your phone.'
+          : 'Account created. A verification code was sent to your email.',
       status: 'PENDING_VERIFICATION',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
@@ -541,6 +572,11 @@ export class AuthService implements OnModuleInit {
     );
 
     return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'A signup verification code was sent to your phone.'
+          : 'A signup verification code was sent to your email.',
       status: 'OTP_SENT',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
@@ -557,7 +593,12 @@ export class AuthService implements OnModuleInit {
   }): Promise<OtpVerifyResponse> {
     const { identifier, type, otp } = input;
     if (type === 'SIGNUP') {
-      return this.verifySignupOtp(identifier, otp);
+      const tokenPair = await this.verifySignupOtp(identifier, otp);
+      return {
+        success: true,
+        message: tokenPair.message,
+        tokenPair,
+      };
     }
 
     if (!input.newPassword || !input.confirmPassword) {
@@ -566,12 +607,17 @@ export class AuthService implements OnModuleInit {
       );
     }
 
-    return this.resetPasswordWithOtp({
+    const passwordReset = await this.resetPasswordWithOtp({
       identifier,
       otp,
       newPassword: input.newPassword,
       confirmPassword: input.confirmPassword,
     });
+    return {
+      success: true,
+      message: passwordReset.message,
+      passwordReset,
+    };
   }
 
   async requestPasswordReset(
@@ -609,6 +655,9 @@ export class AuthService implements OnModuleInit {
     }
 
     return {
+      success: true,
+      message:
+        'If an account with a password exists for this identifier, a password reset code was sent.',
       status: 'OTP_SENT',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
@@ -682,7 +731,10 @@ export class AuthService implements OnModuleInit {
       });
     });
 
-    return this.issuePairForUser(user.id);
+    return this.issuePairForUser(
+      user.id,
+      'Signup verified. You are signed in.',
+    );
   }
 
   async resetPasswordWithOtp(input: {
@@ -765,7 +817,11 @@ export class AuthService implements OnModuleInit {
     });
 
     await this.revokeAllUserRefreshTokens(user.id);
-    return { status: 'PASSWORD_RESET_SUCCESS' };
+    return {
+      success: true,
+      message: 'Password reset successful. You can sign in with your new password.',
+      status: 'PASSWORD_RESET_SUCCESS',
+    };
   }
 
 
@@ -814,7 +870,9 @@ export class AuthService implements OnModuleInit {
   /**
    * Verifies an access JWT issued by this service (same issuer/audience as login).
    */
-  async verifyAccessToken(token: string): Promise<{ sub: string }> {
+  async verifyAccessToken(
+    token: string,
+  ): Promise<{ sub: string; message: string }> {
     const issuer = this.config.getOrThrow<string>('JWT_ISSUER');
     const audience = this.config.getOrThrow<string>('JWT_AUDIENCE');
     try {
@@ -826,7 +884,7 @@ export class AuthService implements OnModuleInit {
       if (!sub) {
         throw new UnauthorizedException('Invalid token');
       }
-      return { sub };
+      return { sub, message: 'Access token is valid.' };
     } catch (e) {
       if (e instanceof UnauthorizedException) {
         throw e;
@@ -842,7 +900,11 @@ export class AuthService implements OnModuleInit {
       newPassword: string;
       confirmPassword: string;
     },
-  ): Promise<{ status: 'PASSWORD_UPDATED' }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: 'PASSWORD_UPDATED';
+  }> {
     const { currentPassword, newPassword, confirmPassword } = input;
     if (newPassword !== confirmPassword) {
       throw new BadRequestException(
@@ -875,7 +937,11 @@ export class AuthService implements OnModuleInit {
       data: { passwordHash },
     });
     await this.revokeAllUserRefreshTokens(userId);
-    return { status: 'PASSWORD_UPDATED' };
+    return {
+      success: true,
+      message: 'Password updated. Other sessions were signed out; sign in again on those devices.',
+      status: 'PASSWORD_UPDATED',
+    };
   }
 
   async getUserContactById(userId: string) {
@@ -893,6 +959,8 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('User not found');
     }
     return {
+      success: true,
+      message: 'User contact and verification flags returned.',
       userId: user.id,
       email: user.email,
       phone: user.phone,
@@ -1058,6 +1126,6 @@ export class AuthService implements OnModuleInit {
           : undefined;
 
     const user = await this.upsertOidcUser(iss, sub, email);
-    return this.issuePairForUser(user.id);
+    return this.issuePairForUser(user.id, 'OAuth sign-in successful.');
   }
 }

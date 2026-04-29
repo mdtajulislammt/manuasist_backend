@@ -238,7 +238,7 @@ export class WellKnownController {
   required: true,
 })
 export class InternalAuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Get('users/:userId/contact')
   @ApiOperation({ summary: 'Get auth contact/verification by user id (internal)' })
