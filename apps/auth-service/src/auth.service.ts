@@ -83,6 +83,7 @@ export type RegisterPendingVerificationResponse = {
   channel: 'email' | 'sms';
   identifier: string;
   expires_in_seconds: number;
+  otp?: string;
 };
 
 export type ForgotPasswordRequestResponse = {
@@ -92,6 +93,7 @@ export type ForgotPasswordRequestResponse = {
   channel: 'email' | 'sms';
   identifier: string;
   expires_in_seconds: number;
+  otp?: string;
 };
 
 export type PasswordResetResponse = {
@@ -249,6 +251,16 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('PASSWORD_RESET_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private otpDebugResponse(otp: string): { otp?: string } {
+    const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
+      .trim()
+      .toLowerCase();
+    if (env === 'development') {
+      return { otp };
+    }
+    return {};
+  }
+
   private generateOtp6(): string {
     return randomInt(0, 1_000_000).toString().padStart(6, '0');
   }
@@ -308,7 +320,7 @@ export class AuthService implements OnModuleInit {
     purpose: 'SIGNUP' | 'PASSWORD_RESET',
     identifier: string,
     expiresInSeconds: number,
-  ): Promise<void> {
+  ): Promise<{ otp: string }> {
     const otp = this.generateOtp6();
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
@@ -341,11 +353,11 @@ export class AuthService implements OnModuleInit {
         purpose,
         expiresInSeconds,
       });
-      return;
     }
 
     // TODO: replace with real SMS provider integration.
     this.logger.log(`${purpose} OTP for ${identifier}: ${otp}`);
+    return { otp };
   }
 
   private async revokeAllUserRefreshTokens(userId: string): Promise<void> {
@@ -597,7 +609,7 @@ export class AuthService implements OnModuleInit {
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
     const expiresInSeconds = this.signupOtpTtlSec();
-    await this.createOtpChallenge(
+    const { otp } = await this.createOtpChallenge(
       user.id,
       channel,
       'SIGNUP',
@@ -615,6 +627,7 @@ export class AuthService implements OnModuleInit {
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,
+      ...this.otpDebugResponse(otp),
     };
   }
 
@@ -658,7 +671,7 @@ export class AuthService implements OnModuleInit {
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
     const expiresInSeconds = this.signupOtpTtlSec();
-    await this.createOtpChallenge(
+    const { otp } = await this.createOtpChallenge(
       user.id,
       channel,
       'SIGNUP',
@@ -676,6 +689,7 @@ export class AuthService implements OnModuleInit {
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,
+      ...this.otpDebugResponse(otp),
     };
   }
 
@@ -732,13 +746,22 @@ export class AuthService implements OnModuleInit {
     });
 
     if (user?.passwordHash) {
-      await this.createOtpChallenge(
+      const { otp } = await this.createOtpChallenge(
         user.id,
         channel,
         'PASSWORD_RESET',
         targetIdentifier,
         expiresInSeconds,
       );
+      return {
+        success: true,
+        message: 'A password reset code was sent to your email.',
+        status: 'OTP_SENT',
+        channel: channel === 'SMS' ? 'sms' : 'email',
+        identifier: targetIdentifier,
+        expires_in_seconds: expiresInSeconds,
+        ...this.otpDebugResponse(otp),
+      };
     }
 
     return {
