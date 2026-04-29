@@ -31,6 +31,8 @@ export type AuthUserMinAggregateOutputType = {
   passwordHash: string | null
   emailVerifiedAt: Date | null
   phoneVerifiedAt: Date | null
+  referralCode: string | null
+  referredById: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +44,8 @@ export type AuthUserMaxAggregateOutputType = {
   passwordHash: string | null
   emailVerifiedAt: Date | null
   phoneVerifiedAt: Date | null
+  referralCode: string | null
+  referredById: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +57,8 @@ export type AuthUserCountAggregateOutputType = {
   passwordHash: number
   emailVerifiedAt: number
   phoneVerifiedAt: number
+  referralCode: number
+  referredById: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +72,8 @@ export type AuthUserMinAggregateInputType = {
   passwordHash?: true
   emailVerifiedAt?: true
   phoneVerifiedAt?: true
+  referralCode?: true
+  referredById?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +85,8 @@ export type AuthUserMaxAggregateInputType = {
   passwordHash?: true
   emailVerifiedAt?: true
   phoneVerifiedAt?: true
+  referralCode?: true
+  referredById?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +98,8 @@ export type AuthUserCountAggregateInputType = {
   passwordHash?: true
   emailVerifiedAt?: true
   phoneVerifiedAt?: true
+  referralCode?: true
+  referredById?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +184,8 @@ export type AuthUserGroupByOutputType = {
   passwordHash: string | null
   emailVerifiedAt: Date | null
   phoneVerifiedAt: Date | null
+  referralCode: string | null
+  referredById: string | null
   createdAt: Date
   updatedAt: Date
   _count: AuthUserCountAggregateOutputType | null
@@ -204,8 +218,12 @@ export type AuthUserWhereInput = {
   passwordHash?: Prisma.StringNullableFilter<"AuthUser"> | string | null
   emailVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
   phoneVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
+  referralCode?: Prisma.StringNullableFilter<"AuthUser"> | string | null
+  referredById?: Prisma.UuidNullableFilter<"AuthUser"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
+  referredBy?: Prisma.XOR<Prisma.AuthUserNullableScalarRelationFilter, Prisma.AuthUserWhereInput> | null
+  referrals?: Prisma.AuthUserListRelationFilter
   otpTokens?: Prisma.AuthOtpTokenListRelationFilter
   identities?: Prisma.AuthIdentityListRelationFilter
   refreshTokens?: Prisma.AuthRefreshTokenListRelationFilter
@@ -219,8 +237,12 @@ export type AuthUserOrderByWithRelationInput = {
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   emailVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   phoneVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  referralCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  referredById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  referredBy?: Prisma.AuthUserOrderByWithRelationInput
+  referrals?: Prisma.AuthUserOrderByRelationAggregateInput
   otpTokens?: Prisma.AuthOtpTokenOrderByRelationAggregateInput
   identities?: Prisma.AuthIdentityOrderByRelationAggregateInput
   refreshTokens?: Prisma.AuthRefreshTokenOrderByRelationAggregateInput
@@ -231,19 +253,23 @@ export type AuthUserWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   email?: string
   phone?: string
+  referralCode?: string
   AND?: Prisma.AuthUserWhereInput | Prisma.AuthUserWhereInput[]
   OR?: Prisma.AuthUserWhereInput[]
   NOT?: Prisma.AuthUserWhereInput | Prisma.AuthUserWhereInput[]
   passwordHash?: Prisma.StringNullableFilter<"AuthUser"> | string | null
   emailVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
   phoneVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
+  referredById?: Prisma.UuidNullableFilter<"AuthUser"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
+  referredBy?: Prisma.XOR<Prisma.AuthUserNullableScalarRelationFilter, Prisma.AuthUserWhereInput> | null
+  referrals?: Prisma.AuthUserListRelationFilter
   otpTokens?: Prisma.AuthOtpTokenListRelationFilter
   identities?: Prisma.AuthIdentityListRelationFilter
   refreshTokens?: Prisma.AuthRefreshTokenListRelationFilter
   roles?: Prisma.UserRoleListRelationFilter
-}, "id" | "email" | "phone">
+}, "id" | "email" | "phone" | "referralCode">
 
 export type AuthUserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -252,6 +278,8 @@ export type AuthUserOrderByWithAggregationInput = {
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   emailVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   phoneVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  referralCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  referredById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AuthUserCountOrderByAggregateInput
@@ -269,6 +297,8 @@ export type AuthUserScalarWhereWithAggregatesInput = {
   passwordHash?: Prisma.StringNullableWithAggregatesFilter<"AuthUser"> | string | null
   emailVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AuthUser"> | Date | string | null
   phoneVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AuthUser"> | Date | string | null
+  referralCode?: Prisma.StringNullableWithAggregatesFilter<"AuthUser"> | string | null
+  referredById?: Prisma.UuidNullableWithAggregatesFilter<"AuthUser"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AuthUser"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AuthUser"> | Date | string
 }
@@ -280,8 +310,11 @@ export type AuthUserCreateInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
@@ -295,8 +328,11 @@ export type AuthUserUncheckedCreateInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -310,8 +346,11 @@ export type AuthUserUpdateInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
@@ -325,8 +364,11 @@ export type AuthUserUncheckedUpdateInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -340,6 +382,8 @@ export type AuthUserCreateManyInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -351,6 +395,7 @@ export type AuthUserUpdateManyMutationInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -362,8 +407,25 @@ export type AuthUserUncheckedUpdateManyInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type AuthUserNullableScalarRelationFilter = {
+  is?: Prisma.AuthUserWhereInput | null
+  isNot?: Prisma.AuthUserWhereInput | null
+}
+
+export type AuthUserListRelationFilter = {
+  every?: Prisma.AuthUserWhereInput
+  some?: Prisma.AuthUserWhereInput
+  none?: Prisma.AuthUserWhereInput
+}
+
+export type AuthUserOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type AuthUserCountOrderByAggregateInput = {
@@ -373,6 +435,8 @@ export type AuthUserCountOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   emailVerifiedAt?: Prisma.SortOrder
   phoneVerifiedAt?: Prisma.SortOrder
+  referralCode?: Prisma.SortOrder
+  referredById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -384,6 +448,8 @@ export type AuthUserMaxOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   emailVerifiedAt?: Prisma.SortOrder
   phoneVerifiedAt?: Prisma.SortOrder
+  referralCode?: Prisma.SortOrder
+  referredById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,6 +461,8 @@ export type AuthUserMinOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   emailVerifiedAt?: Prisma.SortOrder
   phoneVerifiedAt?: Prisma.SortOrder
+  referralCode?: Prisma.SortOrder
+  referredById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -402,6 +470,26 @@ export type AuthUserMinOrderByAggregateInput = {
 export type AuthUserScalarRelationFilter = {
   is?: Prisma.AuthUserWhereInput
   isNot?: Prisma.AuthUserWhereInput
+}
+
+export type AuthUserCreateNestedOneWithoutReferralsInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferralsInput, Prisma.AuthUserUncheckedCreateWithoutReferralsInput>
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferralsInput
+  connect?: Prisma.AuthUserWhereUniqueInput
+}
+
+export type AuthUserCreateNestedManyWithoutReferredByInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput> | Prisma.AuthUserCreateWithoutReferredByInput[] | Prisma.AuthUserUncheckedCreateWithoutReferredByInput[]
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferredByInput | Prisma.AuthUserCreateOrConnectWithoutReferredByInput[]
+  createMany?: Prisma.AuthUserCreateManyReferredByInputEnvelope
+  connect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+}
+
+export type AuthUserUncheckedCreateNestedManyWithoutReferredByInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput> | Prisma.AuthUserCreateWithoutReferredByInput[] | Prisma.AuthUserUncheckedCreateWithoutReferredByInput[]
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferredByInput | Prisma.AuthUserCreateOrConnectWithoutReferredByInput[]
+  createMany?: Prisma.AuthUserCreateManyReferredByInputEnvelope
+  connect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -418,6 +506,44 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type AuthUserUpdateOneWithoutReferralsNestedInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferralsInput, Prisma.AuthUserUncheckedCreateWithoutReferralsInput>
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferralsInput
+  upsert?: Prisma.AuthUserUpsertWithoutReferralsInput
+  disconnect?: Prisma.AuthUserWhereInput | boolean
+  delete?: Prisma.AuthUserWhereInput | boolean
+  connect?: Prisma.AuthUserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AuthUserUpdateToOneWithWhereWithoutReferralsInput, Prisma.AuthUserUpdateWithoutReferralsInput>, Prisma.AuthUserUncheckedUpdateWithoutReferralsInput>
+}
+
+export type AuthUserUpdateManyWithoutReferredByNestedInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput> | Prisma.AuthUserCreateWithoutReferredByInput[] | Prisma.AuthUserUncheckedCreateWithoutReferredByInput[]
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferredByInput | Prisma.AuthUserCreateOrConnectWithoutReferredByInput[]
+  upsert?: Prisma.AuthUserUpsertWithWhereUniqueWithoutReferredByInput | Prisma.AuthUserUpsertWithWhereUniqueWithoutReferredByInput[]
+  createMany?: Prisma.AuthUserCreateManyReferredByInputEnvelope
+  set?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  disconnect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  delete?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  connect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  update?: Prisma.AuthUserUpdateWithWhereUniqueWithoutReferredByInput | Prisma.AuthUserUpdateWithWhereUniqueWithoutReferredByInput[]
+  updateMany?: Prisma.AuthUserUpdateManyWithWhereWithoutReferredByInput | Prisma.AuthUserUpdateManyWithWhereWithoutReferredByInput[]
+  deleteMany?: Prisma.AuthUserScalarWhereInput | Prisma.AuthUserScalarWhereInput[]
+}
+
+export type AuthUserUncheckedUpdateManyWithoutReferredByNestedInput = {
+  create?: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput> | Prisma.AuthUserCreateWithoutReferredByInput[] | Prisma.AuthUserUncheckedCreateWithoutReferredByInput[]
+  connectOrCreate?: Prisma.AuthUserCreateOrConnectWithoutReferredByInput | Prisma.AuthUserCreateOrConnectWithoutReferredByInput[]
+  upsert?: Prisma.AuthUserUpsertWithWhereUniqueWithoutReferredByInput | Prisma.AuthUserUpsertWithWhereUniqueWithoutReferredByInput[]
+  createMany?: Prisma.AuthUserCreateManyReferredByInputEnvelope
+  set?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  disconnect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  delete?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  connect?: Prisma.AuthUserWhereUniqueInput | Prisma.AuthUserWhereUniqueInput[]
+  update?: Prisma.AuthUserUpdateWithWhereUniqueWithoutReferredByInput | Prisma.AuthUserUpdateWithWhereUniqueWithoutReferredByInput[]
+  updateMany?: Prisma.AuthUserUpdateManyWithWhereWithoutReferredByInput | Prisma.AuthUserUpdateManyWithWhereWithoutReferredByInput[]
+  deleteMany?: Prisma.AuthUserScalarWhereInput | Prisma.AuthUserScalarWhereInput[]
 }
 
 export type AuthUserCreateNestedOneWithoutIdentitiesInput = {
@@ -476,6 +602,166 @@ export type AuthUserUpdateOneRequiredWithoutOtpTokensNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AuthUserUpdateToOneWithWhereWithoutOtpTokensInput, Prisma.AuthUserUpdateWithoutOtpTokensInput>, Prisma.AuthUserUncheckedUpdateWithoutOtpTokensInput>
 }
 
+export type AuthUserCreateWithoutReferralsInput = {
+  id?: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
+  identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
+  roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+}
+
+export type AuthUserUncheckedCreateWithoutReferralsInput = {
+  id?: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
+  identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type AuthUserCreateOrConnectWithoutReferralsInput = {
+  where: Prisma.AuthUserWhereUniqueInput
+  create: Prisma.XOR<Prisma.AuthUserCreateWithoutReferralsInput, Prisma.AuthUserUncheckedCreateWithoutReferralsInput>
+}
+
+export type AuthUserCreateWithoutReferredByInput = {
+  id?: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
+  otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
+  identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
+  roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+}
+
+export type AuthUserUncheckedCreateWithoutReferredByInput = {
+  id?: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
+  otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
+  identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type AuthUserCreateOrConnectWithoutReferredByInput = {
+  where: Prisma.AuthUserWhereUniqueInput
+  create: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput>
+}
+
+export type AuthUserCreateManyReferredByInputEnvelope = {
+  data: Prisma.AuthUserCreateManyReferredByInput | Prisma.AuthUserCreateManyReferredByInput[]
+  skipDuplicates?: boolean
+}
+
+export type AuthUserUpsertWithoutReferralsInput = {
+  update: Prisma.XOR<Prisma.AuthUserUpdateWithoutReferralsInput, Prisma.AuthUserUncheckedUpdateWithoutReferralsInput>
+  create: Prisma.XOR<Prisma.AuthUserCreateWithoutReferralsInput, Prisma.AuthUserUncheckedCreateWithoutReferralsInput>
+  where?: Prisma.AuthUserWhereInput
+}
+
+export type AuthUserUpdateToOneWithWhereWithoutReferralsInput = {
+  where?: Prisma.AuthUserWhereInput
+  data: Prisma.XOR<Prisma.AuthUserUpdateWithoutReferralsInput, Prisma.AuthUserUncheckedUpdateWithoutReferralsInput>
+}
+
+export type AuthUserUpdateWithoutReferralsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
+  identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
+  roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+}
+
+export type AuthUserUncheckedUpdateWithoutReferralsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
+  identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type AuthUserUpsertWithWhereUniqueWithoutReferredByInput = {
+  where: Prisma.AuthUserWhereUniqueInput
+  update: Prisma.XOR<Prisma.AuthUserUpdateWithoutReferredByInput, Prisma.AuthUserUncheckedUpdateWithoutReferredByInput>
+  create: Prisma.XOR<Prisma.AuthUserCreateWithoutReferredByInput, Prisma.AuthUserUncheckedCreateWithoutReferredByInput>
+}
+
+export type AuthUserUpdateWithWhereUniqueWithoutReferredByInput = {
+  where: Prisma.AuthUserWhereUniqueInput
+  data: Prisma.XOR<Prisma.AuthUserUpdateWithoutReferredByInput, Prisma.AuthUserUncheckedUpdateWithoutReferredByInput>
+}
+
+export type AuthUserUpdateManyWithWhereWithoutReferredByInput = {
+  where: Prisma.AuthUserScalarWhereInput
+  data: Prisma.XOR<Prisma.AuthUserUpdateManyMutationInput, Prisma.AuthUserUncheckedUpdateManyWithoutReferredByInput>
+}
+
+export type AuthUserScalarWhereInput = {
+  AND?: Prisma.AuthUserScalarWhereInput | Prisma.AuthUserScalarWhereInput[]
+  OR?: Prisma.AuthUserScalarWhereInput[]
+  NOT?: Prisma.AuthUserScalarWhereInput | Prisma.AuthUserScalarWhereInput[]
+  id?: Prisma.UuidFilter<"AuthUser"> | string
+  email?: Prisma.StringNullableFilter<"AuthUser"> | string | null
+  phone?: Prisma.StringNullableFilter<"AuthUser"> | string | null
+  passwordHash?: Prisma.StringNullableFilter<"AuthUser"> | string | null
+  emailVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
+  phoneVerifiedAt?: Prisma.DateTimeNullableFilter<"AuthUser"> | Date | string | null
+  referralCode?: Prisma.StringNullableFilter<"AuthUser"> | string | null
+  referredById?: Prisma.UuidNullableFilter<"AuthUser"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"AuthUser"> | Date | string
+}
+
 export type AuthUserCreateWithoutIdentitiesInput = {
   id?: string
   email?: string | null
@@ -483,8 +769,11 @@ export type AuthUserCreateWithoutIdentitiesInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -497,8 +786,11 @@ export type AuthUserUncheckedCreateWithoutIdentitiesInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -527,8 +819,11 @@ export type AuthUserUpdateWithoutIdentitiesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -541,8 +836,11 @@ export type AuthUserUncheckedUpdateWithoutIdentitiesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
@@ -555,8 +853,11 @@ export type AuthUserCreateWithoutRefreshTokensInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -569,8 +870,11 @@ export type AuthUserUncheckedCreateWithoutRefreshTokensInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -599,8 +903,11 @@ export type AuthUserUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -613,8 +920,11 @@ export type AuthUserUncheckedUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
@@ -627,8 +937,11 @@ export type AuthUserCreateWithoutRolesInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
@@ -641,8 +954,11 @@ export type AuthUserUncheckedCreateWithoutRolesInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedCreateNestedManyWithoutUserInput
   identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -671,8 +987,11 @@ export type AuthUserUpdateWithoutRolesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
@@ -685,8 +1004,11 @@ export type AuthUserUncheckedUpdateWithoutRolesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
   otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
   identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -699,8 +1021,11 @@ export type AuthUserCreateWithoutOtpTokensInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referredBy?: Prisma.AuthUserCreateNestedOneWithoutReferralsInput
+  referrals?: Prisma.AuthUserCreateNestedManyWithoutReferredByInput
   identities?: Prisma.AuthIdentityCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
@@ -713,8 +1038,11 @@ export type AuthUserUncheckedCreateWithoutOtpTokensInput = {
   passwordHash?: string | null
   emailVerifiedAt?: Date | string | null
   phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  referredById?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  referrals?: Prisma.AuthUserUncheckedCreateNestedManyWithoutReferredByInput
   identities?: Prisma.AuthIdentityUncheckedCreateNestedManyWithoutUserInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedCreateNestedManyWithoutUserInput
   roles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
@@ -743,8 +1071,11 @@ export type AuthUserUpdateWithoutOtpTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referredBy?: Prisma.AuthUserUpdateOneWithoutReferralsNestedInput
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
   identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
@@ -757,11 +1088,72 @@ export type AuthUserUncheckedUpdateWithoutOtpTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referredById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
   identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
   refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type AuthUserCreateManyReferredByInput = {
+  id?: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  phoneVerifiedAt?: Date | string | null
+  referralCode?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type AuthUserUpdateWithoutReferredByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUpdateManyWithoutReferredByNestedInput
+  otpTokens?: Prisma.AuthOtpTokenUpdateManyWithoutUserNestedInput
+  identities?: Prisma.AuthIdentityUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.AuthRefreshTokenUpdateManyWithoutUserNestedInput
+  roles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+}
+
+export type AuthUserUncheckedUpdateWithoutReferredByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  referrals?: Prisma.AuthUserUncheckedUpdateManyWithoutReferredByNestedInput
+  otpTokens?: Prisma.AuthOtpTokenUncheckedUpdateManyWithoutUserNestedInput
+  identities?: Prisma.AuthIdentityUncheckedUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.AuthRefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  roles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type AuthUserUncheckedUpdateManyWithoutReferredByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  phoneVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  referralCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -770,6 +1162,7 @@ export type AuthUserUncheckedUpdateWithoutOtpTokensInput = {
  */
 
 export type AuthUserCountOutputType = {
+  referrals: number
   otpTokens: number
   identities: number
   refreshTokens: number
@@ -777,6 +1170,7 @@ export type AuthUserCountOutputType = {
 }
 
 export type AuthUserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  referrals?: boolean | AuthUserCountOutputTypeCountReferralsArgs
   otpTokens?: boolean | AuthUserCountOutputTypeCountOtpTokensArgs
   identities?: boolean | AuthUserCountOutputTypeCountIdentitiesArgs
   refreshTokens?: boolean | AuthUserCountOutputTypeCountRefreshTokensArgs
@@ -791,6 +1185,13 @@ export type AuthUserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
    * Select specific fields to fetch from the AuthUserCountOutputType
    */
   select?: Prisma.AuthUserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AuthUserCountOutputType without action
+ */
+export type AuthUserCountOutputTypeCountReferralsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AuthUserWhereInput
 }
 
 /**
@@ -829,8 +1230,12 @@ export type AuthUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   passwordHash?: boolean
   emailVerifiedAt?: boolean
   phoneVerifiedAt?: boolean
+  referralCode?: boolean
+  referredById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
+  referrals?: boolean | Prisma.AuthUser$referralsArgs<ExtArgs>
   otpTokens?: boolean | Prisma.AuthUser$otpTokensArgs<ExtArgs>
   identities?: boolean | Prisma.AuthUser$identitiesArgs<ExtArgs>
   refreshTokens?: boolean | Prisma.AuthUser$refreshTokensArgs<ExtArgs>
@@ -845,8 +1250,11 @@ export type AuthUserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   passwordHash?: boolean
   emailVerifiedAt?: boolean
   phoneVerifiedAt?: boolean
+  referralCode?: boolean
+  referredById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
 }, ExtArgs["result"]["authUser"]>
 
 export type AuthUserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -856,8 +1264,11 @@ export type AuthUserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   passwordHash?: boolean
   emailVerifiedAt?: boolean
   phoneVerifiedAt?: boolean
+  referralCode?: boolean
+  referredById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
 }, ExtArgs["result"]["authUser"]>
 
 export type AuthUserSelectScalar = {
@@ -867,24 +1278,34 @@ export type AuthUserSelectScalar = {
   passwordHash?: boolean
   emailVerifiedAt?: boolean
   phoneVerifiedAt?: boolean
+  referralCode?: boolean
+  referredById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AuthUserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "passwordHash" | "emailVerifiedAt" | "phoneVerifiedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["authUser"]>
+export type AuthUserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "passwordHash" | "emailVerifiedAt" | "phoneVerifiedAt" | "referralCode" | "referredById" | "createdAt" | "updatedAt", ExtArgs["result"]["authUser"]>
 export type AuthUserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
+  referrals?: boolean | Prisma.AuthUser$referralsArgs<ExtArgs>
   otpTokens?: boolean | Prisma.AuthUser$otpTokensArgs<ExtArgs>
   identities?: boolean | Prisma.AuthUser$identitiesArgs<ExtArgs>
   refreshTokens?: boolean | Prisma.AuthUser$refreshTokensArgs<ExtArgs>
   roles?: boolean | Prisma.AuthUser$rolesArgs<ExtArgs>
   _count?: boolean | Prisma.AuthUserCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type AuthUserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type AuthUserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type AuthUserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
+}
+export type AuthUserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  referredBy?: boolean | Prisma.AuthUser$referredByArgs<ExtArgs>
+}
 
 export type $AuthUserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AuthUser"
   objects: {
+    referredBy: Prisma.$AuthUserPayload<ExtArgs> | null
+    referrals: Prisma.$AuthUserPayload<ExtArgs>[]
     otpTokens: Prisma.$AuthOtpTokenPayload<ExtArgs>[]
     identities: Prisma.$AuthIdentityPayload<ExtArgs>[]
     refreshTokens: Prisma.$AuthRefreshTokenPayload<ExtArgs>[]
@@ -897,6 +1318,15 @@ export type $AuthUserPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     passwordHash: string | null
     emailVerifiedAt: Date | null
     phoneVerifiedAt: Date | null
+    /**
+     * Unique code a user can share with others.
+     * When another user registers with this code, they get `referredById` set.
+     */
+    referralCode: string | null
+    /**
+     * Referrer user id (if this user signed up using a referral code).
+     */
+    referredById: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["authUser"]>
@@ -1293,6 +1723,8 @@ readonly fields: AuthUserFieldRefs;
  */
 export interface Prisma__AuthUserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  referredBy<T extends Prisma.AuthUser$referredByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AuthUser$referredByArgs<ExtArgs>>): Prisma.Prisma__AuthUserClient<runtime.Types.Result.GetResult<Prisma.$AuthUserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  referrals<T extends Prisma.AuthUser$referralsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AuthUser$referralsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   otpTokens<T extends Prisma.AuthUser$otpTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AuthUser$otpTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthOtpTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   identities<T extends Prisma.AuthUser$identitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AuthUser$identitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthIdentityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   refreshTokens<T extends Prisma.AuthUser$refreshTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AuthUser$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthRefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1332,6 +1764,8 @@ export interface AuthUserFieldRefs {
   readonly passwordHash: Prisma.FieldRef<"AuthUser", 'String'>
   readonly emailVerifiedAt: Prisma.FieldRef<"AuthUser", 'DateTime'>
   readonly phoneVerifiedAt: Prisma.FieldRef<"AuthUser", 'DateTime'>
+  readonly referralCode: Prisma.FieldRef<"AuthUser", 'String'>
+  readonly referredById: Prisma.FieldRef<"AuthUser", 'String'>
   readonly createdAt: Prisma.FieldRef<"AuthUser", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AuthUser", 'DateTime'>
 }
@@ -1588,6 +2022,10 @@ export type AuthUserCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    */
   data: Prisma.AuthUserCreateManyInput | Prisma.AuthUserCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthUserIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1658,6 +2096,10 @@ export type AuthUserUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    * Limit how many AuthUsers to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthUserIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1724,6 +2166,49 @@ export type AuthUserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Limit how many AuthUsers to delete.
    */
   limit?: number
+}
+
+/**
+ * AuthUser.referredBy
+ */
+export type AuthUser$referredByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuthUser
+   */
+  select?: Prisma.AuthUserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuthUser
+   */
+  omit?: Prisma.AuthUserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthUserInclude<ExtArgs> | null
+  where?: Prisma.AuthUserWhereInput
+}
+
+/**
+ * AuthUser.referrals
+ */
+export type AuthUser$referralsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuthUser
+   */
+  select?: Prisma.AuthUserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuthUser
+   */
+  omit?: Prisma.AuthUserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthUserInclude<ExtArgs> | null
+  where?: Prisma.AuthUserWhereInput
+  orderBy?: Prisma.AuthUserOrderByWithRelationInput | Prisma.AuthUserOrderByWithRelationInput[]
+  cursor?: Prisma.AuthUserWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AuthUserScalarFieldEnum | Prisma.AuthUserScalarFieldEnum[]
 }
 
 /**

@@ -1,7 +1,13 @@
 // @ts-ignore
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // @ts-ignore
-import { IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  MinLength,
+  IsOptional,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -33,4 +39,16 @@ export class RegisterDto {
   @MinLength(8)
   @MaxLength(128)
   confirmPassword!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional referral code from another user. If provided, this user will be marked as referred by the code owner.',
+    example: 'a1b2c3d4e5f6',
+    maxLength: 64,
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  @MaxLength(64)
+  referralCode?: string;
 }

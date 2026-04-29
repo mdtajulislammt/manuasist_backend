@@ -82,6 +82,7 @@ export class AuthController {
       identifier: body.identifier,
       password: body.password,
       confirmPassword: body.confirmPassword,
+      referralCode: body.referralCode,
     });
   }
 

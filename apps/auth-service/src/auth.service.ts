@@ -219,6 +219,32 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('SIGNUP_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private normalizeReferralCode(referralCode?: string): string | undefined {
+    const code = referralCode?.trim();
+    return code ? code : undefined;
+  }
+
+  private generateReferralCodeCandidate(): string {
+    // 12 hex chars, safe for URLs / JSON (easy to share)
+    return randomBytes(6).toString('hex');
+  }
+
+  private async generateUniqueReferralCode(): Promise<string> {
+    // Collision is extremely unlikely; try a few times to be safe.
+    for (let i = 0; i < 5; i++) {
+      const code = this.generateReferralCodeCandidate();
+      const existing = await this.prisma.authUser.findUnique({
+        where: { referralCode: code },
+        select: { id: true },
+      });
+      if (!existing) return code;
+    }
+
+    throw new InternalServerErrorException(
+      'Failed to generate a unique referral code',
+    );
+  }
+
   private passwordResetOtpTtlSec(): number {
     return this.config.get<number>('PASSWORD_RESET_OTP_TTL_SECONDS') ?? 600;
   }
@@ -502,12 +528,28 @@ export class AuthService implements OnModuleInit {
     identifier: string;
     password: string;
     confirmPassword: string;
+    referralCode?: string;
   }): Promise<RegisterPendingVerificationResponse> {
     const { password, confirmPassword } = input;
     if (password !== confirmPassword) {
       throw new BadRequestException(
         'Password and confirm password do not match',
       );
+    }
+
+    const referrerCode = this.normalizeReferralCode(input.referralCode);
+    const referralCodeForNewUser = await this.generateUniqueReferralCode();
+    let referredById: string | undefined;
+
+    if (referrerCode) {
+      const referrer = await this.prisma.authUser.findUnique({
+        where: { referralCode: referrerCode },
+        select: { id: true },
+      });
+      if (!referrer) {
+        throw new BadRequestException('Invalid referral code');
+      }
+      referredById = referrer.id;
     }
 
     const { email: normalizedEmail, phone: normalizedPhone } =
@@ -542,6 +584,8 @@ export class AuthService implements OnModuleInit {
         email: normalizedEmail,
         phone: normalizedPhone,
         passwordHash,
+        referralCode: referralCodeForNewUser,
+        referredById,
         roles: {
           create: {
             role: { connect: { name: 'user' } },

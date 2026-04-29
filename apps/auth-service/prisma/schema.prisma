@@ -25,6 +25,15 @@ model AuthUser {
   passwordHash    String?   @map("password_hash")
   emailVerifiedAt DateTime? @map("email_verified_at")
   phoneVerifiedAt DateTime? @map("phone_verified_at")
+  /// Unique code a user can share with others.
+  /// When another user registers with this code, they get `referredById` set.
+  referralCode   String?   @unique @map("referral_code")
+
+  /// Referrer user id (if this user signed up using a referral code).
+  referredById   String?   @map("referred_by_id") @db.Uuid
+  referredBy     AuthUser? @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals      AuthUser[] @relation("UserReferrals")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
