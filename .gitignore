@@ -43,6 +43,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# Uploaded onboarding icons (admin-service local disk)
+/uploads
+
 # temp directory
 .temp
 .tmp

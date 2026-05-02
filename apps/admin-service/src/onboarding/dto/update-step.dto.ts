@@ -45,10 +45,22 @@ export class UpdateStepDto {
   subtitle?: string;
 
   @ApiPropertyOptional({
-    description: 'Updated UI config payload',
+    description:
+      'Updated UI config (JSON). Same `kind` rules as create step; optional `icon` per option on card kinds. See `steps.txt` for examples.',
     type: 'object',
     additionalProperties: true,
-    example: { kind: 'multi_select', options: ['vegetarian', 'vegan'] },
+    example: {
+      kind: 'multi_select_cards',
+      progressPercent: 50,
+      selection: {
+        mode: 'multiple',
+        required: false,
+        minSelections: 0,
+        maxSelections: 10,
+      },
+      options: [{ value: 'dairy', label: 'Dairy / Milk', icon: 'dairy' }],
+      defaultValues: ['dairy'],
+    },
   })
   @IsOptional()
   @IsObject()

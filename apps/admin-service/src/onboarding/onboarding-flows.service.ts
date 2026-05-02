@@ -11,6 +11,7 @@ import { CreateFlowDto } from './dto/create-flow.dto';
 import { CreateStepDto } from './dto/create-step.dto';
 import { UpdateFlowDto } from './dto/update-flow.dto';
 import { UpdateStepDto } from './dto/update-step.dto';
+import { assertValidOnboardingUiConfig } from './onboarding-ui-config.validator';
 
 @Injectable()
 export class OnboardingFlowsService {
@@ -147,6 +148,7 @@ export class OnboardingFlowsService {
   async addStep(flowId: string, dto: CreateStepDto) {
     try {
       await this.ensureDraft(flowId);
+      assertValidOnboardingUiConfig(dto.uiConfig);
       const step = await this.prisma.onboardingStep.create({
         data: {
           flowId,
@@ -201,6 +203,7 @@ export class OnboardingFlowsService {
         data.subtitle = dto.subtitle;
       }
       if (dto.uiConfig !== undefined) {
+        assertValidOnboardingUiConfig(dto.uiConfig);
         data.uiConfig = dto.uiConfig as Prisma.InputJsonValue;
       }
       const updatedStep = await this.prisma.onboardingStep.update({

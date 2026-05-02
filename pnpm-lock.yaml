@@ -41,6 +41,9 @@ importers:
       jose:
         specifier: ^5.9.6
         version: 5.10.0
+      multer:
+        specifier: ^2.1.1
+        version: 2.1.1
       nodemailer:
         specifier: ^8.0.5
         version: 8.0.5
@@ -168,6 +171,9 @@ importers:
       class-validator:
         specifier: ^0.14.1
         version: 0.14.4
+      multer:
+        specifier: ^2.1.1
+        version: 2.1.1
       pg:
         specifier: ^8.20.0
         version: 8.20.0
