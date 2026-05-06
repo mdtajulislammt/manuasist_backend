@@ -67,7 +67,13 @@
     "prisma:migrate:ai": "pnpm exec prisma migrate deploy --config apps/ai-ingestion-service/prisma.config.ts",
     "seed:auth": "pnpm run build:auth && node dist/apps/auth-service/apps/auth-service/src/seed.js",
     "seed:admin": "pnpm run build:admin && node dist/apps/admin-service/apps/admin-service/src/seed.js",
-    "seed:all": "pnpm run seed:auth && pnpm run seed:admin"
+    "seed:all": "pnpm run seed:auth && pnpm run seed:admin",
+    "push:all": "git push origin main && git push backup main",
+    "pull:all": "git pull origin main && git pull backup main",
+    "push:backup": "git push backup main",
+    "pull:backup": "git pull backup main",
+    "push:origin": "git push origin main",
+    "pull:origin": "git pull origin main"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
