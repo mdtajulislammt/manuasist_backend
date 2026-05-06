@@ -68,6 +68,8 @@ function normalizeIdentifier(identifier: string): { email?: string; phone?: stri
 }
 
 export type TokenPairResponse = {
+  success: boolean;
+  message: string;
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
@@ -75,26 +77,39 @@ export type TokenPairResponse = {
 };
 
 export type RegisterPendingVerificationResponse = {
+  success: boolean;
+  message: string;
   status: 'PENDING_VERIFICATION';
   channel: 'email' | 'sms';
   identifier: string;
   expires_in_seconds: number;
+  otp?: string;
 };
 
 export type ForgotPasswordRequestResponse = {
+  success: boolean;
+  message: string;
   status: 'OTP_SENT';
   channel: 'email' | 'sms';
   identifier: string;
   expires_in_seconds: number;
+  otp?: string;
 };
 
 export type PasswordResetResponse = {
+  success: boolean;
+  message: string;
   status: 'PASSWORD_RESET_SUCCESS';
 };
 
 export type OtpType = 'SIGNUP' | 'PASSWORD_RESET';
 
-export type OtpVerifyResponse = TokenPairResponse | PasswordResetResponse;
+export type OtpVerifyResponse = {
+  success: boolean;
+  message: string;
+  tokenPair?: TokenPairResponse;
+  passwordReset?: PasswordResetResponse;
+};
 
 type PkceEntry = { codeVerifier: string; createdAt: number };
 
@@ -206,8 +221,44 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('SIGNUP_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private normalizeReferralCode(referralCode?: string): string | undefined {
+    const code = referralCode?.trim();
+    return code ? code : undefined;
+  }
+
+  private generateReferralCodeCandidate(): string {
+    // 12 hex chars, safe for URLs / JSON (easy to share)
+    return randomBytes(6).toString('hex');
+  }
+
+  private async generateUniqueReferralCode(): Promise<string> {
+    // Collision is extremely unlikely; try a few times to be safe.
+    for (let i = 0; i < 5; i++) {
+      const code = this.generateReferralCodeCandidate();
+      const existing = await this.prisma.authUser.findUnique({
+        where: { referralCode: code },
+        select: { id: true },
+      });
+      if (!existing) return code;
+    }
+
+    throw new InternalServerErrorException(
+      'Failed to generate a unique referral code',
+    );
+  }
+
   private passwordResetOtpTtlSec(): number {
     return this.config.get<number>('PASSWORD_RESET_OTP_TTL_SECONDS') ?? 600;
+  }
+
+  private otpDebugResponse(otp: string): { otp?: string } {
+    const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
+      .trim()
+      .toLowerCase();
+    if (env === 'development') {
+      return { otp };
+    }
+    return {};
   }
 
   private generateOtp6(): string {
@@ -269,7 +320,7 @@ export class AuthService implements OnModuleInit {
     purpose: 'SIGNUP' | 'PASSWORD_RESET',
     identifier: string,
     expiresInSeconds: number,
-  ): Promise<void> {
+  ): Promise<{ otp: string }> {
     const otp = this.generateOtp6();
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
@@ -302,11 +353,11 @@ export class AuthService implements OnModuleInit {
         purpose,
         expiresInSeconds,
       });
-      return;
     }
 
     // TODO: replace with real SMS provider integration.
     this.logger.log(`${purpose} OTP for ${identifier}: ${otp}`);
+    return { otp };
   }
 
   private async revokeAllUserRefreshTokens(userId: string): Promise<void> {
@@ -316,7 +367,10 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  async issuePairForUser(userId: string): Promise<TokenPairResponse> {
+  async issuePairForUser(
+    userId: string,
+    message = 'Login successful.',
+  ): Promise<TokenPairResponse> {
     const user = await this.prisma.authUser.findUniqueOrThrow({
       where: { id: userId },
       include: { roles: { include: { role: true } } },
@@ -325,6 +379,8 @@ export class AuthService implements OnModuleInit {
     const access_token = await this.signAccessToken(userId, roleNames);
     const refresh_token = await this.createRefreshToken(userId, randomUUID());
     return {
+      success: true,
+      message,
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -394,6 +450,8 @@ export class AuthService implements OnModuleInit {
 
     const access_token = await this.signAccessToken(userId, roleNames);
     return {
+      success: true,
+      message: 'Refresh successful.',
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -401,15 +459,21 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  async revoke(refreshRaw: string): Promise<void> {
+  async revoke(
+    refreshRaw: string,
+  ): Promise<{ success: boolean; message: string }> {
     const tokenLookup = sha256Hex(refreshRaw);
     const row = await this.prisma.authRefreshToken.findUnique({
       where: { tokenLookup },
     });
     if (!row) {
-      return;
+      return {
+        success: true,
+        message: 'No matching refresh token; already logged out or unknown token.',
+      };
     }
     await this.revokeFamily(row.familyId);
+    return { success: true, message: 'Logged out successfully. Refresh token family revoked.' };
   }
 
   private async revokeFamily(familyId: string) {
@@ -419,18 +483,85 @@ export class AuthService implements OnModuleInit {
     });
   }
 
+  private async verifyOtpResponse(identifier: string, otp: string): Promise<any> {
+    const { email: normalizedEmail, phone: normalizedPhone } =
+      normalizeIdentifier(identifier);
+    if (!normalizedEmail && !normalizedPhone) {
+      throw new BadRequestException(
+        'Identifier must be a valid email or E.164 phone number',
+      );
+    }
+
+    const user = await this.prisma.authUser.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ],
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+    const otpRow = await this.prisma.authOtpToken.findFirst({
+      where: {
+        userId: user.id,
+        channel,
+        purpose: 'PASSWORD_RESET',
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRow || otpRow.expiresAt < new Date()) {
+      throw new UnauthorizedException('OTP expired or invalid');
+    }
+
+    if (otpRow.attempts >= 5) {
+      throw new UnauthorizedException('OTP attempt limit exceeded');
+    }
+
+    const codeHash = sha256Hex(otp);
+    if (otpRow.codeHash !== codeHash) {
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    return {
+      success: true,
+      message: 'OTP verified successfully.',
+    };
+  }
+
   // --- Password registration/login ---
 
   async registerWithPassword(input: {
     identifier: string;
     password: string;
     confirmPassword: string;
+    referralCode?: string;
   }): Promise<RegisterPendingVerificationResponse> {
     const { password, confirmPassword } = input;
     if (password !== confirmPassword) {
       throw new BadRequestException(
         'Password and confirm password do not match',
       );
+    }
+
+    const referrerCode = this.normalizeReferralCode(input.referralCode);
+    const referralCodeForNewUser = await this.generateUniqueReferralCode();
+    let referredById: string | undefined;
+
+    if (referrerCode) {
+      const referrer = await this.prisma.authUser.findUnique({
+        where: { referralCode: referrerCode },
+        select: { id: true },
+      });
+      if (!referrer) {
+        throw new BadRequestException('Invalid referral code');
+      }
+      referredById = referrer.id;
     }
 
     const { email: normalizedEmail, phone: normalizedPhone } =
@@ -465,6 +596,8 @@ export class AuthService implements OnModuleInit {
         email: normalizedEmail,
         phone: normalizedPhone,
         passwordHash,
+        referralCode: referralCodeForNewUser,
+        referredById,
         roles: {
           create: {
             role: { connect: { name: 'user' } },
@@ -476,7 +609,7 @@ export class AuthService implements OnModuleInit {
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
     const expiresInSeconds = this.signupOtpTtlSec();
-    await this.createOtpChallenge(
+    const { otp } = await this.createOtpChallenge(
       user.id,
       channel,
       'SIGNUP',
@@ -485,10 +618,16 @@ export class AuthService implements OnModuleInit {
     );
 
     return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'Account created. A verification code was sent to your phone.'
+          : 'Account created. A verification code was sent to your email.',
       status: 'PENDING_VERIFICATION',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,
+      ...this.otpDebugResponse(otp),
     };
   }
 
@@ -532,7 +671,7 @@ export class AuthService implements OnModuleInit {
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
     const expiresInSeconds = this.signupOtpTtlSec();
-    await this.createOtpChallenge(
+    const { otp } = await this.createOtpChallenge(
       user.id,
       channel,
       'SIGNUP',
@@ -541,10 +680,16 @@ export class AuthService implements OnModuleInit {
     );
 
     return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'A signup verification code was sent to your phone.'
+          : 'A signup verification code was sent to your email.',
       status: 'OTP_SENT',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,
+      ...this.otpDebugResponse(otp),
     };
   }
 
@@ -557,21 +702,23 @@ export class AuthService implements OnModuleInit {
   }): Promise<OtpVerifyResponse> {
     const { identifier, type, otp } = input;
     if (type === 'SIGNUP') {
-      return this.verifySignupOtp(identifier, otp);
+      const tokenPair = await this.verifySignupOtp(identifier, otp);
+      return {
+        success: true,
+        message: tokenPair.message,
+        tokenPair,
+      };
     }
 
-    if (!input.newPassword || !input.confirmPassword) {
-      throw new BadRequestException(
-        'newPassword and confirmPassword are required for PASSWORD_RESET',
-      );
-    }
 
-    return this.resetPasswordWithOtp({
-      identifier,
-      otp,
-      newPassword: input.newPassword,
-      confirmPassword: input.confirmPassword,
-    });
+    const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
+    if (!verifyOtpResponse.success) {
+      throw new UnauthorizedException(verifyOtpResponse.message);
+    }
+    return {
+      success: true,
+      message: verifyOtpResponse.message,
+    };
   }
 
   async requestPasswordReset(
@@ -599,16 +746,28 @@ export class AuthService implements OnModuleInit {
     });
 
     if (user?.passwordHash) {
-      await this.createOtpChallenge(
+      const { otp } = await this.createOtpChallenge(
         user.id,
         channel,
         'PASSWORD_RESET',
         targetIdentifier,
         expiresInSeconds,
       );
+      return {
+        success: true,
+        message: 'A password reset code was sent to your email.',
+        status: 'OTP_SENT',
+        channel: channel === 'SMS' ? 'sms' : 'email',
+        identifier: targetIdentifier,
+        expires_in_seconds: expiresInSeconds,
+        ...this.otpDebugResponse(otp),
+      };
     }
 
     return {
+      success: true,
+      message:
+        'If an account with a password exists for this identifier, a password reset code was sent.',
       status: 'OTP_SENT',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
@@ -682,7 +841,10 @@ export class AuthService implements OnModuleInit {
       });
     });
 
-    return this.issuePairForUser(user.id);
+    return this.issuePairForUser(
+      user.id,
+      'Signup verified. You are signed in.',
+    );
   }
 
   async resetPasswordWithOtp(input: {
@@ -765,7 +927,11 @@ export class AuthService implements OnModuleInit {
     });
 
     await this.revokeAllUserRefreshTokens(user.id);
-    return { status: 'PASSWORD_RESET_SUCCESS' };
+    return {
+      success: true,
+      message: 'Password reset successful. You can sign in with your new password.',
+      status: 'PASSWORD_RESET_SUCCESS',
+    };
   }
 
 
@@ -814,7 +980,9 @@ export class AuthService implements OnModuleInit {
   /**
    * Verifies an access JWT issued by this service (same issuer/audience as login).
    */
-  async verifyAccessToken(token: string): Promise<{ sub: string }> {
+  async verifyAccessToken(
+    token: string,
+  ): Promise<{ sub: string; message: string }> {
     const issuer = this.config.getOrThrow<string>('JWT_ISSUER');
     const audience = this.config.getOrThrow<string>('JWT_AUDIENCE');
     try {
@@ -826,7 +994,7 @@ export class AuthService implements OnModuleInit {
       if (!sub) {
         throw new UnauthorizedException('Invalid token');
       }
-      return { sub };
+      return { sub, message: 'Access token is valid.' };
     } catch (e) {
       if (e instanceof UnauthorizedException) {
         throw e;
@@ -842,7 +1010,11 @@ export class AuthService implements OnModuleInit {
       newPassword: string;
       confirmPassword: string;
     },
-  ): Promise<{ status: 'PASSWORD_UPDATED' }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: 'PASSWORD_UPDATED';
+  }> {
     const { currentPassword, newPassword, confirmPassword } = input;
     if (newPassword !== confirmPassword) {
       throw new BadRequestException(
@@ -875,7 +1047,11 @@ export class AuthService implements OnModuleInit {
       data: { passwordHash },
     });
     await this.revokeAllUserRefreshTokens(userId);
-    return { status: 'PASSWORD_UPDATED' };
+    return {
+      success: true,
+      message: 'Password updated. Other sessions were signed out; sign in again on those devices.',
+      status: 'PASSWORD_UPDATED',
+    };
   }
 
   async getUserContactById(userId: string) {
@@ -893,6 +1069,8 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('User not found');
     }
     return {
+      success: true,
+      message: 'User contact and verification flags returned.',
       userId: user.id,
       email: user.email,
       phone: user.phone,
@@ -1058,6 +1236,6 @@ export class AuthService implements OnModuleInit {
           : undefined;
 
     const user = await this.upsertOidcUser(iss, sub, email);
-    return this.issuePairForUser(user.id);
+    return this.issuePairForUser(user.id, 'OAuth sign-in successful.');
   }
 }

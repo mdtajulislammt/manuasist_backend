@@ -82,6 +82,8 @@ export const AuthUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   emailVerifiedAt: 'emailVerifiedAt',
   phoneVerifiedAt: 'phoneVerifiedAt',
+  referralCode: 'referralCode',
+  referredById: 'referredById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

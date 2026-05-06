@@ -45,10 +45,21 @@ export class CreateStepDto {
   subtitle?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional UI config payload',
+    description:
+      'UI config (JSON). Supported `kind` values: single_select | multi_slider | single_select_cards | multi_select_cards | multi_scale. ' +
+      'For card kinds, each option may include optional `icon` (string: asset key or image URL). See repo `steps.txt` for full payload examples.',
     type: 'object',
     additionalProperties: true,
-    example: { kind: 'single_select', options: ['lose', 'maintain', 'gain'] },
+    example: {
+      kind: 'single_select_cards',
+      progressPercent: 30,
+      selection: { mode: 'single', required: true },
+      options: [
+        { value: 'weight_loss', label: 'Weight Loss', icon: 'weight_loss' },
+        { value: 'gain_energy', label: 'Gain Energy' },
+      ],
+      defaultValue: 'weight_loss',
+    },
   })
   @IsOptional()
   @IsObject()

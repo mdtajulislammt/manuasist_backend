@@ -37,6 +37,8 @@ import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
 // @ts-ignore
 import { UpdatePasswordDto } from './dto/update-password.dto';
+// @ts-ignore
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { InternalApiKeyGuard } from './internal-api-key.guard';
 
 function bearerTokenFromAuthorization(header: string | undefined): string {
@@ -80,6 +82,7 @@ export class AuthController {
       identifier: body.identifier,
       password: body.password,
       confirmPassword: body.confirmPassword,
+      referralCode: body.referralCode,
     });
   }
 
@@ -110,6 +113,24 @@ export class AuthController {
     return this.auth.verifyOtp({
       identifier: body.identifier,
       type: body.type,
+      otp: body.otp,
+      newPassword: body.newPassword,
+      confirmPassword: body.confirmPassword,
+    });
+  }
+
+
+  // Reset Password after forgot password
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Reset password after forgot password' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({ description: 'Password reset successful.' })
+  @ApiBadRequestResponse({ description: 'Invalid input payload.' })
+  @ApiUnauthorizedResponse({ description: 'OTP invalid, expired, or exceeded attempts.' })
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.auth.resetPasswordWithOtp({
+      identifier: body.identifier,
       otp: body.otp,
       newPassword: body.newPassword,
       confirmPassword: body.confirmPassword,
@@ -238,7 +259,7 @@ export class WellKnownController {
   required: true,
 })
 export class InternalAuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Get('users/:userId/contact')
   @ApiOperation({ summary: 'Get auth contact/verification by user id (internal)' })
