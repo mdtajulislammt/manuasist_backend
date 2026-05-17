@@ -51,6 +51,8 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  PlatformStorageSettings: 'PlatformStorageSettings',
+  StoredFile: 'StoredFile',
   OnboardingFlow: 'OnboardingFlow',
   OnboardingStep: 'OnboardingStep'
 } as const
@@ -69,6 +71,30 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const PlatformStorageSettingsScalarFieldEnum = {
+  id: 'id',
+  activeProvider: 'activeProvider',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformStorageSettingsScalarFieldEnum = (typeof PlatformStorageSettingsScalarFieldEnum)[keyof typeof PlatformStorageSettingsScalarFieldEnum]
+
+
+export const StoredFileScalarFieldEnum = {
+  id: 'id',
+  storedName: 'storedName',
+  namespace: 'namespace',
+  provider: 'provider',
+  contentType: 'contentType',
+  sizeBytes: 'sizeBytes',
+  objectKey: 'objectKey',
+  displayName: 'displayName',
+  createdAt: 'createdAt'
+} as const
+
+export type StoredFileScalarFieldEnum = (typeof StoredFileScalarFieldEnum)[keyof typeof StoredFileScalarFieldEnum]
 
 
 export const OnboardingFlowScalarFieldEnum = {

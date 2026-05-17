@@ -270,8 +270,8 @@ export class OnboardingIconsController {
     description:
       'Each entry: `filename` (stored UUID file), `iconUrl`, size, content type, and optional `iconName` (admin label from meta).',
   })
-  listAll() {
-    const data = this.icons.listAllIcons();
+  async listAll() {
+    const data = await this.icons.listAllIcons();
     return {
       success: true,
       message: 'Icons listed successfully',
@@ -288,8 +288,8 @@ export class OnboardingIconsController {
   })
   @ApiProduces('image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml')
   @ApiOkResponse({ description: 'Image stream.' })
-  get(@Param('filename') filename: string): StreamableFile {
-    const { stream, contentType } = this.icons.getReadStream(filename);
+  async get(@Param('filename') filename: string): Promise<StreamableFile> {
+    const { stream, contentType } = await this.icons.getReadStream(filename);
     return new StreamableFile(stream, {
       type: contentType,
       disposition: `inline; filename="${filename}"`,

@@ -1,0 +1,3 @@
+export const FILE_STORAGE_OPTIONS = Symbol('FILE_STORAGE_OPTIONS');
+export const LOCAL_FILE_STORAGE = Symbol('LOCAL_FILE_STORAGE');
+export const S3_FILE_STORAGE = Symbol('S3_FILE_STORAGE');

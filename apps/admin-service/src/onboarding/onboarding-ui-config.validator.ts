@@ -135,9 +135,13 @@ function validateSingleSelectCards(obj: Record<string, unknown>) {
   if (!isNonEmptyString(obj.defaultValue)) {
     throw new BadRequestException('uiConfig.defaultValue must be a non-empty string');
   }
-  const values = new Set(opts.map((o) => o.value));
-  if (!values.has((obj.defaultValue as string).trim())) {
-    throw new BadRequestException('uiConfig.defaultValue must match one of uiConfig.options[].value');
+  const values = [...new Set(opts.map((o) => o.value))];
+  const defaultVal = (obj.defaultValue as string).trim();
+  if (!values.includes(defaultVal)) {
+    throw new BadRequestException(
+      `uiConfig.defaultValue "${defaultVal}" must match one of uiConfig.options[].value ` +
+        `(allowed: ${values.join(', ')})`,
+    );
   }
 }
 
@@ -156,9 +160,11 @@ function validateMultiSelectCards(obj: Record<string, unknown>) {
     if (!isNonEmptyString(v)) {
       throw new BadRequestException(`uiConfig.defaultValues[${i}] must be a non-empty string`);
     }
-    if (!valueSet.has(v.trim())) {
+    const trimmed = v.trim();
+    if (!valueSet.has(trimmed)) {
       throw new BadRequestException(
-        `uiConfig.defaultValues[${i}] must match one of uiConfig.options[].value`,
+        `uiConfig.defaultValues[${i}] "${trimmed}" must match one of uiConfig.options[].value ` +
+          `(allowed: ${[...valueSet].join(', ')})`,
       );
     }
   });

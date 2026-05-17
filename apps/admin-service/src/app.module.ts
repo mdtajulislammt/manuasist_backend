@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
 import { HealthController } from './health.controller';
+import { PlatformFileStorageModule } from './file-storage/platform-file-storage.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaModule } from './prisma.module';
 
@@ -27,6 +28,7 @@ const envFilePaths = [
       }),
       inject: [ConfigService],
     }),
+    PlatformFileStorageModule,
     OnboardingModule,
   ],
   controllers: [HealthController],

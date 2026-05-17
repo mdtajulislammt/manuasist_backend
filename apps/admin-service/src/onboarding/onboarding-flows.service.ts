@@ -146,24 +146,60 @@ export class OnboardingFlowsService {
   }
 
   async addStep(flowId: string, dto: CreateStepDto) {
+    const steps = await this.createSteps(flowId, [dto]);
+    return {
+      success: true,
+      message: 'Step created successfully',
+      data: steps[0],
+    };
+  }
+
+  async addSteps(flowId: string, dtos: CreateStepDto[]) {
+    const steps = await this.createSteps(flowId, dtos);
+    return {
+      success: true,
+      message: `${steps.length} step(s) created successfully`,
+      data: steps,
+    };
+  }
+
+  private async createSteps(flowId: string, dtos: CreateStepDto[]) {
+    if (dtos.length === 0) {
+      throw new BadRequestException('At least one step is required');
+    }
     try {
       await this.ensureDraft(flowId);
-      assertValidOnboardingUiConfig(dto.uiConfig);
-      const step = await this.prisma.onboardingStep.create({
-        data: {
-          flowId,
-          orderIndex: dto.orderIndex,
-          type: dto.type,
-          title: dto.title,
-          subtitle: dto.subtitle,
-          uiConfig: dto.uiConfig === undefined ? undefined : (dto.uiConfig as Prisma.InputJsonValue),
-        },
-      });
-      return {
-        success: true,
-        message: 'Step created successfully',
-        data: step,
-      };
+      this.assertUniqueOrderIndexesInRequest(dtos);
+      for (const dto of dtos) {
+        try {
+          assertValidOnboardingUiConfig(dto.uiConfig);
+        } catch (error) {
+          if (error instanceof BadRequestException) {
+            const detail = this.formatHttpExceptionMessage(error);
+            throw new BadRequestException(
+              `Step orderIndex ${dto.orderIndex} (${dto.type}): ${detail}`,
+            );
+          }
+          throw error;
+        }
+      }
+      return await this.prisma.$transaction(
+        dtos.map((dto) =>
+          this.prisma.onboardingStep.create({
+            data: {
+              flowId,
+              orderIndex: dto.orderIndex,
+              type: dto.type,
+              title: dto.title,
+              subtitle: dto.subtitle,
+              uiConfig:
+                dto.uiConfig === undefined
+                  ? undefined
+                  : (dto.uiConfig as Prisma.InputJsonValue),
+            },
+          }),
+        ),
+      );
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -173,7 +209,19 @@ export class OnboardingFlowsService {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to add step');
+      throw new InternalServerErrorException('Failed to add step(s)');
+    }
+  }
+
+  private assertUniqueOrderIndexesInRequest(dtos: CreateStepDto[]): void {
+    const seen = new Set<number>();
+    for (const dto of dtos) {
+      if (seen.has(dto.orderIndex)) {
+        throw new BadRequestException(
+          `Duplicate orderIndex ${dto.orderIndex} in request`,
+        );
+      }
+      seen.add(dto.orderIndex);
     }
   }
 
@@ -321,6 +369,18 @@ export class OnboardingFlowsService {
       }
       throw new InternalServerErrorException('Failed to get active published flow');
     }
+  }
+
+  private formatHttpExceptionMessage(error: HttpException): string {
+    const response = error.getResponse();
+    if (typeof response === 'string') {
+      return response;
+    }
+    if (response && typeof response === 'object' && 'message' in response) {
+      const message = (response as { message: string | string[] }).message;
+      return Array.isArray(message) ? message.join('; ') : message;
+    }
+    return error.message;
   }
 
   private async ensureFlowExists(id: string) {

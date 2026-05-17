@@ -384,6 +384,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  PlatformStorageSettings: 'PlatformStorageSettings',
+  StoredFile: 'StoredFile',
   OnboardingFlow: 'OnboardingFlow',
   OnboardingStep: 'OnboardingStep'
 } as const
@@ -401,10 +403,158 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "onboardingFlow" | "onboardingStep"
+    modelProps: "platformStorageSettings" | "storedFile" | "onboardingFlow" | "onboardingStep"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    PlatformStorageSettings: {
+      payload: Prisma.$PlatformStorageSettingsPayload<ExtArgs>
+      fields: Prisma.PlatformStorageSettingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlatformStorageSettingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlatformStorageSettingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        findFirst: {
+          args: Prisma.PlatformStorageSettingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlatformStorageSettingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        findMany: {
+          args: Prisma.PlatformStorageSettingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>[]
+        }
+        create: {
+          args: Prisma.PlatformStorageSettingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        createMany: {
+          args: Prisma.PlatformStorageSettingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlatformStorageSettingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>[]
+        }
+        delete: {
+          args: Prisma.PlatformStorageSettingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        update: {
+          args: Prisma.PlatformStorageSettingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlatformStorageSettingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlatformStorageSettingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlatformStorageSettingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlatformStorageSettingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformStorageSettingsPayload>
+        }
+        aggregate: {
+          args: Prisma.PlatformStorageSettingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlatformStorageSettings>
+        }
+        groupBy: {
+          args: Prisma.PlatformStorageSettingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformStorageSettingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlatformStorageSettingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformStorageSettingsCountAggregateOutputType> | number
+        }
+      }
+    }
+    StoredFile: {
+      payload: Prisma.$StoredFilePayload<ExtArgs>
+      fields: Prisma.StoredFileFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StoredFileFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StoredFileFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        findFirst: {
+          args: Prisma.StoredFileFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StoredFileFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        findMany: {
+          args: Prisma.StoredFileFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>[]
+        }
+        create: {
+          args: Prisma.StoredFileCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        createMany: {
+          args: Prisma.StoredFileCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StoredFileCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>[]
+        }
+        delete: {
+          args: Prisma.StoredFileDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        update: {
+          args: Prisma.StoredFileUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        deleteMany: {
+          args: Prisma.StoredFileDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StoredFileUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StoredFileUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>[]
+        }
+        upsert: {
+          args: Prisma.StoredFileUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoredFilePayload>
+        }
+        aggregate: {
+          args: Prisma.StoredFileAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStoredFile>
+        }
+        groupBy: {
+          args: Prisma.StoredFileGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoredFileGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StoredFileCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoredFileCountAggregateOutputType> | number
+        }
+      }
+    }
     OnboardingFlow: {
       payload: Prisma.$OnboardingFlowPayload<ExtArgs>
       fields: Prisma.OnboardingFlowFieldRefs
@@ -592,6 +742,30 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const PlatformStorageSettingsScalarFieldEnum = {
+  id: 'id',
+  activeProvider: 'activeProvider',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformStorageSettingsScalarFieldEnum = (typeof PlatformStorageSettingsScalarFieldEnum)[keyof typeof PlatformStorageSettingsScalarFieldEnum]
+
+
+export const StoredFileScalarFieldEnum = {
+  id: 'id',
+  storedName: 'storedName',
+  namespace: 'namespace',
+  provider: 'provider',
+  contentType: 'contentType',
+  sizeBytes: 'sizeBytes',
+  objectKey: 'objectKey',
+  displayName: 'displayName',
+  createdAt: 'createdAt'
+} as const
+
+export type StoredFileScalarFieldEnum = (typeof StoredFileScalarFieldEnum)[keyof typeof StoredFileScalarFieldEnum]
+
+
 export const OnboardingFlowScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -683,16 +857,44 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
- * Reference to a field of type 'OnboardingFlowStatus'
+ * Reference to a field of type 'StorageProvider'
  */
-export type EnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus'>
+export type EnumStorageProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StorageProvider'>
     
 
 
 /**
- * Reference to a field of type 'OnboardingFlowStatus[]'
+ * Reference to a field of type 'StorageProvider[]'
  */
-export type ListEnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus[]'>
+export type ListEnumStorageProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StorageProvider[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'StoredFileNamespace'
+ */
+export type EnumStoredFileNamespaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StoredFileNamespace'>
+    
+
+
+/**
+ * Reference to a field of type 'StoredFileNamespace[]'
+ */
+export type ListEnumStoredFileNamespaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StoredFileNamespace[]'>
     
 
 
@@ -711,23 +913,23 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'OnboardingFlowStatus'
+ */
+export type EnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'OnboardingFlowStatus[]'
+ */
+export type ListEnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -853,6 +1055,8 @@ export type PrismaClientOptions = ({
   comments?: runtime.SqlCommenterPlugin[]
 }
 export type GlobalOmitConfig = {
+  platformStorageSettings?: Prisma.PlatformStorageSettingsOmit
+  storedFile?: Prisma.StoredFileOmit
   onboardingFlow?: Prisma.OnboardingFlowOmit
   onboardingStep?: Prisma.OnboardingStepOmit
 }

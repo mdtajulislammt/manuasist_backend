@@ -1,14 +1,28 @@
 {
   "orderIndex": 0,
-  "type": "QUESTION",
-  "title": "What is your gender?",
+  "type": "GENDER",
+  "title": "What is Your Gender?",
   "subtitle": "Personalize your Menu Assist experience by creating an account",
   "uiConfig": {
-    "kind": "single_select",
+    "kind": "single_select_cards",
+    "progressPercent": 10,
+    "selection": {
+      "mode": "single",
+      "required": true
+    },
     "options": [
-      "male",
-      "female"
-    ]
+      {
+        "value": "male",
+        "label": "Male",
+        "icon": "/onboarding/icons/{uuid-male}.png"
+      },
+      {
+        "value": "female",
+        "label": "Female",
+        "icon": "/onboarding/icons/{uuid-female}.png"
+      }
+    ],
+    "defaultValue": "male"
   }
 }
 

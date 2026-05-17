@@ -491,10 +491,6 @@ export type OnboardingStepUncheckedUpdateManyWithoutFlowNestedInput = {
   deleteMany?: Prisma.OnboardingStepScalarWhereInput | Prisma.OnboardingStepScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type OnboardingStepCreateWithoutFlowInput = {
   id?: string
   orderIndex: number

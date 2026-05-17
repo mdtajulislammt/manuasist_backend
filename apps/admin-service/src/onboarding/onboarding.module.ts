@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PlatformFileStorageModule } from '../file-storage/platform-file-storage.module';
 import {
   InternalOnboardingController,
   OnboardingFlowsController,
@@ -10,6 +11,7 @@ import { OnboardingFlowsService } from './onboarding-flows.service';
 import { InternalApiKeyGuard } from '../internal-api-key.guard';
 
 @Module({
+  imports: [PlatformFileStorageModule],
   controllers: [
     OnboardingFlowsController,
     OnboardingStepsController,

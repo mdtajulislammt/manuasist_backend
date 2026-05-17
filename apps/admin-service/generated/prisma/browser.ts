@@ -18,6 +18,16 @@ export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
+ * Model PlatformStorageSettings
+ * 
+ */
+export type PlatformStorageSettings = Prisma.PlatformStorageSettingsModel
+/**
+ * Model StoredFile
+ * 
+ */
+export type StoredFile = Prisma.StoredFileModel
+/**
  * Model OnboardingFlow
  * 
  */

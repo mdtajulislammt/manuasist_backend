@@ -8,6 +8,8 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/PlatformStorageSettings.js'
+export type * from './models/StoredFile.js'
 export type * from './models/OnboardingFlow.js'
 export type * from './models/OnboardingStep.js'
 export type * from './commonInputTypes.js'

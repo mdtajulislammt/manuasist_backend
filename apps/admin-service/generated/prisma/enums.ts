@@ -16,3 +16,21 @@ export const OnboardingFlowStatus = {
 } as const
 
 export type OnboardingFlowStatus = (typeof OnboardingFlowStatus)[keyof typeof OnboardingFlowStatus]
+
+
+export const StorageProvider = {
+  LOCAL: 'LOCAL',
+  S3: 'S3'
+} as const
+
+export type StorageProvider = (typeof StorageProvider)[keyof typeof StorageProvider]
+
+
+export const StoredFileNamespace = {
+  ONBOARDING_ICON: 'ONBOARDING_ICON',
+  MENU_SCAN: 'MENU_SCAN',
+  USER_AVATAR: 'USER_AVATAR',
+  GENERIC: 'GENERIC'
+} as const
+
+export type StoredFileNamespace = (typeof StoredFileNamespace)[keyof typeof StoredFileNamespace]

@@ -155,11 +155,29 @@ Stop containers:
 docker compose down
 ```
 
-## Notes
+## Platform file storage (local vs S3)
 
-- Uploaded onboarding icons are stored on disk under `uploads/` and are gitignored.
-- Icon API responses include a UUID `filename` for retrieval and optional admin-defined `iconName` label metadata.
-- For a command-focused reference, see `commands.md`.
+Admins can set the **default storage provider for new uploads** via the admin API:
+
+- `GET /storage/settings` — current default (`LOCAL` or `S3`) and capability flags
+- `PATCH /storage/settings` — body `{ "activeProvider": "LOCAL" | "S3" }`
+
+Each stored file keeps the provider it was created with when you toggle (no automatic migration).
+
+**Local (VPS):** files under `FILE_STORAGE_LOCAL_ROOT` (default `uploads/`), gitignored.
+
+**S3:** set `AWS_REGION`, `AWS_S3_BUCKET`, and credentials (or use an IAM role on the host).
+
+After migrating the admin DB, backfill legacy onboarding icons into the registry:
+
+```bash
+pnpm run prisma:migrate:admin
+pnpm run backfill:stored-files
+```
+
+**Internal upload (other services):** `POST /internal/files` with header `x-internal-api-key` and multipart `file` + `namespace`.
+
+For a command-focused reference, see `commands.md`.
 
 ## License
 

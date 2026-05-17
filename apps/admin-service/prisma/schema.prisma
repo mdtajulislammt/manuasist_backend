@@ -13,6 +13,42 @@ enum OnboardingFlowStatus {
   ARCHIVED
 }
 
+enum StorageProvider {
+  LOCAL
+  S3
+}
+
+enum StoredFileNamespace {
+  ONBOARDING_ICON
+  MENU_SCAN
+  USER_AVATAR
+  GENERIC
+}
+
+model PlatformStorageSettings {
+  id             String           @id @default("default")
+  activeProvider StorageProvider  @default(LOCAL) @map("active_provider")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@map("platform_storage_settings")
+}
+
+model StoredFile {
+  id           String              @id @default(uuid()) @db.Uuid
+  storedName   String              @unique @map("stored_name")
+  namespace    StoredFileNamespace
+  provider     StorageProvider
+  contentType  String              @map("content_type")
+  sizeBytes    Int                 @map("size_bytes")
+  objectKey    String              @map("object_key")
+  displayName  String?             @map("display_name")
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  @@unique([namespace, storedName])
+  @@index([namespace])
+  @@map("stored_files")
+}
+
 model OnboardingFlow {
   id          String               @id @default(uuid()) @db.Uuid
   name        String

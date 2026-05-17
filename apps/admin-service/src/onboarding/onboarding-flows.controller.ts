@@ -14,21 +14,26 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiExtraModels,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { InternalApiKeyGuard } from '../internal-api-key.guard';
+import { BulkCreateStepsDto } from './dto/bulk-create-steps.dto';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { CreateStepDto } from './dto/create-step.dto';
 import { UpdateFlowDto } from './dto/update-flow.dto';
 import { UpdateStepDto } from './dto/update-step.dto';
+import { AddStepsBodyPipe } from './pipes/add-steps-body.pipe';
 import { OnboardingFlowsService } from './onboarding-flows.service';
 
 @Controller('onboarding/flows')
 @ApiTags('Admin Onboarding Flows')
 @ApiBearerAuth()
+@ApiExtraModels(CreateStepDto, BulkCreateStepsDto)
 @Roles('admin')
 export class OnboardingFlowsController {
   constructor(private readonly flows: OnboardingFlowsService) {}
@@ -80,16 +85,35 @@ export class OnboardingFlowsController {
   }
 
   @Post(':flowId/steps')
-  @ApiOperation({ summary: 'Add step to a draft flow' })
-  @ApiBody({ type: CreateStepDto })
-  @ApiOkResponse({ description: 'Step added.' })
+  @ApiOperation({
+    summary: 'Add one or more steps to a draft flow',
+    description:
+      'Accepts a single step object, `{ "steps": [...] }`, or a JSON array of steps. ' +
+      'All steps are validated and created in one transaction.',
+  })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(CreateStepDto) },
+        { $ref: getSchemaPath(BulkCreateStepsDto) },
+        {
+          type: 'array',
+          items: { $ref: getSchemaPath(CreateStepDto) },
+        },
+      ],
+    },
+  })
+  @ApiOkResponse({ description: 'Step(s) added.' })
   @ApiBadRequestResponse({ description: 'Flow is not draft or payload invalid.' })
   @ApiNotFoundResponse({ description: 'Flow not found.' })
   addStep(
     @Param('flowId', ParseUUIDPipe) flowId: string,
-    @Body() dto: CreateStepDto,
+    @Body(AddStepsBodyPipe) steps: CreateStepDto[],
   ) {
-    return this.flows.addStep(flowId, dto);
+    if (steps.length === 1) {
+      return this.flows.addStep(flowId, steps[0]);
+    }
+    return this.flows.addSteps(flowId, steps);
   }
 
   @Post(':id/publish')
