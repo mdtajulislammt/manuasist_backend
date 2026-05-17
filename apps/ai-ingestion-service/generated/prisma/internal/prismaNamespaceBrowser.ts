@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   MenuScan: 'MenuScan',
   Dish: 'Dish',
-  NutritionCache: 'NutritionCache'
+  NutritionCache: 'NutritionCache',
+  UserDietPattern: 'UserDietPattern'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -75,12 +76,18 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const MenuScanScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  storedFileName: 'storedFileName',
+  contentType: 'contentType',
   imageUrl: 'imageUrl',
+  menuText: 'menuText',
   status: 'status',
   scanTime: 'scanTime',
   rawOcrText: 'rawOcrText',
   parseError: 'parseError',
   parseMetadata: 'parseMetadata',
+  naiScore: 'naiScore',
+  naiBreakdown: 'naiBreakdown',
+  summary: 'summary',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -94,8 +101,11 @@ export const DishScalarFieldEnum = {
   name: 'name',
   calories: 'calories',
   dietScore: 'dietScore',
+  naiScore: 'naiScore',
+  naiFactors: 'naiFactors',
   category: 'category',
   allergenFlags: 'allergenFlags',
+  explanation: 'explanation',
   macros: 'macros',
   nutritionSource: 'nutritionSource',
   nutritionConfidence: 'nutritionConfidence',
@@ -117,6 +127,19 @@ export const NutritionCacheScalarFieldEnum = {
 } as const
 
 export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
+
+
+export const UserDietPatternScalarFieldEnum = {
+  userId: 'userId',
+  scanCount: 'scanCount',
+  topCuisines: 'topCuisines',
+  avgNaiScore: 'avgNaiScore',
+  frequentAllergens: 'frequentAllergens',
+  lastScanAt: 'lastScanAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserDietPatternScalarFieldEnum = (typeof UserDietPatternScalarFieldEnum)[keyof typeof UserDietPatternScalarFieldEnum]
 
 
 export const SortOrder = {

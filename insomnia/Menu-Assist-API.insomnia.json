@@ -841,23 +841,27 @@
       "_id": "req_v1_ing_scans_post",
       "parentId": "fld_v1_ingestion",
       "_type": "request",
-      "name": "POST scans",
-      "description": "Bearer access_token. Body: { \"imageUrl\": \"https://...\" }",
+      "name": "POST scans (multipart image)",
+      "description": "Bearer access_token. Multipart form field `file` (JPEG/PNG/WebP menu photo from app).",
       "url": "{{ gateway_url }}/v1/ingestion/scans",
       "method": "POST",
       "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"imageUrl\": \"https://example.com/menu-sample.jpg\"\n}"
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "file",
+            "value": "",
+            "type": "file",
+            "fileName": "",
+            "description": "Menu image"
+          }
+        ]
       },
       "parameters": [],
       "headers": [
         {
           "name": "Authorization",
           "value": "Bearer {{ access_token }}"
-        },
-        {
-          "name": "Content-Type",
-          "value": "application/json"
         }
       ],
       "authentication": {},
@@ -888,6 +892,117 @@
       ],
       "authentication": {},
       "metaSortKey": -997,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scans_text_post",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "POST scans/text (dev)",
+      "description": "Bearer access_token. JSON { menuText } — skips OCR (dev/test).",
+      "url": "{{ gateway_url }}/v1/ingestion/scans/text",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"menuText\": \"Grilled Salmon Bowl\\nCaesar Salad\\nMargherita Pizza\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_scan_recommendations",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET scans/:id/recommendations",
+      "description": "Bearer access_token. Ranked dishes + NAI summary for a scan.",
+      "url": "{{ gateway_url }}/v1/ingestion/scans/{{ scan_id }}/recommendations",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.4,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_recommendations_me",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET recommendations/me",
+      "description": "Bearer access_token. Cross-scan top picks.",
+      "url": "{{ gateway_url }}/v1/ingestion/recommendations/me",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.3,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_ing_patterns_me",
+      "parentId": "fld_v1_ingestion",
+      "_type": "request",
+      "name": "GET patterns/me",
+      "description": "Bearer access_token. Aggregated diet patterns from scan history.",
+      "url": "{{ gateway_url }}/v1/ingestion/patterns/me",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -996.2,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,18 +7,30 @@ import {
   ParseUUIDPipe,
   Post,
   UnauthorizedException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { memoryStorage } from 'multer';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
-import { CreateScanDto } from './dto/create-scan.dto';
+import { CreateTextScanDto } from './dto/create-text-scan.dto';
 import { ScansService } from './scans.service';
+
+type MulterFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+};
 
 @Controller('scans')
 @ApiTags('Menu scans')
@@ -28,25 +41,56 @@ export class ScansController {
 
   @Post()
   @ApiOperation({
-    summary: 'Submit a menu image URL for ingestion',
+    summary: 'Submit a menu photo from the app',
     description:
-      'Creates a scan in PENDING state and emits scan.submitted.v1 for async processing.',
+      'Multipart upload of a menu image (JPEG/PNG/WebP). Stored server-side and processed asynchronously.',
   })
-  @ApiBody({ type: CreateScanDto })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   @ApiOkResponse({ description: 'Scan created' })
-  create(
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  createFromImage(
     @CurrentUserId() userId: string | undefined,
-    @Body() dto: CreateScanDto,
+    @UploadedFile() file: MulterFile | undefined,
   ) {
     const id = this.requireUserId(userId);
-    return this.scans.createScan(id, dto.imageUrl);
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Missing multipart field `file`');
+    }
+    return this.scans.createScanFromImage(id, file);
+  }
+
+  @Post('text')
+  @ApiOperation({
+    summary: 'Submit menu text (dev/test only)',
+    description: 'Skips image upload and OCR. Not used by the mobile app.',
+  })
+  @ApiBody({ type: CreateTextScanDto })
+  @ApiOkResponse({ description: 'Text scan created' })
+  createFromText(
+    @CurrentUserId() userId: string | undefined,
+    @Body() dto: CreateTextScanDto,
+  ) {
+    return this.scans.createScanFromText(this.requireUserId(userId), dto.menuText);
   }
 
   @Get()
   @ApiOperation({ summary: 'List my menu scans' })
   list(@CurrentUserId() userId: string | undefined) {
-    const id = this.requireUserId(userId);
-    return this.scans.listScansForUser(id);
+    return this.scans.listScansForUser(this.requireUserId(userId));
   }
 
   @Get(':id')
@@ -55,13 +99,12 @@ export class ScansController {
     @CurrentUserId() userId: string | undefined,
     @Param('id', ParseUUIDPipe) scanId: string,
   ) {
-    const id = this.requireUserId(userId);
-    return this.scans.getScanForUser(id, scanId);
+    return this.scans.getScanForUser(this.requireUserId(userId), scanId);
   }
 
   private requireUserId(userId: string | undefined): string {
     if (!userId) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('User id missing from token');
     }
     return userId;
   }

@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   MenuScan: 'MenuScan',
   Dish: 'Dish',
-  NutritionCache: 'NutritionCache'
+  NutritionCache: 'NutritionCache',
+  UserDietPattern: 'UserDietPattern'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "menuScan" | "dish" | "nutritionCache"
+    modelProps: "menuScan" | "dish" | "nutritionCache" | "userDietPattern"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -628,6 +629,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserDietPattern: {
+      payload: Prisma.$UserDietPatternPayload<ExtArgs>
+      fields: Prisma.UserDietPatternFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserDietPatternFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserDietPatternFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        findFirst: {
+          args: Prisma.UserDietPatternFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserDietPatternFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        findMany: {
+          args: Prisma.UserDietPatternFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>[]
+        }
+        create: {
+          args: Prisma.UserDietPatternCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        createMany: {
+          args: Prisma.UserDietPatternCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserDietPatternCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>[]
+        }
+        delete: {
+          args: Prisma.UserDietPatternDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        update: {
+          args: Prisma.UserDietPatternUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserDietPatternDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserDietPatternUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserDietPatternUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserDietPatternUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDietPatternPayload>
+        }
+        aggregate: {
+          args: Prisma.UserDietPatternAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserDietPattern>
+        }
+        groupBy: {
+          args: Prisma.UserDietPatternGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDietPatternGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserDietPatternCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDietPatternCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -670,12 +745,18 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const MenuScanScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  storedFileName: 'storedFileName',
+  contentType: 'contentType',
   imageUrl: 'imageUrl',
+  menuText: 'menuText',
   status: 'status',
   scanTime: 'scanTime',
   rawOcrText: 'rawOcrText',
   parseError: 'parseError',
   parseMetadata: 'parseMetadata',
+  naiScore: 'naiScore',
+  naiBreakdown: 'naiBreakdown',
+  summary: 'summary',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -689,8 +770,11 @@ export const DishScalarFieldEnum = {
   name: 'name',
   calories: 'calories',
   dietScore: 'dietScore',
+  naiScore: 'naiScore',
+  naiFactors: 'naiFactors',
   category: 'category',
   allergenFlags: 'allergenFlags',
+  explanation: 'explanation',
   macros: 'macros',
   nutritionSource: 'nutritionSource',
   nutritionConfidence: 'nutritionConfidence',
@@ -712,6 +796,19 @@ export const NutritionCacheScalarFieldEnum = {
 } as const
 
 export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
+
+
+export const UserDietPatternScalarFieldEnum = {
+  userId: 'userId',
+  scanCount: 'scanCount',
+  topCuisines: 'topCuisines',
+  avgNaiScore: 'avgNaiScore',
+  frequentAllergens: 'frequentAllergens',
+  lastScanAt: 'lastScanAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserDietPatternScalarFieldEnum = (typeof UserDietPatternScalarFieldEnum)[keyof typeof UserDietPatternScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -963,6 +1060,7 @@ export type GlobalOmitConfig = {
   menuScan?: Prisma.MenuScanOmit
   dish?: Prisma.DishOmit
   nutritionCache?: Prisma.NutritionCacheOmit
+  userDietPattern?: Prisma.UserDietPatternOmit
 }
 
 /* Types for Logging */

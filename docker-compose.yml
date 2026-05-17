@@ -49,10 +49,25 @@ services:
       AI_INGESTION_SERVICE_PORT: 5004
       AI_INGESTION_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_ai_ingestion_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:5001
+      AUTH_JWT_AUDIENCE: menu-assist-api
+      APPLICATION_SERVICE_URL: http://application-service:5002
+      APPLICATION_INTERNAL_API_KEY: dev-internal-application-key
+      ADMIN_SERVICE_URL: http://admin-service:5003
+      ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
+      API_GATEWAY_PUBLIC_URL: http://localhost:5000
+      INGESTION_INTERNAL_API_KEY: dev-internal-ingestion-key
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_CHAT_MODEL: gpt-4o-mini
+      GOOGLE_VISION_API_KEY: ${GOOGLE_VISION_API_KEY:-}
+      OCR_PROVIDER: google
     ports:
       - '5004:5004'
     depends_on:
       - rabbitmq
+      - application-service
+      - admin-service
 
   auth-service:
     build:
@@ -85,6 +100,7 @@ services:
       APPLICATION_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/menu_assist_application_service
       ADMIN_SERVICE_URL: http://admin-service:5003
       ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
+      APPLICATION_INTERNAL_API_KEY: dev-internal-application-key
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
       AUTH_JWT_ISSUER: http://auth-service:5001

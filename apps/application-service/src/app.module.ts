@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { ApplicationOnboardingModule } from './onboarding/application-onboarding.module';
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma.module';
+import { InternalModule } from './internal/internal.module';
 import { UsersMeModule } from './users-me/users-me.module';
 
 const envFilePaths = [
@@ -32,6 +33,7 @@ const envFilePaths = [
     }),
     UsersMeModule,
     ApplicationOnboardingModule,
+    InternalModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

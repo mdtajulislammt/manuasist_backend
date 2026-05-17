@@ -7,30 +7,77 @@ import {
 
 export type UserPreferenceHints = {
   dietType?: string | null;
+  calorieTarget?: number | null;
   spiceLevel?: string | null;
   weightGoal?: string | null;
+  allergies?: string[];
 };
 
 const SYSTEM = `You classify a single menu item for a diner with known preferences.
-Return JSON only: { "category": "RECOMMENDED" | "CAUTION" | "AVOID", "dietScore": 0-100, "allergenFlags"?: { [allergen: string]: boolean } }
-RECOMMENDED = likely fits their goals; CAUTION = uncertain or moderate concern; AVOID = likely conflicts (allergens, diet conflict).`;
+Return JSON only:
+{
+  "category": "RECOMMENDED" | "CAUTION" | "AVOID",
+  "dietScore": 0-100,
+  "allergenFlags"?: { [allergen: string]: boolean },
+  "reasons": [{ "code": "DIET_ALIGN"|"ALLERGEN"|"MACRO"|"SPICE"|"CALORIE"|"UNCERTAIN"|"GENERAL", "severity": "info"|"warning"|"critical", "message": "..." }],
+  "summary"?: "one short sentence"
+}
+RECOMMENDED = likely fits their goals; CAUTION = uncertain or moderate concern; AVOID = likely conflicts (allergens, diet conflict).
+Always include at least one reason with a clear message.`;
 
-/**
- * Rule-based fallback when LLM is unavailable: neutral CAUTION, score 50.
- */
 export function classifyDishHeuristic(
   dish: ExtractedDishLine,
-  _prefs: UserPreferenceHints,
+  prefs: UserPreferenceHints,
 ): DishClassification {
   const name = dish.name.toLowerCase();
   const flags: Record<string, boolean> = {};
-  if (/\b(peanut|tree nut|shellfish|dairy|gluten)\b/i.test(name)) {
+  const reasons: DishClassification['reasons'] = [];
+
+  if (/\b(peanut|tree nut|shellfish|dairy|gluten|egg|soy|fish)\b/i.test(name)) {
     flags.possibleAllergenMention = true;
+    const allergyHit = (prefs.allergies ?? []).some((a) =>
+      name.includes(a.toLowerCase()),
+    );
+    reasons.push({
+      code: 'ALLERGEN',
+      severity: allergyHit ? 'critical' : 'warning',
+      message: allergyHit
+        ? `May contain an allergen you listed (${name})`
+        : 'Dish name may reference common allergens',
+    });
   }
+
+  if (prefs.dietType) {
+    const diet = prefs.dietType.toLowerCase();
+    if (diet.includes('vegan') && /\b(chicken|beef|pork|fish|cheese|cream)\b/i.test(name)) {
+      reasons.push({
+        code: 'DIET_ALIGN',
+        severity: 'critical',
+        message: `Likely not compatible with ${prefs.dietType} diet`,
+      });
+    } else {
+      reasons.push({
+        code: 'DIET_ALIGN',
+        severity: 'info',
+        message: `Review for ${prefs.dietType} compatibility`,
+      });
+    }
+  }
+
+  if (reasons.length === 0) {
+    reasons.push({
+      code: 'UNCERTAIN',
+      severity: 'info',
+      message: 'Limited preference data — review ingredients when ordering',
+    });
+  }
+
   return {
-    category: 'CAUTION',
-    dietScore: 55,
+    category: reasons.some((r) => r.severity === 'critical') ? 'AVOID' : 'CAUTION',
+    dietScore: reasons.some((r) => r.severity === 'critical') ? 35 : 55,
     allergenFlags: Object.keys(flags).length ? flags : undefined,
+    reasons,
+    summary: `Heuristic classification for ${dish.name}`,
   };
 }
 
@@ -43,7 +90,7 @@ export async function classifyDish(
     return classifyDishHeuristic(dish, prefs);
   }
   const prefText = JSON.stringify(prefs ?? {});
-  return llm.completeJson(
+  const result = await llm.completeJson(
     [
       { role: 'system', content: SYSTEM },
       {
@@ -53,4 +100,17 @@ export async function classifyDish(
     ],
     dishClassificationSchema,
   );
+  if (!result.reasons?.length) {
+    return {
+      ...result,
+      reasons: [
+        {
+          code: 'GENERAL',
+          severity: 'info',
+          message: result.summary ?? 'Classified based on your dietary profile',
+        },
+      ],
+    };
+  }
+  return result;
 }

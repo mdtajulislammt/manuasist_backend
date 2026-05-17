@@ -46,11 +46,11 @@ export class InternalScansController {
   @Post(':id/reprocess')
   @ApiOperation({
     summary: 'Re-run ingestion pipeline for a scan',
-    description: 'Uses stored imageUrl and userId from the scan row.',
+    description: 'Re-runs OCR and classification using stored image or menu text.',
   })
   async reprocess(@Param('id', ParseUUIDPipe) scanId: string) {
     const scan = await this.scans.getScanByIdInternal(scanId);
-    await this.processor.reprocessScan(scan.id, scan.userId, scan.imageUrl);
+    await this.processor.reprocessScan(scan.id, scan.userId);
     return { success: true, message: 'Reprocess started', data: { scanId } };
   }
 }

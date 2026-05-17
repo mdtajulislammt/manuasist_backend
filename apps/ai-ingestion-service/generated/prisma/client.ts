@@ -56,3 +56,8 @@ export type Dish = Prisma.DishModel
  * 
  */
 export type NutritionCache = Prisma.NutritionCacheModel
+/**
+ * Model UserDietPattern
+ * 
+ */
+export type UserDietPattern = Prisma.UserDietPatternModel

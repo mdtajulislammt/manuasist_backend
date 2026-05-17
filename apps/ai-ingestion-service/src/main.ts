@@ -1,11 +1,18 @@
 import { ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { createRmqMicroserviceOptions } from '@messaging/rmq-transport.options';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: createRmqMicroserviceOptions(),
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -27,6 +34,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, swaggerDocument);
 
+  await app.startAllMicroservices();
   await app.listen(process.env.AI_INGESTION_SERVICE_PORT ?? 5004);
 }
 

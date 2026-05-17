@@ -19,6 +19,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Public } from '@menu-assist/api-auth';
 import { memoryStorage } from 'multer';
 import { InternalApiKeyGuard } from '../internal-api-key.guard';
 import { InternalUploadFileBodyDto } from './dto/internal-upload-file.dto';
@@ -33,6 +34,7 @@ type MulterFile = {
 
 @Controller('internal/files')
 @ApiTags('Internal files')
+@Public()
 @UseGuards(InternalApiKeyGuard)
 @ApiHeader({ name: 'x-internal-api-key', required: true })
 export class InternalFilesController {

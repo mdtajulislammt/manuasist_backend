@@ -6,7 +6,7 @@
   "scripts": {
     "build": "pnpm -w run build:api-auth && pnpm -w run build:ai-pipeline && nest build ai-ingestion-service",
     "start": "nest start ai-ingestion-service",
-    "start:dev": "pnpm -w run build:api-auth && pnpm -w run build:ai-pipeline && nest start ai-ingestion-service --watch",
+    "start:dev": "pnpm -w run build:api-auth && pnpm -w run build:ai-pipeline && pnpm -w run prisma:generate:ai && nest start ai-ingestion-service --watch",
     "prisma:generate": "prisma generate --schema ./prisma/schema.prisma && node ../../scripts/patch-prisma-client-cjs.mjs ."
   },
   "dependencies": {

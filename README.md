@@ -133,6 +133,30 @@ pnpm run lint
 pnpm run test
 pnpm run test:e2e
 pnpm run test:cov
+pnpm run test:phase2
+```
+
+## Phase 2 — AI ingestion (menu scan)
+
+Mobile app uploads a menu photo; the backend stores it, runs OCR, classifies dishes with user preferences, and returns NAI scores plus recommendations.
+
+| Method | Gateway path | Description |
+|--------|----------------|-------------|
+| POST | `/v1/ingestion/scans` | Multipart `file` (JPEG/PNG/WebP) — primary app flow |
+| POST | `/v1/ingestion/scans/text` | JSON `{ "menuText" }` — dev/test only |
+| GET | `/v1/ingestion/scans` | List scans with dishes |
+| GET | `/v1/ingestion/scans/:id` | Single scan |
+| GET | `/v1/ingestion/scans/:id/recommendations` | Ranked recommendations + NAI |
+| GET | `/v1/ingestion/recommendations/me` | Cross-scan top picks |
+| GET | `/v1/ingestion/patterns/me` | Diet pattern aggregates |
+
+Configure `apps/ai-ingestion-service/.env` (see `.env.example`): `OPENAI_API_KEY`, `GOOGLE_VISION_API_KEY` (or OCR falls back to demo text), `APPLICATION_INTERNAL_API_KEY`, `ADMIN_INTERNAL_API_KEY`.
+
+After schema changes:
+
+```bash
+pnpm run prisma:migrate:ai
+pnpm run prisma:generate:ai
 ```
 
 ## Docker

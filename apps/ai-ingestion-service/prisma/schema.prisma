@@ -23,12 +23,18 @@ enum DishCategory {
 model MenuScan {
   id             String         @id @default(uuid()) @db.Uuid
   userId         String         @map("user_id") @db.Uuid
-  imageUrl       String         @map("image_url")
+  storedFileName String?        @map("stored_file_name")
+  contentType    String?        @map("content_type")
+  imageUrl       String?        @map("image_url")
+  menuText       String?        @map("menu_text")
   status         MenuScanStatus
   scanTime       DateTime       @default(now()) @map("scan_time")
   rawOcrText     String?        @map("raw_ocr_text")
   parseError     String?        @map("parse_error")
   parseMetadata  Json?          @map("parse_metadata")
+  naiScore       Int?           @map("nai_score")
+  naiBreakdown   Json?          @map("nai_breakdown")
+  summary        String?
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
@@ -44,8 +50,11 @@ model Dish {
   name                String
   calories            Int
   dietScore           Int          @map("diet_score")
+  naiScore            Int?         @map("nai_score")
+  naiFactors          Json?        @map("nai_factors")
   category            DishCategory
   allergenFlags       Json?        @map("allergen_flags")
+  explanation         Json?
   macros              Json?
   nutritionSource     String?      @map("nutrition_source")
   nutritionConfidence Float?       @map("nutrition_confidence")
@@ -69,4 +78,16 @@ model NutritionCache {
 
   @@index([expiresAt])
   @@map("ingestion_nutrition_cache")
+}
+
+model UserDietPattern {
+  userId            String    @id @map("user_id") @db.Uuid
+  scanCount         Int       @default(0) @map("scan_count")
+  topCuisines       Json      @default("[]") @map("top_cuisines")
+  avgNaiScore       Float?    @map("avg_nai_score")
+  frequentAllergens Json      @default("[]") @map("frequent_allergens")
+  lastScanAt        DateTime? @map("last_scan_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("ingestion_user_diet_patterns")
 }

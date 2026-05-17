@@ -11,16 +11,23 @@ import { RMQ_EVENT_CLIENT } from '@messaging/tokens';
 import {
   classifyDish,
   CompositeNutritionProvider,
+  computeDishNai,
+  computeScanNai,
+  createOcrProvider,
   EmbeddingClient,
   extractMenuDishes,
   LlmClient,
   OpenFoodFactsProvider,
+  type OcrProviderPort,
   type UserPreferenceHints,
   UsdaFdcProvider,
 } from '../../../../libs/ai-pipeline/src';
 import { firstValueFrom } from 'rxjs';
 import { Prisma } from '../../generated/prisma/client';
 import { MenuScanStatus } from '../../generated/prisma/enums';
+import { ApplicationClientService } from '../clients/application-client.service';
+import { AdminFileClientService } from '../clients/admin-file-client.service';
+import { PatternsService } from '../patterns/patterns.service';
 import { PrismaService } from '../prisma.service';
 import { NutritionCacheService } from './nutrition-cache.service';
 
@@ -33,11 +40,15 @@ export class ScanProcessorService {
   private readonly llm: LlmClient;
   private readonly embeddings: EmbeddingClient;
   private readonly nutrition: CompositeNutritionProvider;
+  private readonly ocr: OcrProviderPort;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: NutritionCacheService,
     private readonly config: ConfigService,
+    private readonly applicationClient: ApplicationClientService,
+    private readonly adminFiles: AdminFileClientService,
+    private readonly patterns: PatternsService,
     @Inject(RMQ_EVENT_CLIENT) private readonly rmq: ClientProxy,
   ) {
     this.llm = new LlmClient({
@@ -58,28 +69,55 @@ export class ScanProcessorService {
       ...(usda.isConfigured() ? [usda] : []),
       off,
     ]);
+    this.ocr = createOcrProvider({
+      googleVisionApiKey: this.config.get<string>('GOOGLE_VISION_API_KEY'),
+      provider: this.config.get<string>('OCR_PROVIDER'),
+    });
   }
 
   async handleScanSubmitted(payload: ScanSubmittedV1Payload) {
-    const { scanId, userId, imageUrl } = payload;
+    const { scanId, userId } = payload;
     try {
-      await this.prisma.menuScan.update({
-        where: { id: scanId },
+      const claimed = await this.prisma.menuScan.updateMany({
+        where: { id: scanId, status: MenuScanStatus.PENDING },
         data: {
           status: MenuScanStatus.PROCESSING,
           parseError: null,
         },
       });
+      if (claimed.count === 0) {
+        this.logger.debug(
+          `Scan ${scanId} not PENDING — skip duplicate processing`,
+        );
+        return;
+      }
 
-      const demoOcr = this.placeholderOcrText(imageUrl);
-      const extraction = await extractMenuDishes(demoOcr, this.llm);
+      const prefs = await this.applicationClient.getUserPreferenceHints(userId);
+      const { ocrText, parseMetadata } = await this.resolveMenuText(payload);
 
-      const prefs: UserPreferenceHints = {};
+      const extraction = await extractMenuDishes(ocrText, this.llm);
       const dishRows: Prisma.DishCreateManyInput[] = [];
+      const naiScores: number[] = [];
+      const dishNames: string[] = [];
+      const allergenFlagsList: Array<Record<string, boolean> | undefined> = [];
 
       for (const line of extraction.dishes) {
         const classification = await classifyDish(line, prefs, this.llm);
         const nf = await this.lookupNutritionCached(line.name);
+        const nai = computeDishNai({
+          dietScore: classification.dietScore,
+          nutritionConfidence: nf.confidence,
+          calories: nf.calories,
+          calorieTarget: prefs.calorieTarget,
+          weightGoal: prefs.weightGoal,
+          category: classification.category,
+          allergenFlags: classification.allergenFlags,
+          allergies: prefs.allergies,
+        });
+        naiScores.push(nai.naiScore);
+        dishNames.push(line.name);
+        allergenFlagsList.push(classification.allergenFlags);
+
         const embedding = await this.embeddings.embedText(line.name);
         dishRows.push({
           id: randomUUID(),
@@ -87,10 +125,16 @@ export class ScanProcessorService {
           name: line.name.slice(0, 500),
           calories: nf.calories,
           dietScore: classification.dietScore,
+          naiScore: nai.naiScore,
+          naiFactors: nai.factors as Prisma.InputJsonValue,
           category: classification.category,
           allergenFlags: classification.allergenFlags
             ? (classification.allergenFlags as Prisma.InputJsonValue)
             : undefined,
+          explanation: {
+            reasons: classification.reasons ?? [],
+            summary: classification.summary,
+          } as Prisma.InputJsonValue,
           macros: {
             proteinG: nf.proteinG,
             carbG: nf.carbG,
@@ -104,6 +148,9 @@ export class ScanProcessorService {
         });
       }
 
+      const scanNai = computeScanNai(naiScores);
+      const summary = this.buildScanSummary(scanNai.naiScore, dishRows, prefs);
+
       await this.prisma.$transaction(async (tx) => {
         await tx.dish.deleteMany({ where: { scanId } });
         if (dishRows.length > 0) {
@@ -113,26 +160,42 @@ export class ScanProcessorService {
           where: { id: scanId },
           data: {
             status: MenuScanStatus.COMPLETED,
-            rawOcrText: demoOcr,
+            rawOcrText: ocrText,
+            naiScore: scanNai.naiScore,
+            naiBreakdown: scanNai.breakdown as Prisma.InputJsonValue,
+            summary,
             parseMetadata: {
+              ...parseMetadata,
               dishCount: dishRows.length,
               llmConfigured: this.llm.isConfigured(),
-            } as object,
+            } as Prisma.InputJsonValue,
           },
         });
+      });
+
+      await this.patterns.updateFromCompletedScan({
+        userId,
+        dishNames,
+        dishNaiScores: naiScores,
+        allergenFlagsList,
+        scanNaiScore: scanNai.naiScore,
       });
 
       const done: ScanClassificationCompletedV1Payload = {
         scanId,
         userId,
         dishCount: dishRows.length,
+        naiScore: scanNai.naiScore,
       };
       await firstValueFrom(
         this.rmq.emit(EVENT_PATTERNS.SCAN_CLASSIFICATION_COMPLETED_V1, done),
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this.logger.error(`scan ${scanId} failed: ${msg}`, e instanceof Error ? e.stack : undefined);
+      this.logger.error(
+        `scan ${scanId} failed: ${msg}`,
+        e instanceof Error ? e.stack : undefined,
+      );
       await this.prisma.menuScan.update({
         where: { id: scanId },
         data: {
@@ -143,13 +206,49 @@ export class ScanProcessorService {
     }
   }
 
-  private placeholderOcrText(imageUrl: string): string {
-    return [
-      'Demo menu (OCR placeholder)',
-      'Grilled Salmon Bowl — herb rice, seasonal vegetables',
-      'Classic Caesar Salad — parmesan, croutons',
-      `Source image: ${imageUrl.slice(0, 120)}`,
-    ].join('\n');
+  private async resolveMenuText(
+    payload: ScanSubmittedV1Payload,
+  ): Promise<{ ocrText: string; parseMetadata: Record<string, unknown> }> {
+    if (payload.menuText?.trim()) {
+      return {
+        ocrText: payload.menuText.trim(),
+        parseMetadata: { source: 'menu_text', ocrProvider: 'none' },
+      };
+    }
+
+    const storedFileName = payload.storedFileName;
+    if (!storedFileName) {
+      throw new Error('Scan has no stored image or menu text');
+    }
+
+    const { buffer, mimeType } =
+      await this.adminFiles.fetchMenuScanBytes(storedFileName);
+    const started = Date.now();
+    const ocrResult = await this.ocr.extractText({
+      imageBytes: buffer,
+      mimeType: payload.contentType ?? mimeType,
+    });
+    return {
+      ocrText: ocrResult.text,
+      parseMetadata: {
+        source: 'image_ocr',
+        ocrProvider: ocrResult.provider,
+        ocrConfidence: ocrResult.confidence,
+        ocrMs: Date.now() - started,
+        storedFileName,
+      },
+    };
+  }
+
+  private buildScanSummary(
+    naiScore: number,
+    dishes: Prisma.DishCreateManyInput[],
+    prefs: UserPreferenceHints,
+  ): string {
+    const recommended = dishes.filter((d) => d.category === 'RECOMMENDED').length;
+    const avoid = dishes.filter((d) => d.category === 'AVOID').length;
+    const diet = prefs.dietType ? ` for your ${prefs.dietType} preference` : '';
+    return `NAI ${naiScore}${diet}: ${recommended} recommended, ${avoid} to avoid, ${dishes.length} items analyzed.`;
   }
 
   private async lookupNutritionCached(name: string) {
@@ -167,8 +266,17 @@ export class ScanProcessorService {
     return facts;
   }
 
-  /** Re-run pipeline for an existing scan (internal/admin). */
-  async reprocessScan(scanId: string, userId: string, imageUrl: string) {
-    await this.handleScanSubmitted({ scanId, userId, imageUrl });
+  async reprocessScan(scanId: string, userId: string) {
+    const scan = await this.prisma.menuScan.findUniqueOrThrow({
+      where: { id: scanId },
+    });
+    await this.handleScanSubmitted({
+      scanId,
+      userId,
+      storedFileName: scan.storedFileName ?? undefined,
+      contentType: scan.contentType ?? undefined,
+      menuText: scan.menuText ?? undefined,
+      imageUrl: scan.imageUrl ?? undefined,
+    });
   }
 }

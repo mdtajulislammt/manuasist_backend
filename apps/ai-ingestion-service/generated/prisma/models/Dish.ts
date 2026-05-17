@@ -29,12 +29,14 @@ export type AggregateDish = {
 export type DishAvgAggregateOutputType = {
   calories: number | null
   dietScore: number | null
+  naiScore: number | null
   nutritionConfidence: number | null
 }
 
 export type DishSumAggregateOutputType = {
   calories: number | null
   dietScore: number | null
+  naiScore: number | null
   nutritionConfidence: number | null
 }
 
@@ -44,6 +46,7 @@ export type DishMinAggregateOutputType = {
   name: string | null
   calories: number | null
   dietScore: number | null
+  naiScore: number | null
   category: $Enums.DishCategory | null
   nutritionSource: string | null
   nutritionConfidence: number | null
@@ -57,6 +60,7 @@ export type DishMaxAggregateOutputType = {
   name: string | null
   calories: number | null
   dietScore: number | null
+  naiScore: number | null
   category: $Enums.DishCategory | null
   nutritionSource: string | null
   nutritionConfidence: number | null
@@ -70,8 +74,11 @@ export type DishCountAggregateOutputType = {
   name: number
   calories: number
   dietScore: number
+  naiScore: number
+  naiFactors: number
   category: number
   allergenFlags: number
+  explanation: number
   macros: number
   nutritionSource: number
   nutritionConfidence: number
@@ -85,12 +92,14 @@ export type DishCountAggregateOutputType = {
 export type DishAvgAggregateInputType = {
   calories?: true
   dietScore?: true
+  naiScore?: true
   nutritionConfidence?: true
 }
 
 export type DishSumAggregateInputType = {
   calories?: true
   dietScore?: true
+  naiScore?: true
   nutritionConfidence?: true
 }
 
@@ -100,6 +109,7 @@ export type DishMinAggregateInputType = {
   name?: true
   calories?: true
   dietScore?: true
+  naiScore?: true
   category?: true
   nutritionSource?: true
   nutritionConfidence?: true
@@ -113,6 +123,7 @@ export type DishMaxAggregateInputType = {
   name?: true
   calories?: true
   dietScore?: true
+  naiScore?: true
   category?: true
   nutritionSource?: true
   nutritionConfidence?: true
@@ -126,8 +137,11 @@ export type DishCountAggregateInputType = {
   name?: true
   calories?: true
   dietScore?: true
+  naiScore?: true
+  naiFactors?: true
   category?: true
   allergenFlags?: true
+  explanation?: true
   macros?: true
   nutritionSource?: true
   nutritionConfidence?: true
@@ -229,8 +243,11 @@ export type DishGroupByOutputType = {
   name: string
   calories: number
   dietScore: number
+  naiScore: number | null
+  naiFactors: runtime.JsonValue | null
   category: $Enums.DishCategory
   allergenFlags: runtime.JsonValue | null
+  explanation: runtime.JsonValue | null
   macros: runtime.JsonValue | null
   nutritionSource: string | null
   nutritionConfidence: number | null
@@ -268,8 +285,11 @@ export type DishWhereInput = {
   name?: Prisma.StringFilter<"Dish"> | string
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
+  naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
+  naiFactors?: Prisma.JsonNullableFilter<"Dish">
   category?: Prisma.EnumDishCategoryFilter<"Dish"> | $Enums.DishCategory
   allergenFlags?: Prisma.JsonNullableFilter<"Dish">
+  explanation?: Prisma.JsonNullableFilter<"Dish">
   macros?: Prisma.JsonNullableFilter<"Dish">
   nutritionSource?: Prisma.StringNullableFilter<"Dish"> | string | null
   nutritionConfidence?: Prisma.FloatNullableFilter<"Dish"> | number | null
@@ -285,8 +305,11 @@ export type DishOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  naiFactors?: Prisma.SortOrderInput | Prisma.SortOrder
   category?: Prisma.SortOrder
   allergenFlags?: Prisma.SortOrderInput | Prisma.SortOrder
+  explanation?: Prisma.SortOrderInput | Prisma.SortOrder
   macros?: Prisma.SortOrderInput | Prisma.SortOrder
   nutritionSource?: Prisma.SortOrderInput | Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -305,8 +328,11 @@ export type DishWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Dish"> | string
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
+  naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
+  naiFactors?: Prisma.JsonNullableFilter<"Dish">
   category?: Prisma.EnumDishCategoryFilter<"Dish"> | $Enums.DishCategory
   allergenFlags?: Prisma.JsonNullableFilter<"Dish">
+  explanation?: Prisma.JsonNullableFilter<"Dish">
   macros?: Prisma.JsonNullableFilter<"Dish">
   nutritionSource?: Prisma.StringNullableFilter<"Dish"> | string | null
   nutritionConfidence?: Prisma.FloatNullableFilter<"Dish"> | number | null
@@ -322,8 +348,11 @@ export type DishOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  naiFactors?: Prisma.SortOrderInput | Prisma.SortOrder
   category?: Prisma.SortOrder
   allergenFlags?: Prisma.SortOrderInput | Prisma.SortOrder
+  explanation?: Prisma.SortOrderInput | Prisma.SortOrder
   macros?: Prisma.SortOrderInput | Prisma.SortOrder
   nutritionSource?: Prisma.SortOrderInput | Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -346,8 +375,11 @@ export type DishScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Dish"> | string
   calories?: Prisma.IntWithAggregatesFilter<"Dish"> | number
   dietScore?: Prisma.IntWithAggregatesFilter<"Dish"> | number
+  naiScore?: Prisma.IntNullableWithAggregatesFilter<"Dish"> | number | null
+  naiFactors?: Prisma.JsonNullableWithAggregatesFilter<"Dish">
   category?: Prisma.EnumDishCategoryWithAggregatesFilter<"Dish"> | $Enums.DishCategory
   allergenFlags?: Prisma.JsonNullableWithAggregatesFilter<"Dish">
+  explanation?: Prisma.JsonNullableWithAggregatesFilter<"Dish">
   macros?: Prisma.JsonNullableWithAggregatesFilter<"Dish">
   nutritionSource?: Prisma.StringNullableWithAggregatesFilter<"Dish"> | string | null
   nutritionConfidence?: Prisma.FloatNullableWithAggregatesFilter<"Dish"> | number | null
@@ -361,8 +393,11 @@ export type DishCreateInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -378,8 +413,11 @@ export type DishUncheckedCreateInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -393,8 +431,11 @@ export type DishUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -410,8 +451,11 @@ export type DishUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -426,8 +470,11 @@ export type DishCreateManyInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -441,8 +488,11 @@ export type DishUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -457,8 +507,11 @@ export type DishUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -483,8 +536,11 @@ export type DishCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrder
+  naiFactors?: Prisma.SortOrder
   category?: Prisma.SortOrder
   allergenFlags?: Prisma.SortOrder
+  explanation?: Prisma.SortOrder
   macros?: Prisma.SortOrder
   nutritionSource?: Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrder
@@ -496,6 +552,7 @@ export type DishCountOrderByAggregateInput = {
 export type DishAvgOrderByAggregateInput = {
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrder
 }
 
@@ -505,6 +562,7 @@ export type DishMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrder
   category?: Prisma.SortOrder
   nutritionSource?: Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrder
@@ -518,6 +576,7 @@ export type DishMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrder
   category?: Prisma.SortOrder
   nutritionSource?: Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrder
@@ -528,6 +587,7 @@ export type DishMinOrderByAggregateInput = {
 export type DishSumOrderByAggregateInput = {
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
+  naiScore?: Prisma.SortOrder
   nutritionConfidence?: Prisma.SortOrder
 }
 
@@ -598,8 +658,11 @@ export type DishCreateWithoutScanInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -613,8 +676,11 @@ export type DishUncheckedCreateWithoutScanInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -658,8 +724,11 @@ export type DishScalarWhereInput = {
   name?: Prisma.StringFilter<"Dish"> | string
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
+  naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
+  naiFactors?: Prisma.JsonNullableFilter<"Dish">
   category?: Prisma.EnumDishCategoryFilter<"Dish"> | $Enums.DishCategory
   allergenFlags?: Prisma.JsonNullableFilter<"Dish">
+  explanation?: Prisma.JsonNullableFilter<"Dish">
   macros?: Prisma.JsonNullableFilter<"Dish">
   nutritionSource?: Prisma.StringNullableFilter<"Dish"> | string | null
   nutritionConfidence?: Prisma.FloatNullableFilter<"Dish"> | number | null
@@ -673,8 +742,11 @@ export type DishCreateManyScanInput = {
   name: string
   calories: number
   dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category: $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: string | null
   nutritionConfidence?: number | null
@@ -688,8 +760,11 @@ export type DishUpdateWithoutScanInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -703,8 +778,11 @@ export type DishUncheckedUpdateWithoutScanInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -718,8 +796,11 @@ export type DishUncheckedUpdateManyWithoutScanInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
   allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -736,8 +817,11 @@ export type DishSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   name?: boolean
   calories?: boolean
   dietScore?: boolean
+  naiScore?: boolean
+  naiFactors?: boolean
   category?: boolean
   allergenFlags?: boolean
+  explanation?: boolean
   macros?: boolean
   nutritionSource?: boolean
   nutritionConfidence?: boolean
@@ -753,8 +837,11 @@ export type DishSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   name?: boolean
   calories?: boolean
   dietScore?: boolean
+  naiScore?: boolean
+  naiFactors?: boolean
   category?: boolean
   allergenFlags?: boolean
+  explanation?: boolean
   macros?: boolean
   nutritionSource?: boolean
   nutritionConfidence?: boolean
@@ -770,8 +857,11 @@ export type DishSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   name?: boolean
   calories?: boolean
   dietScore?: boolean
+  naiScore?: boolean
+  naiFactors?: boolean
   category?: boolean
   allergenFlags?: boolean
+  explanation?: boolean
   macros?: boolean
   nutritionSource?: boolean
   nutritionConfidence?: boolean
@@ -787,8 +877,11 @@ export type DishSelectScalar = {
   name?: boolean
   calories?: boolean
   dietScore?: boolean
+  naiScore?: boolean
+  naiFactors?: boolean
   category?: boolean
   allergenFlags?: boolean
+  explanation?: boolean
   macros?: boolean
   nutritionSource?: boolean
   nutritionConfidence?: boolean
@@ -797,7 +890,7 @@ export type DishSelectScalar = {
   updatedAt?: boolean
 }
 
-export type DishOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scanId" | "name" | "calories" | "dietScore" | "category" | "allergenFlags" | "macros" | "nutritionSource" | "nutritionConfidence" | "embedding" | "createdAt" | "updatedAt", ExtArgs["result"]["dish"]>
+export type DishOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scanId" | "name" | "calories" | "dietScore" | "naiScore" | "naiFactors" | "category" | "allergenFlags" | "explanation" | "macros" | "nutritionSource" | "nutritionConfidence" | "embedding" | "createdAt" | "updatedAt", ExtArgs["result"]["dish"]>
 export type DishInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scan?: boolean | Prisma.MenuScanDefaultArgs<ExtArgs>
 }
@@ -819,8 +912,11 @@ export type $DishPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     name: string
     calories: number
     dietScore: number
+    naiScore: number | null
+    naiFactors: runtime.JsonValue | null
     category: $Enums.DishCategory
     allergenFlags: runtime.JsonValue | null
+    explanation: runtime.JsonValue | null
     macros: runtime.JsonValue | null
     nutritionSource: string | null
     nutritionConfidence: number | null
@@ -1256,8 +1352,11 @@ export interface DishFieldRefs {
   readonly name: Prisma.FieldRef<"Dish", 'String'>
   readonly calories: Prisma.FieldRef<"Dish", 'Int'>
   readonly dietScore: Prisma.FieldRef<"Dish", 'Int'>
+  readonly naiScore: Prisma.FieldRef<"Dish", 'Int'>
+  readonly naiFactors: Prisma.FieldRef<"Dish", 'Json'>
   readonly category: Prisma.FieldRef<"Dish", 'DishCategory'>
   readonly allergenFlags: Prisma.FieldRef<"Dish", 'Json'>
+  readonly explanation: Prisma.FieldRef<"Dish", 'Json'>
   readonly macros: Prisma.FieldRef<"Dish", 'Json'>
   readonly nutritionSource: Prisma.FieldRef<"Dish", 'String'>
   readonly nutritionConfidence: Prisma.FieldRef<"Dish", 'Float'>

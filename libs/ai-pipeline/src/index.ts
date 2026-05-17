@@ -7,3 +7,7 @@ export * from './nutrition/types';
 export * from './nutrition/usda';
 export * from './nutrition/openfoodfacts';
 export * from './nutrition/composite';
+export * from './ocr/ocr-provider.port';
+export * from './ocr/create-ocr-provider';
+export * from './nai/compute-nai';
+export * from './patterns/cuisine-tags';
