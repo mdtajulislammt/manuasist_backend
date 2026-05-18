@@ -33,7 +33,7 @@ export class ScansService {
     private readonly adminFiles: AdminFileClientService,
     private readonly scanProcessor: ScanProcessorService,
     @Inject(RMQ_EVENT_CLIENT) private readonly rmq: ClientProxy,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(ScansService.name);
 
@@ -147,7 +147,14 @@ export class ScansService {
     const rows = await this.prisma.menuScan.findMany({
       where: { userId },
       orderBy: { scanTime: 'desc' },
-      include: { dishes: true },
+      include: {
+        dishes:
+        {
+          omit: {
+            embedding: true,
+          },
+        },
+      },
     });
     return { success: true, message: 'Scans listed', data: rows };
   }
@@ -155,7 +162,13 @@ export class ScansService {
   async getScanForUser(userId: string, scanId: string) {
     const row = await this.prisma.menuScan.findFirst({
       where: { id: scanId, userId },
-      include: { dishes: true },
+      include: {
+        dishes: {
+          omit: {
+            embedding: true,
+          },
+        }
+      },
     });
     if (!row) {
       throw new NotFoundException('Scan not found');
