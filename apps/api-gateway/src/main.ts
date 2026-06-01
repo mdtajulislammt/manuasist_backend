@@ -7,6 +7,7 @@ import {
 import express, { json } from 'express';
 import { AppModule } from './app.module';
 import { GatewayProxyService } from './gateway-proxy.service';
+import { createRequestTraceMiddleware } from './request-trace.middleware';
 
 /**
  * API Gateway for the Menu Assist application.
@@ -14,6 +15,8 @@ import { GatewayProxyService } from './gateway-proxy.service';
  */
 async function bootstrap() {
   const expressApp = express();
+  expressApp.set('trust proxy', true);
+  expressApp.use(createRequestTraceMiddleware());
   expressApp.use(json({ limit: '2mb' }));
 
   const app = await NestFactory.create<NestExpressApplication>(
