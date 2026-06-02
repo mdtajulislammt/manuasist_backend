@@ -139,6 +139,7 @@ export const AuthOtpTokenScalarFieldEnum = {
   codeHash: 'codeHash',
   channel: 'channel',
   purpose: 'purpose',
+  targetIdentifier: 'targetIdentifier',
   expiresAt: 'expiresAt',
   consumedAt: 'consumedAt',
   attempts: 'attempts',

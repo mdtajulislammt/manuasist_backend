@@ -16,6 +16,7 @@ enum OtpPurpose {
   SIGNUP
   PASSWORD_RESET
   EMAIL_CHANGE
+  CONTACT_CHANGE
 }
 
 model AuthUser {
@@ -107,6 +108,7 @@ model AuthOtpToken {
   codeHash   String     @map("code_hash")
   channel    OtpChannel
   purpose    OtpPurpose
+  targetIdentifier String? @map("target_identifier")
   expiresAt  DateTime   @map("expires_at")
   consumedAt DateTime?  @map("consumed_at")
   attempts   Int        @default(0)

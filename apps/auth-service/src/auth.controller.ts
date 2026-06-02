@@ -28,6 +28,8 @@ import {
 import type { Request, Response } from 'express';
 import { Public } from '@menu-assist/api-auth';
 import { AuthService } from './auth.service';
+import { ContactChangeRequestDto } from './dto/contact-change-request.dto';
+import { ContactChangeVerifyDto } from './dto/contact-change-verify.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshBodyDto } from './dto/refresh-body.dto';
 import { LoginDto } from './dto/login.dto';
@@ -267,5 +269,36 @@ export class InternalAuthController {
   @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
   getUserContact(@Param('userId') userId: string) {
     return this.auth.getUserContactById(userId);
+  }
+
+  @Post('users/:userId/contact-change/request')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Request OTP to change a user email or phone (internal)' })
+  @ApiBody({ type: ContactChangeRequestDto })
+  @ApiOkResponse({ description: 'Contact-change OTP sent.' })
+  requestContactChange(
+    @Param('userId') userId: string,
+    @Body() body: ContactChangeRequestDto,
+  ) {
+    return this.auth.requestContactChange(userId, {
+      kind: body.kind,
+      identifier: body.identifier,
+    });
+  }
+
+  @Post('users/:userId/contact-change/verify')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Verify OTP and update a user email or phone (internal)' })
+  @ApiBody({ type: ContactChangeVerifyDto })
+  @ApiOkResponse({ description: 'Contact updated and verified.' })
+  verifyContactChange(
+    @Param('userId') userId: string,
+    @Body() body: ContactChangeVerifyDto,
+  ) {
+    return this.auth.verifyContactChange(userId, {
+      kind: body.kind,
+      identifier: body.identifier,
+      otp: body.otp,
+    });
   }
 }

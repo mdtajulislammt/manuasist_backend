@@ -25,6 +25,8 @@ model UserProfile {
   id                    String    @id @default(uuid()) @db.Uuid
   userId                String    @unique @map("user_id") @db.Uuid
   fullName              String?   @map("full_name")
+  avatarFileId          String?   @map("avatar_file_id") @db.Uuid
+  avatarUrl             String?   @map("avatar_url")
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")

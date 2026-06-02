@@ -20,7 +20,8 @@ export type OtpChannel = (typeof OtpChannel)[keyof typeof OtpChannel]
 export const OtpPurpose = {
   SIGNUP: 'SIGNUP',
   PASSWORD_RESET: 'PASSWORD_RESET',
-  EMAIL_CHANGE: 'EMAIL_CHANGE'
+  EMAIL_CHANGE: 'EMAIL_CHANGE',
+  CONTACT_CHANGE: 'CONTACT_CHANGE'
 } as const
 
 export type OtpPurpose = (typeof OtpPurpose)[keyof typeof OtpPurpose]

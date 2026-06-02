@@ -82,6 +82,7 @@ services:
       JWT_KID: menu-assist-rs256
       ACCESS_TOKEN_TTL_SECONDS: 900
       REFRESH_TOKEN_TTL_SECONDS: 604800
+      AUTH_INTERNAL_API_KEY: dev-internal-auth-key
       OIDC_REDIRECT_URI: http://localhost:5000/v1/auth/oauth/callback
       OIDC_SCOPES: openid profile email
       # Set OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY via env file or host env before compose up
@@ -102,6 +103,8 @@ services:
       ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
       APPLICATION_INTERNAL_API_KEY: dev-internal-application-key
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AUTH_SERVICE_URL: http://auth-service:5001
+      AUTH_INTERNAL_API_KEY: dev-internal-auth-key
       AUTH_JWKS_URI: http://auth-service:5001/.well-known/jwks.json
       AUTH_JWT_ISSUER: http://auth-service:5001
       AUTH_JWT_AUDIENCE: menu-assist-api

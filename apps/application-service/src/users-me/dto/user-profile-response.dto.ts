@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UserProfileResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -9,6 +9,12 @@ export class UserProfileResponseDto {
 
   @ApiProperty({ nullable: true, description: 'Display name' })
   fullName!: string | null;
+
+  @ApiProperty({ nullable: true, format: 'uuid', description: 'Stored avatar file id' })
+  avatarFileId!: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Public avatar URL' })
+  avatarUrl!: string | null;
 
   @ApiProperty({ nullable: true, description: 'Verified email from auth-service' })
   email!: string | null;
@@ -34,4 +40,10 @@ export class UserProfileResponseDto {
 
   @ApiProperty({ format: 'date-time' })
   updatedAt!: Date;
+
+  @ApiPropertyOptional({
+    description:
+      'Present when a profile update started email/phone verification and the client should ask for OTP.',
+  })
+  pendingVerification?: Record<string, unknown>;
 }

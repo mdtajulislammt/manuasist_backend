@@ -103,12 +103,32 @@ export type PasswordResetResponse = {
 };
 
 export type OtpType = 'SIGNUP' | 'PASSWORD_RESET';
+export type ContactChangeKind = 'email' | 'phone';
 
 export type OtpVerifyResponse = {
   success: boolean;
   message: string;
   tokenPair?: TokenPairResponse;
   passwordReset?: PasswordResetResponse;
+};
+
+export type ContactChangeRequestResponse = {
+  success: boolean;
+  message: string;
+  status: 'OTP_SENT';
+  kind: ContactChangeKind;
+  channel: 'email' | 'sms';
+  identifier: string;
+  expires_in_seconds: number;
+  otp?: string;
+};
+
+export type ContactChangeVerifyResponse = {
+  success: boolean;
+  message: string;
+  status: 'CONTACT_CHANGE_VERIFIED';
+  kind: ContactChangeKind;
+  identifier: string;
 };
 
 type PkceEntry = { codeVerifier: string; createdAt: number };
@@ -251,6 +271,10 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('PASSWORD_RESET_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private contactChangeOtpTtlSec(): number {
+    return this.config.get<number>('CONTACT_CHANGE_OTP_TTL_SECONDS') ?? 600;
+  }
+
   private otpDebugResponse(otp: string): { otp?: string } {
     const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
       .trim()
@@ -268,7 +292,7 @@ export class AuthService implements OnModuleInit {
   private async sendOtpEmail(input: {
     to: string;
     otp: string;
-    purpose: 'SIGNUP' | 'PASSWORD_RESET';
+    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE';
     expiresInSeconds: number;
   }): Promise<void> {
     const { to, otp, purpose, expiresInSeconds } = input;
@@ -297,7 +321,9 @@ export class AuthService implements OnModuleInit {
     const purposeText =
       purpose === 'PASSWORD_RESET'
         ? 'password reset verification'
-        : 'account verification';
+        : purpose === 'CONTACT_CHANGE'
+          ? 'contact change verification'
+          : 'account verification';
     const subject = `${appName} ${purposeText} code`;
     const text = `Your ${appName} OTP code is ${otp}. It expires in ${minutes} minute(s).`;
 
@@ -317,7 +343,7 @@ export class AuthService implements OnModuleInit {
   private async createOtpChallenge(
     userId: string,
     channel: 'EMAIL' | 'SMS',
-    purpose: 'SIGNUP' | 'PASSWORD_RESET',
+    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE',
     identifier: string,
     expiresInSeconds: number,
   ): Promise<{ otp: string }> {
@@ -342,6 +368,7 @@ export class AuthService implements OnModuleInit {
         codeHash: sha256Hex(otp),
         channel,
         purpose,
+        targetIdentifier: identifier,
         expiresAt,
       },
     });
@@ -1052,6 +1079,180 @@ export class AuthService implements OnModuleInit {
       message: 'Password updated. Other sessions were signed out; sign in again on those devices.',
       status: 'PASSWORD_UPDATED',
     };
+  }
+
+  async requestContactChange(
+    userId: string,
+    input: {
+      kind: ContactChangeKind;
+      identifier: string;
+    },
+  ): Promise<ContactChangeRequestResponse> {
+    const normalized = this.normalizeContactChangeIdentifier(
+      input.kind,
+      input.identifier,
+    );
+
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, phone: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const current = input.kind === 'email' ? user.email : user.phone;
+    if (current === normalized.identifier) {
+      throw new BadRequestException(
+        `This ${input.kind} is already on your account`,
+      );
+    }
+    await this.ensureContactIdentifierAvailable(input.kind, normalized.identifier);
+
+    const expiresInSeconds = this.contactChangeOtpTtlSec();
+    const { otp } = await this.createOtpChallenge(
+      userId,
+      normalized.channel,
+      'CONTACT_CHANGE',
+      normalized.identifier,
+      expiresInSeconds,
+    );
+
+    return {
+      success: true,
+      message:
+        input.kind === 'phone'
+          ? 'A verification code was sent to your new phone.'
+          : 'A verification code was sent to your new email.',
+      status: 'OTP_SENT',
+      kind: input.kind,
+      channel: normalized.channel === 'SMS' ? 'sms' : 'email',
+      identifier: normalized.identifier,
+      expires_in_seconds: expiresInSeconds,
+      ...this.otpDebugResponse(otp),
+    };
+  }
+
+  async verifyContactChange(
+    userId: string,
+    input: {
+      kind: ContactChangeKind;
+      identifier: string;
+      otp: string;
+    },
+  ): Promise<ContactChangeVerifyResponse> {
+    const normalized = this.normalizeContactChangeIdentifier(
+      input.kind,
+      input.identifier,
+    );
+
+    await this.ensureContactIdentifierAvailable(
+      input.kind,
+      normalized.identifier,
+      userId,
+    );
+
+    const otpRow = await this.prisma.authOtpToken.findFirst({
+      where: {
+        userId,
+        channel: normalized.channel,
+        purpose: 'CONTACT_CHANGE',
+        targetIdentifier: normalized.identifier,
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRow || otpRow.expiresAt < new Date()) {
+      throw new UnauthorizedException('OTP expired or invalid');
+    }
+
+    if (otpRow.attempts >= 5) {
+      throw new UnauthorizedException('OTP attempt limit exceeded');
+    }
+
+    const codeHash = sha256Hex(input.otp);
+    if (otpRow.codeHash !== codeHash) {
+      await this.prisma.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.authOtpToken.update({
+        where: { id: otpRow.id },
+        data: { consumedAt: new Date() },
+      });
+
+      await tx.authUser.update({
+        where: { id: userId },
+        data:
+          input.kind === 'phone'
+            ? {
+              phone: normalized.identifier,
+              phoneVerifiedAt: new Date(),
+            }
+            : {
+              email: normalized.identifier,
+              emailVerifiedAt: new Date(),
+            },
+      });
+    });
+
+    return {
+      success: true,
+      message:
+        input.kind === 'phone'
+          ? 'Phone updated and verified successfully.'
+          : 'Email updated and verified successfully.',
+      status: 'CONTACT_CHANGE_VERIFIED',
+      kind: input.kind,
+      identifier: normalized.identifier,
+    };
+  }
+
+  private normalizeContactChangeIdentifier(
+    kind: ContactChangeKind,
+    identifier: string,
+  ): {
+    identifier: string;
+    channel: 'EMAIL' | 'SMS';
+  } {
+    const { email, phone } = normalizeIdentifier(identifier);
+    if (kind === 'email' && email) {
+      return { identifier: email, channel: 'EMAIL' };
+    }
+    if (kind === 'phone' && phone) {
+      return { identifier: phone, channel: 'SMS' };
+    }
+    throw new BadRequestException(
+      kind === 'phone'
+        ? 'Identifier must be a valid E.164 phone number'
+        : 'Identifier must be a valid email address',
+    );
+  }
+
+  private async ensureContactIdentifierAvailable(
+    kind: ContactChangeKind,
+    identifier: string,
+    allowUserId?: string,
+  ) {
+    const existing = await this.prisma.authUser.findFirst({
+      where:
+        kind === 'phone'
+          ? { phone: identifier }
+          : { email: identifier },
+      select: { id: true },
+    });
+    if (existing && existing.id !== allowUserId) {
+      throw new ConflictException(
+        kind === 'phone'
+          ? 'An account with this phone already exists'
+          : 'An account with this email already exists',
+      );
+    }
   }
 
   async getUserContactById(userId: string) {

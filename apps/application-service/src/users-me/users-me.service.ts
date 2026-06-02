@@ -1,6 +1,16 @@
-import { BadRequestException, HttpException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { SpiceLevel, WeightGoal } from '../../generated/prisma/enums';
+import {
+  ProfileAvatarStorageService,
+  type ProfileAvatarUpload,
+} from './profile-avatar-storage.service';
 import type { AdminActiveFlowPayload } from '../admin-internal/admin-internal-client.service';
 import { AdminInternalClientService } from '../admin-internal/admin-internal-client.service';
 import { AuthInternalClientService } from '../auth-internal/auth-internal-client.service';
@@ -55,6 +65,7 @@ export class UsersMeService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly avatars: ProfileAvatarStorageService,
     private readonly admin: AdminInternalClientService,
     private readonly authInternal: AuthInternalClientService,
   ) { }
@@ -65,17 +76,10 @@ export class UsersMeService {
       const profile = await this.prisma.userProfile.findUniqueOrThrow({
         where: { userId },
       });
-      const contact = await this.getUserContactSafe(userId);
       return {
         success: true,
         message: 'Profile retrieved successfully',
-        data: {
-          ...profile,
-          email: contact.email,
-          phone: contact.phone,
-          emailVerified: contact.emailVerified,
-          phoneVerified: contact.phoneVerified,
-        },
+        data: await this.withContact(profile),
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -85,25 +89,77 @@ export class UsersMeService {
     }
   }
 
-  async patchProfile(userId: string, dto: PatchProfileDto) {
+  async patchProfile(
+    userId: string,
+    dto: PatchProfileDto,
+    avatar?: ProfileAvatarUpload,
+  ) {
     try {
       await this.ensureUserRows(userId);
-      const updatedProfile = await this.prisma.userProfile.update({
-        where: { userId },
-        data: {
-          ...(dto.fullName !== undefined ? { fullName: dto.fullName } : {}),
-        },
-      });
-      const contact = await this.getUserContactSafe(userId);
+      const data: Prisma.UserProfileUpdateInput = {};
+      if (dto.fullName !== undefined) {
+        data.fullName = dto.fullName;
+      }
+      if (avatar) {
+        const stored = await this.avatars.storeAvatar(avatar);
+        data.avatarFileId = stored.avatarFileId;
+        data.avatarUrl = stored.avatarUrl;
+      }
+
+      const updatedProfile =
+        Object.keys(data).length > 0
+          ? await this.prisma.userProfile.update({
+              where: { userId },
+              data,
+            })
+          : await this.prisma.userProfile.findUniqueOrThrow({
+              where: { userId },
+            });
+
+      const pendingVerification: Record<string, unknown> = {};
+      if (dto.email) {
+        if (dto.emailOtp) {
+          await this.authInternal.verifyContactChange(userId, {
+            kind: 'email',
+            identifier: dto.email,
+            otp: dto.emailOtp,
+          });
+        } else {
+          pendingVerification.email =
+            await this.authInternal.requestContactChange(userId, {
+              kind: 'email',
+              identifier: dto.email,
+            });
+        }
+      }
+      if (dto.phone) {
+        if (dto.phoneOtp) {
+          await this.authInternal.verifyContactChange(userId, {
+            kind: 'phone',
+            identifier: dto.phone,
+            otp: dto.phoneOtp,
+          });
+        } else {
+          pendingVerification.phone =
+            await this.authInternal.requestContactChange(userId, {
+              kind: 'phone',
+              identifier: dto.phone,
+            });
+        }
+      }
+
+      const profile = await this.withContact(updatedProfile);
       return {
         success: true,
-        message: 'Profile updated successfully',
+        message:
+          Object.keys(pendingVerification).length > 0
+            ? 'Profile updated. Contact verification required.'
+            : 'Profile updated successfully',
         data: {
-          ...updatedProfile,
-          email: contact.email,
-          phone: contact.phone,
-          emailVerified: contact.emailVerified,
-          phoneVerified: contact.phoneVerified,
+          ...profile,
+          ...(Object.keys(pendingVerification).length > 0
+            ? { pendingVerification }
+            : {}),
         },
       };
     } catch (error) {
@@ -365,6 +421,20 @@ export class UsersMeService {
         phoneVerified: false,
       };
     }
+  }
+
+  private async withContact(
+    profile: Prisma.UserProfileGetPayload<Record<string, never>>,
+  ) {
+    const contact = await this.getUserContactSafe(profile.userId);
+    return {
+      ...profile,
+      avatarUrl: this.avatars.normalizePublicUrl(profile.avatarUrl),
+      email: contact.email,
+      phone: contact.phone,
+      emailVerified: contact.emailVerified,
+      phoneVerified: contact.phoneVerified,
+    };
   }
 
   private async ensureUserRowsTx(

@@ -1,4 +1,5 @@
 import { ApiAuthModule } from '@menu-assist/api-auth';
+import { FileStorageModule } from '@menu-assist/file-storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
@@ -22,6 +23,27 @@ const envFilePaths = [
       envFilePath: envFilePaths,
     }),
     PrismaModule,
+    FileStorageModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const bucket = config.get<string>('AWS_S3_BUCKET');
+        const region = config.get<string>('AWS_REGION');
+        return {
+          localRoot: config.get<string>('FILE_STORAGE_LOCAL_ROOT') ?? 'uploads',
+          s3:
+            bucket && region
+              ? {
+                bucket,
+                region,
+                accessKeyId: config.get<string>('AWS_ACCESS_KEY_ID'),
+                secretAccessKey: config.get<string>('AWS_SECRET_ACCESS_KEY'),
+                publicBaseUrl: config.get<string>('AWS_S3_PUBLIC_BASE_URL'),
+              }
+              : undefined,
+        };
+      },
+    }),
     ApiAuthModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -38,4 +60,4 @@ const envFilePaths = [
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

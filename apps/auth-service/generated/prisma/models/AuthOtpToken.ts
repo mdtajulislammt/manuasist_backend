@@ -40,6 +40,7 @@ export type AuthOtpTokenMinAggregateOutputType = {
   codeHash: string | null
   channel: $Enums.OtpChannel | null
   purpose: $Enums.OtpPurpose | null
+  targetIdentifier: string | null
   expiresAt: Date | null
   consumedAt: Date | null
   attempts: number | null
@@ -52,6 +53,7 @@ export type AuthOtpTokenMaxAggregateOutputType = {
   codeHash: string | null
   channel: $Enums.OtpChannel | null
   purpose: $Enums.OtpPurpose | null
+  targetIdentifier: string | null
   expiresAt: Date | null
   consumedAt: Date | null
   attempts: number | null
@@ -64,6 +66,7 @@ export type AuthOtpTokenCountAggregateOutputType = {
   codeHash: number
   channel: number
   purpose: number
+  targetIdentifier: number
   expiresAt: number
   consumedAt: number
   attempts: number
@@ -86,6 +89,7 @@ export type AuthOtpTokenMinAggregateInputType = {
   codeHash?: true
   channel?: true
   purpose?: true
+  targetIdentifier?: true
   expiresAt?: true
   consumedAt?: true
   attempts?: true
@@ -98,6 +102,7 @@ export type AuthOtpTokenMaxAggregateInputType = {
   codeHash?: true
   channel?: true
   purpose?: true
+  targetIdentifier?: true
   expiresAt?: true
   consumedAt?: true
   attempts?: true
@@ -110,6 +115,7 @@ export type AuthOtpTokenCountAggregateInputType = {
   codeHash?: true
   channel?: true
   purpose?: true
+  targetIdentifier?: true
   expiresAt?: true
   consumedAt?: true
   attempts?: true
@@ -209,6 +215,7 @@ export type AuthOtpTokenGroupByOutputType = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier: string | null
   expiresAt: Date
   consumedAt: Date | null
   attempts: number
@@ -244,6 +251,7 @@ export type AuthOtpTokenWhereInput = {
   codeHash?: Prisma.StringFilter<"AuthOtpToken"> | string
   channel?: Prisma.EnumOtpChannelFilter<"AuthOtpToken"> | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFilter<"AuthOtpToken"> | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.StringNullableFilter<"AuthOtpToken"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"AuthOtpToken"> | Date | string
   consumedAt?: Prisma.DateTimeNullableFilter<"AuthOtpToken"> | Date | string | null
   attempts?: Prisma.IntFilter<"AuthOtpToken"> | number
@@ -257,6 +265,7 @@ export type AuthOtpTokenOrderByWithRelationInput = {
   codeHash?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
+  targetIdentifier?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   consumedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   attempts?: Prisma.SortOrder
@@ -273,6 +282,7 @@ export type AuthOtpTokenWhereUniqueInput = Prisma.AtLeast<{
   codeHash?: Prisma.StringFilter<"AuthOtpToken"> | string
   channel?: Prisma.EnumOtpChannelFilter<"AuthOtpToken"> | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFilter<"AuthOtpToken"> | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.StringNullableFilter<"AuthOtpToken"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"AuthOtpToken"> | Date | string
   consumedAt?: Prisma.DateTimeNullableFilter<"AuthOtpToken"> | Date | string | null
   attempts?: Prisma.IntFilter<"AuthOtpToken"> | number
@@ -286,6 +296,7 @@ export type AuthOtpTokenOrderByWithAggregationInput = {
   codeHash?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
+  targetIdentifier?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   consumedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   attempts?: Prisma.SortOrder
@@ -306,6 +317,7 @@ export type AuthOtpTokenScalarWhereWithAggregatesInput = {
   codeHash?: Prisma.StringWithAggregatesFilter<"AuthOtpToken"> | string
   channel?: Prisma.EnumOtpChannelWithAggregatesFilter<"AuthOtpToken"> | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeWithAggregatesFilter<"AuthOtpToken"> | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.StringNullableWithAggregatesFilter<"AuthOtpToken"> | string | null
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"AuthOtpToken"> | Date | string
   consumedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AuthOtpToken"> | Date | string | null
   attempts?: Prisma.IntWithAggregatesFilter<"AuthOtpToken"> | number
@@ -317,6 +329,7 @@ export type AuthOtpTokenCreateInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -330,6 +343,7 @@ export type AuthOtpTokenUncheckedCreateInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -341,6 +355,7 @@ export type AuthOtpTokenUpdateInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -354,6 +369,7 @@ export type AuthOtpTokenUncheckedUpdateInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -366,6 +382,7 @@ export type AuthOtpTokenCreateManyInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -377,6 +394,7 @@ export type AuthOtpTokenUpdateManyMutationInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -389,6 +407,7 @@ export type AuthOtpTokenUncheckedUpdateManyInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -411,6 +430,7 @@ export type AuthOtpTokenCountOrderByAggregateInput = {
   codeHash?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
+  targetIdentifier?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   consumedAt?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
@@ -427,6 +447,7 @@ export type AuthOtpTokenMaxOrderByAggregateInput = {
   codeHash?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
+  targetIdentifier?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   consumedAt?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
@@ -439,6 +460,7 @@ export type AuthOtpTokenMinOrderByAggregateInput = {
   codeHash?: Prisma.SortOrder
   channel?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
+  targetIdentifier?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   consumedAt?: Prisma.SortOrder
   attempts?: Prisma.SortOrder
@@ -512,6 +534,7 @@ export type AuthOtpTokenCreateWithoutUserInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -523,6 +546,7 @@ export type AuthOtpTokenUncheckedCreateWithoutUserInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -564,6 +588,7 @@ export type AuthOtpTokenScalarWhereInput = {
   codeHash?: Prisma.StringFilter<"AuthOtpToken"> | string
   channel?: Prisma.EnumOtpChannelFilter<"AuthOtpToken"> | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFilter<"AuthOtpToken"> | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.StringNullableFilter<"AuthOtpToken"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"AuthOtpToken"> | Date | string
   consumedAt?: Prisma.DateTimeNullableFilter<"AuthOtpToken"> | Date | string | null
   attempts?: Prisma.IntFilter<"AuthOtpToken"> | number
@@ -575,6 +600,7 @@ export type AuthOtpTokenCreateManyUserInput = {
   codeHash: string
   channel: $Enums.OtpChannel
   purpose: $Enums.OtpPurpose
+  targetIdentifier?: string | null
   expiresAt: Date | string
   consumedAt?: Date | string | null
   attempts?: number
@@ -586,6 +612,7 @@ export type AuthOtpTokenUpdateWithoutUserInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -597,6 +624,7 @@ export type AuthOtpTokenUncheckedUpdateWithoutUserInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -608,6 +636,7 @@ export type AuthOtpTokenUncheckedUpdateManyWithoutUserInput = {
   codeHash?: Prisma.StringFieldUpdateOperationsInput | string
   channel?: Prisma.EnumOtpChannelFieldUpdateOperationsInput | $Enums.OtpChannel
   purpose?: Prisma.EnumOtpPurposeFieldUpdateOperationsInput | $Enums.OtpPurpose
+  targetIdentifier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
@@ -622,6 +651,7 @@ export type AuthOtpTokenSelect<ExtArgs extends runtime.Types.Extensions.Internal
   codeHash?: boolean
   channel?: boolean
   purpose?: boolean
+  targetIdentifier?: boolean
   expiresAt?: boolean
   consumedAt?: boolean
   attempts?: boolean
@@ -635,6 +665,7 @@ export type AuthOtpTokenSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   codeHash?: boolean
   channel?: boolean
   purpose?: boolean
+  targetIdentifier?: boolean
   expiresAt?: boolean
   consumedAt?: boolean
   attempts?: boolean
@@ -648,6 +679,7 @@ export type AuthOtpTokenSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   codeHash?: boolean
   channel?: boolean
   purpose?: boolean
+  targetIdentifier?: boolean
   expiresAt?: boolean
   consumedAt?: boolean
   attempts?: boolean
@@ -661,13 +693,14 @@ export type AuthOtpTokenSelectScalar = {
   codeHash?: boolean
   channel?: boolean
   purpose?: boolean
+  targetIdentifier?: boolean
   expiresAt?: boolean
   consumedAt?: boolean
   attempts?: boolean
   createdAt?: boolean
 }
 
-export type AuthOtpTokenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "codeHash" | "channel" | "purpose" | "expiresAt" | "consumedAt" | "attempts" | "createdAt", ExtArgs["result"]["authOtpToken"]>
+export type AuthOtpTokenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "codeHash" | "channel" | "purpose" | "targetIdentifier" | "expiresAt" | "consumedAt" | "attempts" | "createdAt", ExtArgs["result"]["authOtpToken"]>
 export type AuthOtpTokenInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.AuthUserDefaultArgs<ExtArgs>
 }
@@ -689,6 +722,7 @@ export type $AuthOtpTokenPayload<ExtArgs extends runtime.Types.Extensions.Intern
     codeHash: string
     channel: $Enums.OtpChannel
     purpose: $Enums.OtpPurpose
+    targetIdentifier: string | null
     expiresAt: Date
     consumedAt: Date | null
     attempts: number
@@ -1122,6 +1156,7 @@ export interface AuthOtpTokenFieldRefs {
   readonly codeHash: Prisma.FieldRef<"AuthOtpToken", 'String'>
   readonly channel: Prisma.FieldRef<"AuthOtpToken", 'OtpChannel'>
   readonly purpose: Prisma.FieldRef<"AuthOtpToken", 'OtpPurpose'>
+  readonly targetIdentifier: Prisma.FieldRef<"AuthOtpToken", 'String'>
   readonly expiresAt: Prisma.FieldRef<"AuthOtpToken", 'DateTime'>
   readonly consumedAt: Prisma.FieldRef<"AuthOtpToken", 'DateTime'>
   readonly attempts: Prisma.FieldRef<"AuthOtpToken", 'Int'>
