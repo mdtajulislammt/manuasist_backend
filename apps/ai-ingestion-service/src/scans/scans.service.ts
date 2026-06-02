@@ -11,13 +11,22 @@ import { ClientProxy } from '@nestjs/microservices';
 import { EVENT_PATTERNS } from '@contracts/events';
 import type { ScanSubmittedV1Payload } from '@contracts/ingestion-payloads';
 import { RMQ_EVENT_CLIENT } from '@messaging/tokens';
-import { MenuScanStatus } from '../../generated/prisma/enums';
+import { DishCategory, MenuScanStatus } from '../../generated/prisma/enums';
 import { AdminFileClientService } from '../clients/admin-file-client.service';
 import { PrismaService } from '../prisma.service';
 import { ScanProcessorService } from './scan-processor.service';
 import { firstValueFrom } from 'rxjs';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: '2-digit',
+  day: '2-digit',
+  year: 'numeric',
+});
+const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 type MulterFile = {
   buffer: Buffer;
@@ -144,19 +153,137 @@ export class ScansService {
   }
 
   async listScansForUser(userId: string) {
-    const rows = await this.prisma.menuScan.findMany({
-      where: { userId },
-      orderBy: { scanTime: 'desc' },
-      include: {
-        dishes:
-        {
-          omit: {
-            embedding: true,
+    try {
+      const rows = await this.prisma.menuScan.findMany({
+        where: { userId },
+        orderBy: { scanTime: 'desc' },
+        take: 100,
+        include: {
+          dishes: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              naiScore: true,
+              dietScore: true,
+              calories: true,
+            },
           },
         },
-      },
-    });
-    return { success: true, message: 'Scans listed', data: rows };
+      });
+      const items = rows.map((scan) => {
+        const counts = this.countDishCategories(scan.dishes);
+        const scannedAt = scan.scanTime;
+        return {
+          id: scan.id,
+          scanId: scan.id,
+          title: this.buildHistoryTitle(scan),
+          subtitle: `Scanned on: ${this.formatScannedAt(scannedAt)}`,
+          imageUrl: scan.imageUrl,
+          thumbnailUrl: scan.imageUrl,
+          status: scan.status,
+          scannedAt,
+          dateGroupKey: this.dateGroupKey(scannedAt),
+          dateGroupLabel: this.dateGroupLabel(scannedAt),
+          dishCount: scan.dishes.length,
+          counts,
+          naiScore: scan.naiScore,
+          naiImpactPoints: this.naiImpactPoints(scan.naiScore),
+          summary: scan.summary,
+          topDishes: this.topDishNames(scan.dishes),
+        };
+      });
+      return {
+        success: true,
+        message: 'Menu scan history listed successfully.',
+        data: {
+          items,
+          total: items.length,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to list menu scans for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new InternalServerErrorException('Failed to list menu scans');
+    }
+  }
+
+  private countDishCategories(
+    dishes: Array<{ category: DishCategory }>,
+  ): { recommended: number; caution: number; avoid: number } {
+    return {
+      recommended: dishes.filter(
+        (dish) => dish.category === DishCategory.RECOMMENDED,
+      ).length,
+      caution: dishes.filter((dish) => dish.category === DishCategory.CAUTION)
+        .length,
+      avoid: dishes.filter((dish) => dish.category === DishCategory.AVOID)
+        .length,
+    };
+  }
+
+  private buildHistoryTitle(scan: {
+    menuText: string | null;
+    rawOcrText: string | null;
+    summary: string | null;
+  }): string {
+    const firstLine = (scan.menuText ?? scan.rawOcrText ?? '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(Boolean);
+    if (firstLine) {
+      return this.compactTitle(firstLine);
+    }
+    return scan.summary ? 'Analyzed Menu' : 'Menu Scan';
+  }
+
+  private compactTitle(value: string): string {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized.length > 48
+      ? `${normalized.slice(0, 45).trim()}...`
+      : normalized;
+  }
+
+  private formatScannedAt(date: Date): string {
+    return `${DATE_FORMATTER.format(date)}, ${TIME_FORMATTER.format(date)}`;
+  }
+
+  private dateGroupKey(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private dateGroupLabel(date: Date): string {
+    return this.isToday(date) ? 'Today' : DATE_FORMATTER.format(date);
+  }
+
+  private isToday(date: Date): boolean {
+    const now = new Date();
+    return (
+      now.getFullYear() === date.getFullYear() &&
+      now.getMonth() === date.getMonth() &&
+      now.getDate() === date.getDate()
+    );
+  }
+
+  private naiImpactPoints(naiScore: number | null): number | null {
+    return naiScore === null ? null : Math.max(0, Math.round(naiScore / 10));
+  }
+
+  private topDishNames(
+    dishes: Array<{
+      name: string;
+      naiScore: number | null;
+      dietScore: number;
+    }>,
+  ): string[] {
+    return [...dishes]
+      .sort((a, b) => (b.naiScore ?? b.dietScore) - (a.naiScore ?? a.dietScore))
+      .slice(0, 3)
+      .map((dish) => dish.name);
   }
 
   async getScanForUser(userId: string, scanId: string) {
