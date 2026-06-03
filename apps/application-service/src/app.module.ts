@@ -9,6 +9,8 @@ import { ApplicationOnboardingModule } from './onboarding/application-onboarding
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma.module';
 import { InternalModule } from './internal/internal.module';
+import { MembershipModule } from './membership/membership.module';
+import { ReferralsModule } from './referrals/referrals.module';
 import { UsersMeModule } from './users-me/users-me.module';
 
 const envFilePaths = [
@@ -54,6 +56,8 @@ const envFilePaths = [
       inject: [ConfigService],
     }),
     UsersMeModule,
+    MembershipModule,
+    ReferralsModule,
     ApplicationOnboardingModule,
     InternalModule,
   ],
