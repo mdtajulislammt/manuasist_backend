@@ -37,3 +37,18 @@ export type OnboardingFlow = Prisma.OnboardingFlowModel
  * 
  */
 export type OnboardingStep = Prisma.OnboardingStepModel
+/**
+ * Model SubscriptionPlan
+ * 
+ */
+export type SubscriptionPlan = Prisma.SubscriptionPlanModel
+/**
+ * Model SubscriptionPrice
+ * 
+ */
+export type SubscriptionPrice = Prisma.SubscriptionPriceModel
+/**
+ * Model RevenueCatSyncLog
+ * 
+ */
+export type RevenueCatSyncLog = Prisma.RevenueCatSyncLogModel

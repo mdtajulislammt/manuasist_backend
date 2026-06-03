@@ -25,6 +25,30 @@ enum StoredFileNamespace {
   GENERIC
 }
 
+enum SubscriptionPlanStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum SubscriptionPriceStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubscriptionBillingInterval {
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum RevenueCatSyncStatus {
+  SUCCESS
+  FAILED
+  NEEDS_STORE_SETUP
+  SKIPPED
+}
+
 model PlatformStorageSettings {
   id             String           @id @default("default")
   activeProvider StorageProvider  @default(LOCAL) @map("active_provider")
@@ -80,4 +104,68 @@ model OnboardingStep {
 
   @@unique([flowId, orderIndex])
   @@map("admin_onboarding_steps")
+}
+
+model SubscriptionPlan {
+  id          String                 @id @default(uuid()) @db.Uuid
+  planKey     String                 @unique @map("plan_key")
+  displayName String                 @map("display_name")
+  description String?
+  features    Json?
+  status      SubscriptionPlanStatus @default(ACTIVE)
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  prices SubscriptionPrice[]
+
+  @@index([status])
+  @@map("admin_subscription_plans")
+}
+
+model SubscriptionPrice {
+  id                      String                      @id @default(uuid()) @db.Uuid
+  planId                  String                      @map("plan_id") @db.Uuid
+  version                 Int
+  amountMinor             Int                         @map("amount_minor")
+  currency                String
+  priceLabel              String                      @map("price_label")
+  billingPeriodLabel      String                      @map("billing_period_label")
+  interval                SubscriptionBillingInterval
+  trialDays               Int?                        @map("trial_days")
+  revenueCatEntitlementId String                      @map("revenuecat_entitlement_id")
+  revenueCatOfferingId    String?                     @map("revenuecat_offering_id")
+  revenueCatPackageId     String?                     @map("revenuecat_package_id")
+  revenueCatProductIds    Json?                       @map("revenuecat_product_ids")
+  effectiveFrom           DateTime?                   @map("effective_from")
+  effectiveUntil          DateTime?                   @map("effective_until")
+  status                  SubscriptionPriceStatus     @default(DRAFT)
+  publishedAt             DateTime?                   @map("published_at")
+  archivedAt              DateTime?                   @map("archived_at")
+  createdAt               DateTime                    @default(now()) @map("created_at")
+  updatedAt               DateTime                    @updatedAt @map("updated_at")
+
+  plan     SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  syncLogs RevenueCatSyncLog[]
+
+  @@unique([planId, version])
+  @@index([status, effectiveFrom])
+  @@index([revenueCatEntitlementId])
+  @@map("admin_subscription_prices")
+}
+
+model RevenueCatSyncLog {
+  id              String               @id @default(uuid()) @db.Uuid
+  priceId         String               @map("price_id") @db.Uuid
+  operation       String
+  status          RevenueCatSyncStatus
+  requestPayload  Json?                @map("request_payload")
+  responsePayload Json?                @map("response_payload")
+  message         String?
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  price SubscriptionPrice @relation(fields: [priceId], references: [id], onDelete: Cascade)
+
+  @@index([priceId, createdAt])
+  @@index([status])
+  @@map("admin_revenuecat_sync_logs")
 }

@@ -54,7 +54,10 @@ export const ModelName = {
   PlatformStorageSettings: 'PlatformStorageSettings',
   StoredFile: 'StoredFile',
   OnboardingFlow: 'OnboardingFlow',
-  OnboardingStep: 'OnboardingStep'
+  OnboardingStep: 'OnboardingStep',
+  SubscriptionPlan: 'SubscriptionPlan',
+  SubscriptionPrice: 'SubscriptionPrice',
+  RevenueCatSyncLog: 'RevenueCatSyncLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -124,6 +127,60 @@ export const OnboardingStepScalarFieldEnum = {
 } as const
 
 export type OnboardingStepScalarFieldEnum = (typeof OnboardingStepScalarFieldEnum)[keyof typeof OnboardingStepScalarFieldEnum]
+
+
+export const SubscriptionPlanScalarFieldEnum = {
+  id: 'id',
+  planKey: 'planKey',
+  displayName: 'displayName',
+  description: 'description',
+  features: 'features',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionPlanScalarFieldEnum = (typeof SubscriptionPlanScalarFieldEnum)[keyof typeof SubscriptionPlanScalarFieldEnum]
+
+
+export const SubscriptionPriceScalarFieldEnum = {
+  id: 'id',
+  planId: 'planId',
+  version: 'version',
+  amountMinor: 'amountMinor',
+  currency: 'currency',
+  priceLabel: 'priceLabel',
+  billingPeriodLabel: 'billingPeriodLabel',
+  interval: 'interval',
+  trialDays: 'trialDays',
+  revenueCatEntitlementId: 'revenueCatEntitlementId',
+  revenueCatOfferingId: 'revenueCatOfferingId',
+  revenueCatPackageId: 'revenueCatPackageId',
+  revenueCatProductIds: 'revenueCatProductIds',
+  effectiveFrom: 'effectiveFrom',
+  effectiveUntil: 'effectiveUntil',
+  status: 'status',
+  publishedAt: 'publishedAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionPriceScalarFieldEnum = (typeof SubscriptionPriceScalarFieldEnum)[keyof typeof SubscriptionPriceScalarFieldEnum]
+
+
+export const RevenueCatSyncLogScalarFieldEnum = {
+  id: 'id',
+  priceId: 'priceId',
+  operation: 'operation',
+  status: 'status',
+  requestPayload: 'requestPayload',
+  responsePayload: 'responsePayload',
+  message: 'message',
+  createdAt: 'createdAt'
+} as const
+
+export type RevenueCatSyncLogScalarFieldEnum = (typeof RevenueCatSyncLogScalarFieldEnum)[keyof typeof RevenueCatSyncLogScalarFieldEnum]
 
 
 export const SortOrder = {

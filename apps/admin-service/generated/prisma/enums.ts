@@ -34,3 +34,39 @@ export const StoredFileNamespace = {
 } as const
 
 export type StoredFileNamespace = (typeof StoredFileNamespace)[keyof typeof StoredFileNamespace]
+
+
+export const SubscriptionPlanStatus = {
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type SubscriptionPlanStatus = (typeof SubscriptionPlanStatus)[keyof typeof SubscriptionPlanStatus]
+
+
+export const SubscriptionPriceStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type SubscriptionPriceStatus = (typeof SubscriptionPriceStatus)[keyof typeof SubscriptionPriceStatus]
+
+
+export const SubscriptionBillingInterval = {
+  WEEK: 'WEEK',
+  MONTH: 'MONTH',
+  YEAR: 'YEAR'
+} as const
+
+export type SubscriptionBillingInterval = (typeof SubscriptionBillingInterval)[keyof typeof SubscriptionBillingInterval]
+
+
+export const RevenueCatSyncStatus = {
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  NEEDS_STORE_SETUP: 'NEEDS_STORE_SETUP',
+  SKIPPED: 'SKIPPED'
+} as const
+
+export type RevenueCatSyncStatus = (typeof RevenueCatSyncStatus)[keyof typeof RevenueCatSyncStatus]
