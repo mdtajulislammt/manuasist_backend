@@ -102,6 +102,8 @@ services:
       ADMIN_SERVICE_URL: http://admin-service:5003
       ADMIN_INTERNAL_API_KEY: dev-internal-onboarding-key
       APPLICATION_INTERNAL_API_KEY: dev-internal-application-key
+      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:5004
+      INGESTION_INTERNAL_API_KEY: dev-internal-ingestion-key
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AUTH_SERVICE_URL: http://auth-service:5001
       AUTH_INTERNAL_API_KEY: dev-internal-auth-key

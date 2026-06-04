@@ -32,6 +32,8 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
 const DEFAULT_SCAN_HISTORY_PAGE = 1;
 const DEFAULT_SCAN_HISTORY_LIMIT = 20;
 const MAX_SCAN_HISTORY_LIMIT = 50;
+const HOME_CHART_DAYS = 7;
+type HomeTrackingRange = 'daily' | 'weekly' | 'monthly';
 
 type MulterFile = {
   buffer: Buffer;
@@ -244,6 +246,218 @@ export class ScansService {
       );
       throw new InternalServerErrorException('Failed to list menu scans');
     }
+  }
+
+  async getHomeSummaryForUser(userId: string, requestedRange?: string) {
+    try {
+      const trackingRange = this.homeTrackingRange(requestedRange);
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      const tomorrowStart = new Date(todayStart);
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+      const chartStart = this.homeChartStart(now, trackingRange);
+
+      const [latestCompleted, previousCompleted, todayCompleted, chartScans] =
+        await Promise.all([
+          this.prisma.menuScan.findFirst({
+            where: { userId, status: MenuScanStatus.COMPLETED },
+            orderBy: { scanTime: 'desc' },
+            include: { dishes: true },
+          }),
+          this.prisma.menuScan.findMany({
+            where: { userId, status: MenuScanStatus.COMPLETED },
+            orderBy: { scanTime: 'desc' },
+            skip: 1,
+            take: 1,
+          }),
+          this.prisma.menuScan.findFirst({
+            where: {
+              userId,
+              status: MenuScanStatus.COMPLETED,
+              scanTime: { gte: todayStart, lt: tomorrowStart },
+            },
+            orderBy: { scanTime: 'desc' },
+            include: { dishes: true },
+          }),
+          this.prisma.menuScan.findMany({
+            where: {
+              userId,
+              status: MenuScanStatus.COMPLETED,
+              scanTime: { gte: chartStart },
+            },
+            orderBy: { scanTime: 'asc' },
+            include: { dishes: true },
+          }),
+        ]);
+
+      const chartPoints = this.buildHomeChartPoints(
+        chartStart,
+        now,
+        trackingRange,
+        chartScans,
+      );
+      const referenceScan = todayCompleted ?? latestCompleted;
+      const latestScore = referenceScan?.naiScore ?? null;
+      const previousScore = previousCompleted[0]?.naiScore ?? null;
+
+      return {
+        success: true,
+        message: 'Home scan summary retrieved successfully.',
+        data: {
+          trackingRange,
+          hasCompletedScan: latestCompleted !== null,
+          latestScanId: referenceScan?.id ?? null,
+          latestScore,
+          previousScore,
+          scoreChangePercent: this.scoreChangePercent(latestScore, previousScore),
+          todayCalories: todayCompleted
+            ? this.totalCalories(todayCompleted.dishes)
+            : 0,
+          latestCalories: referenceScan
+            ? this.totalCalories(referenceScan.dishes)
+            : 0,
+          latestScannedAt: referenceScan?.scanTime ?? null,
+          chartPoints,
+          warning: this.homeWarning(chartScans),
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to get home summary for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new InternalServerErrorException('Failed to get home summary');
+    }
+  }
+
+  private buildHomeChartPoints(
+    startDate: Date,
+    now: Date,
+    trackingRange: HomeTrackingRange,
+    scans: Array<{
+      scanTime: Date;
+      naiScore: number | null;
+      dishes: Array<{ explanation: unknown; naiFactors: unknown }>;
+    }>,
+  ) {
+    const buckets = this.homeChartBuckets(startDate, now, trackingRange);
+    return buckets.map((bucket) => {
+      const bucketScans = scans.filter(
+        (scan) => scan.scanTime >= bucket.start && scan.scanTime < bucket.end,
+      );
+      const scores = bucketScans
+        .map((scan) => scan.naiScore)
+        .filter((score): score is number => score !== null);
+      const score =
+        scores.length > 0
+          ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
+          : null;
+      return {
+        label: bucket.label,
+        date: bucket.key,
+        score,
+        hasScan: scores.length > 0,
+      };
+    });
+  }
+
+  private homeTrackingRange(value?: string): HomeTrackingRange {
+    return value === 'daily' || value === 'monthly' || value === 'weekly'
+      ? value
+      : 'weekly';
+  }
+
+  private homeChartStart(now: Date, range: HomeTrackingRange): Date {
+    const start = new Date(now);
+    if (range === 'daily') {
+      start.setHours(0, 0, 0, 0);
+      return start;
+    }
+    start.setHours(0, 0, 0, 0);
+    if (range === 'monthly') {
+      start.setDate(start.getDate() - 34);
+      return start;
+    }
+    start.setDate(start.getDate() - (HOME_CHART_DAYS - 1));
+    return start;
+  }
+
+  private homeChartBuckets(
+    startDate: Date,
+    now: Date,
+    range: HomeTrackingRange,
+  ): Array<{ label: string; key: string; start: Date; end: Date }> {
+    if (range === 'daily') {
+      return Array.from({ length: 6 }, (_, index) => {
+        const start = new Date(startDate);
+        start.setHours(index * 4, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(start.getHours() + 4);
+        return {
+          label: start.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+          }),
+          key: start.toISOString(),
+          start,
+          end: index === 5 ? new Date(now.getTime() + 1) : end,
+        };
+      });
+    }
+
+    if (range === 'monthly') {
+      return Array.from({ length: 6 }, (_, index) => {
+        const start = new Date(startDate);
+        start.setDate(startDate.getDate() + index * 7);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        return {
+          label: `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          key: start.toISOString().slice(0, 10),
+          start,
+          end: index === 5 ? new Date(now.getTime() + 1) : end,
+        };
+      });
+    }
+
+    return Array.from({ length: HOME_CHART_DAYS }, (_, index) => {
+      const start = new Date(startDate);
+      start.setDate(startDate.getDate() + index);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      return {
+        label: start.toLocaleDateString('en-US', { day: '2-digit' }),
+        key: this.dateGroupKey(start),
+        start,
+        end: index === HOME_CHART_DAYS - 1 ? new Date(now.getTime() + 1) : end,
+      };
+    });
+  }
+
+  private scoreChangePercent(
+    latestScore: number | null,
+    previousScore: number | null,
+  ): number | null {
+    if (latestScore === null || previousScore === null || previousScore === 0) {
+      return null;
+    }
+    return Math.round(((latestScore - previousScore) / previousScore) * 100);
+  }
+
+  private totalCalories(dishes: Array<{ calories: number }>): number {
+    return dishes.reduce((sum, dish) => sum + dish.calories, 0);
+  }
+
+  private homeWarning(
+    scans: Array<{ dishes: Array<{ explanation: unknown; naiFactors: unknown }> }>,
+  ): string | null {
+    const serialized = JSON.stringify(scans).toLowerCase();
+    if (serialized.includes('sodium') || serialized.includes('salt')) {
+      return 'Sodium intake trending high this week';
+    }
+    return null;
   }
 
   private positiveInt(value: number | undefined, fallback: number) {
