@@ -70,3 +70,12 @@ export const RevenueCatSyncStatus = {
 } as const
 
 export type RevenueCatSyncStatus = (typeof RevenueCatSyncStatus)[keyof typeof RevenueCatSyncStatus]
+
+
+export const ReferralOfferStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type ReferralOfferStatus = (typeof ReferralOfferStatus)[keyof typeof ReferralOfferStatus]

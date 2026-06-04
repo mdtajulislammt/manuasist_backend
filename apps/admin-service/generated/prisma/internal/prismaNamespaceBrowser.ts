@@ -57,7 +57,9 @@ export const ModelName = {
   OnboardingStep: 'OnboardingStep',
   SubscriptionPlan: 'SubscriptionPlan',
   SubscriptionPrice: 'SubscriptionPrice',
-  RevenueCatSyncLog: 'RevenueCatSyncLog'
+  RevenueCatSyncLog: 'RevenueCatSyncLog',
+  ReferralOffer: 'ReferralOffer',
+  ReferralRewardTier: 'ReferralRewardTier'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -181,6 +183,36 @@ export const RevenueCatSyncLogScalarFieldEnum = {
 } as const
 
 export type RevenueCatSyncLogScalarFieldEnum = (typeof RevenueCatSyncLogScalarFieldEnum)[keyof typeof RevenueCatSyncLogScalarFieldEnum]
+
+
+export const ReferralOfferScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  status: 'status',
+  isActive: 'isActive',
+  shareBaseUrl: 'shareBaseUrl',
+  publishedAt: 'publishedAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ReferralOfferScalarFieldEnum = (typeof ReferralOfferScalarFieldEnum)[keyof typeof ReferralOfferScalarFieldEnum]
+
+
+export const ReferralRewardTierScalarFieldEnum = {
+  id: 'id',
+  offerId: 'offerId',
+  friendsRequired: 'friendsRequired',
+  rewardLabel: 'rewardLabel',
+  scanCredits: 'scanCredits',
+  premiumDays: 'premiumDays',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ReferralRewardTierScalarFieldEnum = (typeof ReferralRewardTierScalarFieldEnum)[keyof typeof ReferralRewardTierScalarFieldEnum]
 
 
 export const SortOrder = {

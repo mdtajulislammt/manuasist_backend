@@ -49,6 +49,12 @@ enum RevenueCatSyncStatus {
   SKIPPED
 }
 
+enum ReferralOfferStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model PlatformStorageSettings {
   id             String           @id @default("default")
   activeProvider StorageProvider  @default(LOCAL) @map("active_provider")
@@ -168,4 +174,40 @@ model RevenueCatSyncLog {
   @@index([priceId, createdAt])
   @@index([status])
   @@map("admin_revenuecat_sync_logs")
+}
+
+model ReferralOffer {
+  id          String              @id @default(uuid()) @db.Uuid
+  name        String
+  status      ReferralOfferStatus @default(DRAFT)
+  isActive    Boolean             @default(false) @map("is_active")
+  shareBaseUrl String?            @map("share_base_url")
+  publishedAt DateTime?           @map("published_at")
+  archivedAt  DateTime?           @map("archived_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  tiers ReferralRewardTier[]
+
+  @@index([status, isActive])
+  @@map("admin_referral_offers")
+}
+
+model ReferralRewardTier {
+  id              String   @id @default(uuid()) @db.Uuid
+  offerId         String   @map("offer_id") @db.Uuid
+  friendsRequired Int      @map("friends_required")
+  rewardLabel     String   @map("reward_label")
+  scanCredits     Int      @default(0) @map("scan_credits")
+  premiumDays     Int      @default(0) @map("premium_days")
+  sortOrder       Int      @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  offer ReferralOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, friendsRequired])
+  @@unique([offerId, sortOrder])
+  @@index([offerId])
+  @@map("admin_referral_reward_tiers")
 }

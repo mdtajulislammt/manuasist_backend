@@ -1,4 +1,9 @@
-import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadGatewayException,
+  HttpException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { UserPreferenceHints } from '../../../../libs/ai-pipeline/src';
 
@@ -42,15 +47,32 @@ export class ApplicationClientService {
     }
   }
 
+  async assertCanCreateScan(userId: string) {
+    return this.getInternal(`/internal/users/${userId}/scan-access`);
+  }
+
+  async consumeScanCredit(userId: string) {
+    return this.postInternal(`/internal/users/${userId}/scan-credit/consume`);
+  }
+
+  async assertPremiumAccess(userId: string) {
+    return this.getInternal(`/internal/users/${userId}/premium-access`);
+  }
+
   private async fetchDietaryContext(userId: string): Promise<DietaryContextResponse> {
+    return this.getInternal<DietaryContextResponse>(
+      `/internal/users/${userId}/dietary-context`,
+    );
+  }
+
+  private async getInternal<T = unknown>(path: string): Promise<T> {
     const base = this.config
       .getOrThrow<string>('APPLICATION_SERVICE_URL')
       .replace(/\/$/, '');
     const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
-    const url = `${base}/internal/users/${userId}/dietary-context`;
     let res: Response;
     try {
-      res = await fetch(url, {
+      res = await fetch(`${base}${path}`, {
         headers: { 'x-internal-api-key': key },
       });
     } catch (e) {
@@ -60,10 +82,59 @@ export class ApplicationClientService {
     }
     if (!res.ok) {
       const text = await res.text();
+      if (res.status >= 400 && res.status < 500) {
+        throw new HttpException(
+          this.parseErrorPayload(text, res.status),
+          res.status,
+        );
+      }
       throw new BadGatewayException(
         `application-service returned ${res.status}: ${text.slice(0, 500)}`,
       );
     }
-    return res.json() as Promise<DietaryContextResponse>;
+    return res.json() as Promise<T>;
+  }
+
+  private async postInternal<T = unknown>(path: string): Promise<T> {
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    let res: Response;
+    try {
+      res = await fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { 'x-internal-api-key': key },
+      });
+    } catch (e) {
+      throw new BadGatewayException(
+        `Could not reach application-service: ${String(e)}`,
+      );
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      if (res.status >= 400 && res.status < 500) {
+        throw new HttpException(
+          this.parseErrorPayload(text, res.status),
+          res.status,
+        );
+      }
+      throw new BadGatewayException(
+        `application-service returned ${res.status}: ${text.slice(0, 500)}`,
+      );
+    }
+    return res.json() as Promise<T>;
+  }
+
+  private parseErrorPayload(text: string, status: number) {
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      return {
+        success: false,
+        message: text || 'application-service request failed',
+        status,
+      };
+    }
   }
 }

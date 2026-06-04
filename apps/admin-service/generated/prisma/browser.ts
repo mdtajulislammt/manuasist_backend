@@ -52,3 +52,13 @@ export type SubscriptionPrice = Prisma.SubscriptionPriceModel
  * 
  */
 export type RevenueCatSyncLog = Prisma.RevenueCatSyncLogModel
+/**
+ * Model ReferralOffer
+ * 
+ */
+export type ReferralOffer = Prisma.ReferralOfferModel
+/**
+ * Model ReferralRewardTier
+ * 
+ */
+export type ReferralRewardTier = Prisma.ReferralRewardTierModel
