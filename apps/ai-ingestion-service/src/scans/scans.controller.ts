@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UnauthorizedException,
   UploadedFile,
   UseInterceptors,
@@ -23,6 +24,7 @@ import {
 import { memoryStorage } from 'multer';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
 import { CreateTextScanDto } from './dto/create-text-scan.dto';
+import { ListScansQueryDto } from './dto/list-scans-query.dto';
 import { ScansService } from './scans.service';
 
 type MulterFile = {
@@ -89,8 +91,11 @@ export class ScansController {
 
   @Get()
   @ApiOperation({ summary: 'List my menu scans' })
-  list(@CurrentUserId() userId: string | undefined) {
-    return this.scans.listScansForUser(this.requireUserId(userId));
+  list(
+    @CurrentUserId() userId: string | undefined,
+    @Query() query: ListScansQueryDto,
+  ) {
+    return this.scans.listScansForUser(this.requireUserId(userId), query);
   }
 
   @Get(':id')

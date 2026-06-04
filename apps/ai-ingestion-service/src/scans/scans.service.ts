@@ -15,6 +15,7 @@ import { DishCategory, MenuScanStatus } from '../../generated/prisma/enums';
 import { AdminFileClientService } from '../clients/admin-file-client.service';
 import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
+import { ListScansQueryDto } from './dto/list-scans-query.dto';
 import { ScanProcessorService } from './scan-processor.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -28,6 +29,9 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 });
+const DEFAULT_SCAN_HISTORY_PAGE = 1;
+const DEFAULT_SCAN_HISTORY_LIMIT = 20;
+const MAX_SCAN_HISTORY_LIMIT = 50;
 
 type MulterFile = {
   buffer: Buffer;
@@ -158,25 +162,42 @@ export class ScansService {
     }
   }
 
-  async listScansForUser(userId: string) {
+  async listScansForUser(
+    userId: string,
+    pagination: ListScansQueryDto = {},
+  ) {
     try {
-      const rows = await this.prisma.menuScan.findMany({
-        where: { userId },
-        orderBy: { scanTime: 'desc' },
-        take: 100,
-        include: {
-          dishes: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-              naiScore: true,
-              dietScore: true,
-              calories: true,
+      const page = this.positiveInt(
+        pagination.page,
+        DEFAULT_SCAN_HISTORY_PAGE,
+      );
+      const limit = Math.min(
+        this.positiveInt(pagination.limit, DEFAULT_SCAN_HISTORY_LIMIT),
+        MAX_SCAN_HISTORY_LIMIT,
+      );
+      const skip = (page - 1) * limit;
+
+      const [total, rows] = await this.prisma.$transaction([
+        this.prisma.menuScan.count({ where: { userId } }),
+        this.prisma.menuScan.findMany({
+          where: { userId },
+          orderBy: { scanTime: 'desc' },
+          skip,
+          take: limit,
+          include: {
+            dishes: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+                naiScore: true,
+                dietScore: true,
+                calories: true,
+              },
             },
           },
-        },
-      });
+        }),
+      ]);
       const items = rows.map((scan) => {
         const counts = this.countDishCategories(scan.dishes);
         const scannedAt = scan.scanTime;
@@ -204,7 +225,14 @@ export class ScansService {
         message: 'Menu scan history listed successfully.',
         data: {
           items,
-          total: items.length,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+            hasNextPage: skip + items.length < total,
+            hasPreviousPage: page > 1,
+          },
         },
       };
     } catch (error) {
@@ -216,6 +244,11 @@ export class ScansService {
       );
       throw new InternalServerErrorException('Failed to list menu scans');
     }
+  }
+
+  private positiveInt(value: number | undefined, fallback: number) {
+    const parsed = value ?? fallback;
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
   }
 
   private countDishCategories(
