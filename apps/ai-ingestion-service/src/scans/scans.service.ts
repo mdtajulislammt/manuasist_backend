@@ -13,6 +13,7 @@ import type { ScanSubmittedV1Payload } from '@contracts/ingestion-payloads';
 import { RMQ_EVENT_CLIENT } from '@messaging/tokens';
 import { DishCategory, MenuScanStatus } from '../../generated/prisma/enums';
 import { AdminFileClientService } from '../clients/admin-file-client.service';
+import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 import { ScanProcessorService } from './scan-processor.service';
 import { firstValueFrom } from 'rxjs';
@@ -40,6 +41,7 @@ export class ScansService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminFiles: AdminFileClientService,
+    private readonly applicationClient: ApplicationClientService,
     private readonly scanProcessor: ScanProcessorService,
     @Inject(RMQ_EVENT_CLIENT) private readonly rmq: ClientProxy,
   ) { }
@@ -47,6 +49,7 @@ export class ScansService {
   private readonly logger = new Logger(ScansService.name);
 
   async createScanFromImage(userId: string, file: MulterFile) {
+    await this.applicationClient.assertCanCreateScan(userId);
     const mime = (file.mimetype || '').toLowerCase();
     if (!ALLOWED_MIME.has(mime)) {
       throw new BadRequestException(
@@ -77,6 +80,7 @@ export class ScansService {
         contentType: stored.contentType,
         imageUrl,
       });
+      await this.applicationClient.consumeScanCredit(userId);
       return {
         success: true,
         message: 'Scan submitted for processing',
@@ -94,6 +98,7 @@ export class ScansService {
   }
 
   async createScanFromText(userId: string, menuText: string) {
+    await this.applicationClient.assertCanCreateScan(userId);
     const text = menuText.trim();
     if (!text) {
       throw new BadRequestException('menuText must not be empty');
@@ -111,6 +116,7 @@ export class ScansService {
         userId,
         menuText: text,
       });
+      await this.applicationClient.consumeScanCredit(userId);
       return {
         success: true,
         message: 'Text scan submitted for processing',

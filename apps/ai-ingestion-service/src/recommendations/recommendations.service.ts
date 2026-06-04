@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MenuScanStatus } from '../../generated/prisma/enums';
+import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class RecommendationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly applicationClient: ApplicationClientService,
+  ) {}
 
   async getScanRecommendations(userId: string, scanId: string) {
+    await this.applicationClient.assertPremiumAccess(userId);
     const scan = await this.prisma.menuScan.findFirst({
       where: { id: scanId, userId },
       include: { dishes: true },
@@ -78,6 +83,7 @@ export class RecommendationsService {
   }
 
   async getMyRecommendations(userId: string) {
+    await this.applicationClient.assertPremiumAccess(userId);
     const recent = await this.prisma.menuScan.findMany({
       where: { userId, status: MenuScanStatus.COMPLETED },
       orderBy: { scanTime: 'desc' },
