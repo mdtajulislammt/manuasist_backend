@@ -271,6 +271,13 @@ export class InternalAuthController {
     return this.auth.getUserContactById(userId);
   }
 
+  @Get('users/:userId/referral-summary')
+  @ApiOperation({ summary: 'Get referral summary by user id (internal)' })
+  @ApiOkResponse({ description: 'Referral summary returned.' })
+  getReferralSummary(@Param('userId') userId: string) {
+    return this.auth.getReferralSummaryById(userId);
+  }
+
   @Post('users/:userId/contact-change/request')
   @HttpCode(200)
   @ApiOperation({ summary: 'Request OTP to change a user email or phone (internal)' })

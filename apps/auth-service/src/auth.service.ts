@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -248,7 +249,7 @@ export class AuthService implements OnModuleInit {
 
   private generateReferralCodeCandidate(): string {
     // 12 hex chars, safe for URLs / JSON (easy to share)
-    return randomBytes(6).toString('hex');
+    return `MENU-${randomBytes(4).toString('hex').toUpperCase()}`;
   }
 
   private async generateUniqueReferralCode(): Promise<string> {
@@ -1278,6 +1279,49 @@ export class AuthService implements OnModuleInit {
       emailVerified: !!user.emailVerifiedAt,
       phoneVerified: !!user.phoneVerifiedAt,
     };
+  }
+
+  async getReferralSummaryById(userId: string) {
+    try {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          referralCode: true,
+          referrals: {
+            select: {
+              id: true,
+              createdAt: true,
+              emailVerifiedAt: true,
+              phoneVerifiedAt: true,
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      const verifiedReferrals = user.referrals.filter(
+        (referral) => referral.emailVerifiedAt || referral.phoneVerifiedAt,
+      );
+      return {
+        success: true,
+        message: 'Referral summary returned.',
+        data: {
+          userId: user.id,
+          referralCode: user.referralCode,
+          friendsJoined: user.referrals.length,
+          verifiedFriendsJoined: verifiedReferrals.length,
+          referredUserIds: user.referrals.map((referral) => referral.id),
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get referral summary');
+    }
   }
 
   // --- OIDC user sync (from UserSyncService) ---
