@@ -27,3 +27,13 @@ export const SpiceLevel = {
 } as const
 
 export type SpiceLevel = (typeof SpiceLevel)[keyof typeof SpiceLevel]
+
+
+export const EntitlementStatus = {
+  TRIALING: 'TRIALING',
+  ACTIVE: 'ACTIVE',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type EntitlementStatus = (typeof EntitlementStatus)[keyof typeof EntitlementStatus]

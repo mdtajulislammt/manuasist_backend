@@ -328,6 +328,36 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
 }
 
+export type EnumEntitlementStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.EntitlementStatus | Prisma.EnumEntitlementStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel> | $Enums.EntitlementStatus
+}
+
+export type BoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type EnumEntitlementStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EntitlementStatus | Prisma.EnumEntitlementStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEntitlementStatusWithAggregatesFilter<$PrismaModel> | $Enums.EntitlementStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel>
+}
+
+export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -622,6 +652,36 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumEntitlementStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.EntitlementStatus | Prisma.EnumEntitlementStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel> | $Enums.EntitlementStatus
+}
+
+export type NestedBoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type NestedEnumEntitlementStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EntitlementStatus | Prisma.EnumEntitlementStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EntitlementStatus[] | Prisma.ListEnumEntitlementStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEntitlementStatusWithAggregatesFilter<$PrismaModel> | $Enums.EntitlementStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEntitlementStatusFilter<$PrismaModel>
+}
+
+export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 

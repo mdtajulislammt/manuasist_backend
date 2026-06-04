@@ -34,6 +34,14 @@ export type ContactChangeVerifyPayload = {
   identifier: string;
 };
 
+export type AuthReferralSummaryPayload = {
+  userId: string;
+  referralCode: string | null;
+  friendsJoined: number;
+  verifiedFriendsJoined: number;
+  referredUserIds: string[];
+};
+
 @Injectable()
 export class AuthInternalClientService {
   constructor(private readonly config: ConfigService) {}
@@ -67,6 +75,16 @@ export class AuthInternalClientService {
       );
     }
     return res.json() as Promise<AuthInternalContactPayload>;
+  }
+
+  async getReferralSummary(userId: string): Promise<AuthReferralSummaryPayload> {
+    const wrapped = await this.getInternal<{ data?: AuthReferralSummaryPayload }>(
+      `/internal/auth/users/${userId}/referral-summary`,
+    );
+    if (!wrapped.data) {
+      throw new BadGatewayException('auth-service referral summary missing data');
+    }
+    return wrapped.data;
   }
 
   async requestContactChange(
@@ -106,6 +124,36 @@ export class AuthInternalClientService {
           'x-internal-api-key': key,
         },
         body: JSON.stringify(body),
+      });
+    } catch (e) {
+      throw new BadGatewayException(
+        `Could not reach auth-service: ${String(e)}`,
+      );
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      if (res.status >= 400 && res.status < 500) {
+        throw new HttpException(
+          this.parseErrorPayload(text, res.status),
+          res.status,
+        );
+      }
+      throw new BadGatewayException(
+        `auth-service returned ${res.status}: ${text.slice(0, 500)}`,
+      );
+    }
+    return res.json() as Promise<T>;
+  }
+
+  private async getInternal<T>(path: string): Promise<T> {
+    const base = this.config
+      .getOrThrow<string>('AUTH_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('AUTH_INTERNAL_API_KEY');
+    let res: Response;
+    try {
+      res = await fetch(`${base}${path}`, {
+        headers: { 'x-internal-api-key': key },
       });
     } catch (e) {
       throw new BadGatewayException(

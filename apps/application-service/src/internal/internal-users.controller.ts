@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiHeader,
   ApiOkResponse,
@@ -24,5 +31,26 @@ export class InternalUsersController {
   @ApiOkResponse({ description: 'Dietary context returned.' })
   getDietaryContext(@Param('userId', ParseUUIDPipe) userId: string) {
     return this.users.getDietaryContext(userId);
+  }
+
+  @Get(':userId/scan-access')
+  @ApiOperation({ summary: 'Check whether a user can create a menu scan' })
+  @ApiOkResponse({ description: 'Scan access returned.' })
+  getScanAccess(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.users.assertCanCreateScan(userId);
+  }
+
+  @Post(':userId/scan-credit/consume')
+  @ApiOperation({ summary: 'Consume a free scan credit for non-premium users' })
+  @ApiOkResponse({ description: 'Credit consumed or skipped for premium user.' })
+  consumeScanCredit(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.users.consumeScanCredit(userId);
+  }
+
+  @Get(':userId/premium-access')
+  @ApiOperation({ summary: 'Check whether a user has premium access' })
+  @ApiOkResponse({ description: 'Premium access returned.' })
+  getPremiumAccess(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.users.assertPremiumAccess(userId);
   }
 }

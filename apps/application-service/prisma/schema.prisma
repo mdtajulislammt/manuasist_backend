@@ -21,6 +21,13 @@ enum SpiceLevel {
   EXTRA_HOT
 }
 
+enum EntitlementStatus {
+  TRIALING
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
+
 model UserProfile {
   id                    String    @id @default(uuid()) @db.Uuid
   userId                String    @unique @map("user_id") @db.Uuid
@@ -58,4 +65,56 @@ model UserOnboardingAnswer {
   @@unique([userId, stepKey])
   @@index([userId, answeredAt])
   @@map("application_user_onboarding_answers")
+}
+
+model UserEntitlement {
+  id                  String            @id @default(uuid()) @db.Uuid
+  userId              String            @map("user_id") @db.Uuid
+  revenueCatAppUserId String?           @map("revenuecat_app_user_id")
+  entitlementKey      String            @map("entitlement_key")
+  status              EntitlementStatus
+  productId           String?           @map("product_id")
+  periodType          String?           @map("period_type")
+  planKey             String?           @map("plan_key")
+  priceId             String?           @map("price_id") @db.Uuid
+  priceVersion        Int?              @map("price_version")
+  priceLabel          String?           @map("price_label")
+  billingPeriodLabel  String?           @map("billing_period_label")
+  currency            String?
+  amountMinor         Int?              @map("amount_minor")
+  expiresAt           DateTime?         @map("expires_at")
+  grandfatheredUntil  DateTime?         @map("grandfathered_until")
+  willRenew           Boolean           @default(false) @map("will_renew")
+  latestEventAt       DateTime?         @map("latest_event_at")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  @@unique([userId, entitlementKey])
+  @@index([revenueCatAppUserId])
+  @@index([status, expiresAt])
+  @@map("application_user_entitlements")
+}
+
+model RevenueCatWebhookEvent {
+  id         String   @id
+  eventType  String   @map("event_type")
+  userId     String?  @map("user_id") @db.Uuid
+  payload    Json
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  @@index([userId])
+  @@index([eventType])
+  @@map("application_revenuecat_webhook_events")
+}
+
+model UserUsageCredit {
+  userId                   String    @id @map("user_id") @db.Uuid
+  freeScanCredits          Int       @default(0) @map("free_scan_credits")
+  totalReferralScanCredits Int       @default(0) @map("total_referral_scan_credits")
+  referralFriendsRewarded  Int       @default(0) @map("referral_friends_rewarded")
+  premiumUntil             DateTime? @map("premium_until")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  @@map("application_user_usage_credits")
 }

@@ -11,4 +11,7 @@
 export type * from './models/UserProfile.js'
 export type * from './models/Preferences.js'
 export type * from './models/UserOnboardingAnswer.js'
+export type * from './models/UserEntitlement.js'
+export type * from './models/RevenueCatWebhookEvent.js'
+export type * from './models/UserUsageCredit.js'
 export type * from './commonInputTypes.js'

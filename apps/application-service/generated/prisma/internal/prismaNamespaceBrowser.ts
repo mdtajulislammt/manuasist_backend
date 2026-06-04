@@ -53,7 +53,10 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   UserProfile: 'UserProfile',
   Preferences: 'Preferences',
-  UserOnboardingAnswer: 'UserOnboardingAnswer'
+  UserOnboardingAnswer: 'UserOnboardingAnswer',
+  UserEntitlement: 'UserEntitlement',
+  RevenueCatWebhookEvent: 'RevenueCatWebhookEvent',
+  UserUsageCredit: 'UserUsageCredit'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -110,6 +113,56 @@ export const UserOnboardingAnswerScalarFieldEnum = {
 } as const
 
 export type UserOnboardingAnswerScalarFieldEnum = (typeof UserOnboardingAnswerScalarFieldEnum)[keyof typeof UserOnboardingAnswerScalarFieldEnum]
+
+
+export const UserEntitlementScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  revenueCatAppUserId: 'revenueCatAppUserId',
+  entitlementKey: 'entitlementKey',
+  status: 'status',
+  productId: 'productId',
+  periodType: 'periodType',
+  planKey: 'planKey',
+  priceId: 'priceId',
+  priceVersion: 'priceVersion',
+  priceLabel: 'priceLabel',
+  billingPeriodLabel: 'billingPeriodLabel',
+  currency: 'currency',
+  amountMinor: 'amountMinor',
+  expiresAt: 'expiresAt',
+  grandfatheredUntil: 'grandfatheredUntil',
+  willRenew: 'willRenew',
+  latestEventAt: 'latestEventAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserEntitlementScalarFieldEnum = (typeof UserEntitlementScalarFieldEnum)[keyof typeof UserEntitlementScalarFieldEnum]
+
+
+export const RevenueCatWebhookEventScalarFieldEnum = {
+  id: 'id',
+  eventType: 'eventType',
+  userId: 'userId',
+  payload: 'payload',
+  receivedAt: 'receivedAt'
+} as const
+
+export type RevenueCatWebhookEventScalarFieldEnum = (typeof RevenueCatWebhookEventScalarFieldEnum)[keyof typeof RevenueCatWebhookEventScalarFieldEnum]
+
+
+export const UserUsageCreditScalarFieldEnum = {
+  userId: 'userId',
+  freeScanCredits: 'freeScanCredits',
+  totalReferralScanCredits: 'totalReferralScanCredits',
+  referralFriendsRewarded: 'referralFriendsRewarded',
+  premiumUntil: 'premiumUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserUsageCreditScalarFieldEnum = (typeof UserUsageCreditScalarFieldEnum)[keyof typeof UserUsageCreditScalarFieldEnum]
 
 
 export const SortOrder = {

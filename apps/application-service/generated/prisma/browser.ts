@@ -32,3 +32,18 @@ export type Preferences = Prisma.PreferencesModel
  * 
  */
 export type UserOnboardingAnswer = Prisma.UserOnboardingAnswerModel
+/**
+ * Model UserEntitlement
+ * 
+ */
+export type UserEntitlement = Prisma.UserEntitlementModel
+/**
+ * Model RevenueCatWebhookEvent
+ * 
+ */
+export type RevenueCatWebhookEvent = Prisma.RevenueCatWebhookEventModel
+/**
+ * Model UserUsageCredit
+ * 
+ */
+export type UserUsageCredit = Prisma.UserUsageCreditModel

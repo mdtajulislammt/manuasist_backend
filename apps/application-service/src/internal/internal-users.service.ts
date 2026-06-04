@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
 
 export type DietaryContextPayload = {
@@ -19,7 +20,10 @@ export type DietaryContextPayload = {
 
 @Injectable()
 export class InternalUsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly membership: MembershipService,
+  ) {}
 
   async getDietaryContext(userId: string) {
     const [preferences, answers] = await Promise.all([
@@ -55,6 +59,18 @@ export class InternalUsersService {
       message: 'Dietary context retrieved',
       data,
     };
+  }
+
+  assertCanCreateScan(userId: string) {
+    return this.membership.assertCanCreateScan(userId);
+  }
+
+  consumeScanCredit(userId: string) {
+    return this.membership.consumeScanCredit(userId);
+  }
+
+  assertPremiumAccess(userId: string) {
+    return this.membership.assertPremiumAccess(userId);
   }
 
   private extractAllergies(
