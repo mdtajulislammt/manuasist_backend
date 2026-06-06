@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -13,6 +14,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
+import { GetScanRecommendationsQueryDto } from './dto/get-scan-recommendations-query.dto';
 import { RecommendationsService } from './recommendations.service';
 
 @Controller()
@@ -28,10 +30,12 @@ export class RecommendationsController {
   forScan(
     @CurrentUserId() userId: string | undefined,
     @Param('id', ParseUUIDPipe) scanId: string,
+    @Query() query: GetScanRecommendationsQueryDto,
   ) {
     return this.recommendations.getScanRecommendations(
       this.requireUserId(userId),
       scanId,
+      query,
     );
   }
 

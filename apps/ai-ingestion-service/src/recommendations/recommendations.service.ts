@@ -1,7 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { MenuScanStatus } from '../../generated/prisma/enums';
+import { DishCategory, MenuScanStatus } from '../../generated/prisma/enums';
 import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
+import {
+  GetScanRecommendationsQueryDto,
+  RecommendationCategoryFilter,
+  RecommendationSort,
+} from './dto/get-scan-recommendations-query.dto';
+
+type JsonRecord = Record<string, unknown>;
+type DishCardSource = {
+  id: string;
+  name: string;
+  calories: number;
+  dietScore: number;
+  naiScore: number | null;
+  category: DishCategory;
+  allergenFlags: unknown;
+  explanation: unknown;
+  macros: unknown;
+};
 
 @Injectable()
 export class RecommendationsService {
@@ -10,7 +28,11 @@ export class RecommendationsService {
     private readonly applicationClient: ApplicationClientService,
   ) {}
 
-  async getScanRecommendations(userId: string, scanId: string) {
+  async getScanRecommendations(
+    userId: string,
+    scanId: string,
+    query: GetScanRecommendationsQueryDto = {},
+  ) {
     await this.applicationClient.assertPremiumAccess(userId);
     const scan = await this.prisma.menuScan.findFirst({
       where: { id: scanId, userId },
@@ -28,43 +50,24 @@ export class RecommendationsService {
           status: scan.status,
           naiScore: scan.naiScore,
           summary: null,
-          recommendations: [],
-          cautions: [],
-          avoid: [],
+          items: [],
         },
       };
     }
 
-    const sorted = [...scan.dishes].sort(
-      (a, b) => (b.naiScore ?? b.dietScore) - (a.naiScore ?? a.dietScore),
-    );
-    const mapDish = (d: (typeof sorted)[0], rank: number) => ({
-      dishId: d.id,
-      rank,
-      name: d.name,
-      category: d.category,
-      naiScore: d.naiScore ?? d.dietScore,
-      dietScore: d.dietScore,
-      calories: d.calories,
-      reasons: (d.explanation as { reasons?: unknown[] } | null)?.reasons ?? [],
-    });
-
-    const recommendations = sorted
-      .filter((d) => d.category === 'RECOMMENDED')
-      .slice(0, 5)
-      .map((d, i) => mapDish(d, i + 1));
-    const cautions = sorted
-      .filter((d) => d.category === 'CAUTION')
-      .slice(0, 5)
-      .map((d, i) => mapDish(d, i + 1));
-    const avoid = sorted
-      .filter((d) => d.category === 'AVOID')
-      .slice(0, 5)
-      .map((d, i) => mapDish(d, i + 1));
+    const categoryCounts = this.countDishCategories(scan.dishes);
+    const items = this.sortDishes(
+      this.filterDishesByCategory(scan.dishes, query.category),
+      query.sort,
+    ).map((dish) => this.mapDishCard(dish));
 
     const summary =
       scan.summary ??
-      this.buildSummary(scan.naiScore, recommendations.length, avoid.length);
+      this.buildSummary(
+        scan.naiScore,
+        categoryCounts.recommended,
+        categoryCounts.avoid,
+      );
 
     return {
       success: true,
@@ -73,11 +76,8 @@ export class RecommendationsService {
         scanId,
         status: scan.status,
         naiScore: scan.naiScore,
-        naiBreakdown: scan.naiBreakdown,
         summary,
-        recommendations,
-        cautions,
-        avoid,
+        items,
       },
     };
   }
@@ -93,7 +93,7 @@ export class RecommendationsService {
 
     const topPicks = recent.flatMap((scan) =>
       scan.dishes
-        .filter((d) => d.category === 'RECOMMENDED')
+        .filter((d) => d.category === DishCategory.RECOMMENDED)
         .sort((a, b) => (b.naiScore ?? 0) - (a.naiScore ?? 0))
         .slice(0, 2)
         .map((d) => ({
@@ -121,6 +121,122 @@ export class RecommendationsService {
     };
   }
 
+  private filterDishesByCategory<T extends { category: DishCategory }>(
+    dishes: T[],
+    category?: RecommendationCategoryFilter,
+  ): T[] {
+    if (!category || category === RecommendationCategoryFilter.ALL) {
+      return dishes;
+    }
+    return dishes.filter((dish) => dish.category === (category as DishCategory));
+  }
+
+  private sortDishes<
+    T extends { calories: number; dietScore: number; naiScore: number | null },
+  >(dishes: T[], sort?: RecommendationSort): T[] {
+    const sorted = [...dishes];
+    switch (sort) {
+      case RecommendationSort.HEALTH_SCORE:
+        return sorted.sort((a, b) => b.dietScore - a.dietScore);
+      case RecommendationSort.CALORIES:
+        return sorted.sort((a, b) => a.calories - b.calories);
+      case RecommendationSort.BEST_MATCH:
+      default:
+        return sorted.sort(
+          (a, b) => (b.naiScore ?? b.dietScore) - (a.naiScore ?? a.dietScore),
+        );
+    }
+  }
+
+  private mapDishCard(dish: DishCardSource) {
+    const score = dish.naiScore ?? dish.dietScore;
+    return {
+      dishId: dish.id,
+      name: dish.name,
+      imageUrl: null,
+      category: dish.category,
+      naiScore: score,
+      scoreLabel: `${score}% match`,
+      caloriesLabel: `${dish.calories} kcal`,
+      tags: this.buildTags(dish),
+      description: this.buildDescription(dish),
+      isBookmarked: false,
+    };
+  }
+
+  private buildTags(dish: DishCardSource): string[] {
+    const tags: string[] = [];
+
+    if (dish.category === DishCategory.RECOMMENDED) {
+      this.pushUnique(tags, 'Best Match');
+    } else if (dish.category === DishCategory.CAUTION) {
+      this.pushUnique(tags, 'Review First');
+    } else if (dish.category === DishCategory.AVOID) {
+      this.pushUnique(tags, 'Avoid');
+    }
+
+    const macros = this.asRecord(dish.macros);
+    const proteinG = this.numberValue(macros?.proteinG);
+    const carbG = this.numberValue(macros?.carbG);
+    const fatG = this.numberValue(macros?.fatG);
+
+    if (proteinG !== null && proteinG >= 20) {
+      this.pushUnique(tags, 'High Protein');
+    } else if (proteinG !== null && proteinG >= 10) {
+      this.pushUnique(tags, 'Protein Source');
+    }
+    if (carbG !== null && carbG <= 20) {
+      this.pushUnique(tags, 'Low Carb');
+    }
+    if (fatG !== null && fatG <= 10) {
+      this.pushUnique(tags, 'Low Fat');
+    }
+    if (dish.calories <= 450) {
+      this.pushUnique(tags, 'Light Option');
+    }
+
+    const allergenFlags = this.asRecord(dish.allergenFlags);
+    const hasAllergenAlert =
+      allergenFlags &&
+      Object.values(allergenFlags).some((value) => value === true);
+    if (hasAllergenAlert) {
+      this.pushUnique(tags, 'Allergen Alert');
+    }
+
+    return tags.slice(0, 3);
+  }
+
+  private buildDescription(dish: DishCardSource): string {
+    const explanation = this.asRecord(dish.explanation);
+    const summary = this.stringValue(explanation?.summary);
+    if (summary) {
+      return summary;
+    }
+
+    const reasons = this.stringArrayValue(explanation?.reasons);
+    if (reasons.length > 0) {
+      return reasons[0];
+    }
+
+    if (dish.category === DishCategory.RECOMMENDED) {
+      return 'A strong match for your dietary profile.';
+    }
+    if (dish.category === DishCategory.CAUTION) {
+      return 'Review this dish before ordering.';
+    }
+    return 'This dish may not align with your dietary profile.';
+  }
+
+  private countDishCategories(dishes: Array<{ category: DishCategory }>) {
+    return {
+      recommended: dishes.filter(
+        (dish) => dish.category === DishCategory.RECOMMENDED,
+      ).length,
+      avoid: dishes.filter((dish) => dish.category === DishCategory.AVOID)
+        .length,
+    };
+  }
+
   private buildSummary(
     naiScore: number | null,
     recommendedCount: number,
@@ -136,5 +252,39 @@ export class RecommendationsService {
       return `Moderate menu fit (NAI ${naiScore}). ${recommendedCount} good options; check cautions.`;
     }
     return `Limited menu fit (NAI ${naiScore}). ${avoidCount} items may conflict with your goals.`;
+  }
+
+  private asRecord(value: unknown): JsonRecord | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    return value as JsonRecord;
+  }
+
+  private numberValue(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
+  private stringValue(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private stringArrayValue(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .map((item) => this.stringValue(item))
+      .filter((item): item is string => item !== null);
+  }
+
+  private pushUnique(values: string[], value: string) {
+    if (!values.includes(value)) {
+      values.push(value);
+    }
   }
 }
