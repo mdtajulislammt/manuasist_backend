@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   MenuScan: 'MenuScan',
   Dish: 'Dish',
+  DishBookmark: 'DishBookmark',
   NutritionCache: 'NutritionCache',
   UserDietPattern: 'UserDietPattern'
 } as const
@@ -115,6 +116,17 @@ export const DishScalarFieldEnum = {
 } as const
 
 export type DishScalarFieldEnum = (typeof DishScalarFieldEnum)[keyof typeof DishScalarFieldEnum]
+
+
+export const DishBookmarkScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  dishId: 'dishId',
+  scanId: 'scanId',
+  createdAt: 'createdAt'
+} as const
+
+export type DishBookmarkScalarFieldEnum = (typeof DishBookmarkScalarFieldEnum)[keyof typeof DishBookmarkScalarFieldEnum]
 
 
 export const NutritionCacheScalarFieldEnum = {

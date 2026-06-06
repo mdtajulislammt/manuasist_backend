@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -22,7 +23,7 @@ import { RecommendationsService } from './recommendations.service';
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
 export class RecommendationsController {
-  constructor(private readonly recommendations: RecommendationsService) {}
+  constructor(private readonly recommendations: RecommendationsService) { }
 
   @Get('scans/:id/recommendations')
   @ApiOperation({ summary: 'Get ranked recommendations for a completed scan' })
@@ -44,6 +45,27 @@ export class RecommendationsController {
   @ApiOkResponse({ description: 'Personal recommendations returned' })
   forMe(@CurrentUserId() userId: string | undefined) {
     return this.recommendations.getMyRecommendations(this.requireUserId(userId));
+  }
+
+  @Patch('recommendations/dishes/:dishId/bookmark')
+  @ApiOperation({ summary: 'Toggle bookmark state for a recommended dish' })
+  @ApiOkResponse({ description: 'Bookmark state returned' })
+  toggleBookmark(
+    @CurrentUserId() userId: string | undefined,
+    @Param('dishId', ParseUUIDPipe) dishId: string,
+  ) {
+    return this.recommendations.toggleDishBookmark(
+      this.requireUserId(userId),
+      dishId,
+    );
+  }
+
+  // Get all bookmarks for a user
+  @Get('bookmarks/me')
+  @ApiOperation({ summary: 'Get all bookmarks for a user' })
+  @ApiOkResponse({ description: 'Bookmarks returned' })
+  getBookmarks(@CurrentUserId() userId: string | undefined) {
+    return this.recommendations.getBookmarks(this.requireUserId(userId));
   }
 
   private requireUserId(userId: string | undefined): string {

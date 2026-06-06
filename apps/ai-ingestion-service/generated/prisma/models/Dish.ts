@@ -297,6 +297,7 @@ export type DishWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Dish"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Dish"> | Date | string
   scan?: Prisma.XOR<Prisma.MenuScanScalarRelationFilter, Prisma.MenuScanWhereInput>
+  bookmarks?: Prisma.DishBookmarkListRelationFilter
 }
 
 export type DishOrderByWithRelationInput = {
@@ -317,6 +318,7 @@ export type DishOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   scan?: Prisma.MenuScanOrderByWithRelationInput
+  bookmarks?: Prisma.DishBookmarkOrderByRelationAggregateInput
 }
 
 export type DishWhereUniqueInput = Prisma.AtLeast<{
@@ -340,6 +342,7 @@ export type DishWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Dish"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Dish"> | Date | string
   scan?: Prisma.XOR<Prisma.MenuScanScalarRelationFilter, Prisma.MenuScanWhereInput>
+  bookmarks?: Prisma.DishBookmarkListRelationFilter
 }, "id">
 
 export type DishOrderByWithAggregationInput = {
@@ -405,6 +408,7 @@ export type DishCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   scan: Prisma.MenuScanCreateNestedOneWithoutDishesInput
+  bookmarks?: Prisma.DishBookmarkCreateNestedManyWithoutDishInput
 }
 
 export type DishUncheckedCreateInput = {
@@ -424,6 +428,7 @@ export type DishUncheckedCreateInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedCreateNestedManyWithoutDishInput
 }
 
 export type DishUpdateInput = {
@@ -443,6 +448,7 @@ export type DishUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   scan?: Prisma.MenuScanUpdateOneRequiredWithoutDishesNestedInput
+  bookmarks?: Prisma.DishBookmarkUpdateManyWithoutDishNestedInput
 }
 
 export type DishUncheckedUpdateInput = {
@@ -462,6 +468,7 @@ export type DishUncheckedUpdateInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedUpdateManyWithoutDishNestedInput
 }
 
 export type DishCreateManyInput = {
@@ -591,6 +598,11 @@ export type DishSumOrderByAggregateInput = {
   nutritionConfidence?: Prisma.SortOrder
 }
 
+export type DishScalarRelationFilter = {
+  is?: Prisma.DishWhereInput
+  isNot?: Prisma.DishWhereInput
+}
+
 export type DishCreateNestedManyWithoutScanInput = {
   create?: Prisma.XOR<Prisma.DishCreateWithoutScanInput, Prisma.DishUncheckedCreateWithoutScanInput> | Prisma.DishCreateWithoutScanInput[] | Prisma.DishUncheckedCreateWithoutScanInput[]
   connectOrCreate?: Prisma.DishCreateOrConnectWithoutScanInput | Prisma.DishCreateOrConnectWithoutScanInput[]
@@ -653,6 +665,20 @@ export type NullableFloatFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type DishCreateNestedOneWithoutBookmarksInput = {
+  create?: Prisma.XOR<Prisma.DishCreateWithoutBookmarksInput, Prisma.DishUncheckedCreateWithoutBookmarksInput>
+  connectOrCreate?: Prisma.DishCreateOrConnectWithoutBookmarksInput
+  connect?: Prisma.DishWhereUniqueInput
+}
+
+export type DishUpdateOneRequiredWithoutBookmarksNestedInput = {
+  create?: Prisma.XOR<Prisma.DishCreateWithoutBookmarksInput, Prisma.DishUncheckedCreateWithoutBookmarksInput>
+  connectOrCreate?: Prisma.DishCreateOrConnectWithoutBookmarksInput
+  upsert?: Prisma.DishUpsertWithoutBookmarksInput
+  connect?: Prisma.DishWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DishUpdateToOneWithWhereWithoutBookmarksInput, Prisma.DishUpdateWithoutBookmarksInput>, Prisma.DishUncheckedUpdateWithoutBookmarksInput>
+}
+
 export type DishCreateWithoutScanInput = {
   id?: string
   name: string
@@ -669,6 +695,7 @@ export type DishCreateWithoutScanInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.DishBookmarkCreateNestedManyWithoutDishInput
 }
 
 export type DishUncheckedCreateWithoutScanInput = {
@@ -687,6 +714,7 @@ export type DishUncheckedCreateWithoutScanInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedCreateNestedManyWithoutDishInput
 }
 
 export type DishCreateOrConnectWithoutScanInput = {
@@ -737,6 +765,98 @@ export type DishScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Dish"> | Date | string
 }
 
+export type DishCreateWithoutBookmarksInput = {
+  id?: string
+  name: string
+  calories: number
+  dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category: $Enums.DishCategory
+  allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  nutritionSource?: string | null
+  nutritionConfidence?: number | null
+  embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scan: Prisma.MenuScanCreateNestedOneWithoutDishesInput
+}
+
+export type DishUncheckedCreateWithoutBookmarksInput = {
+  id?: string
+  scanId: string
+  name: string
+  calories: number
+  dietScore: number
+  naiScore?: number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category: $Enums.DishCategory
+  allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  nutritionSource?: string | null
+  nutritionConfidence?: number | null
+  embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type DishCreateOrConnectWithoutBookmarksInput = {
+  where: Prisma.DishWhereUniqueInput
+  create: Prisma.XOR<Prisma.DishCreateWithoutBookmarksInput, Prisma.DishUncheckedCreateWithoutBookmarksInput>
+}
+
+export type DishUpsertWithoutBookmarksInput = {
+  update: Prisma.XOR<Prisma.DishUpdateWithoutBookmarksInput, Prisma.DishUncheckedUpdateWithoutBookmarksInput>
+  create: Prisma.XOR<Prisma.DishCreateWithoutBookmarksInput, Prisma.DishUncheckedCreateWithoutBookmarksInput>
+  where?: Prisma.DishWhereInput
+}
+
+export type DishUpdateToOneWithWhereWithoutBookmarksInput = {
+  where?: Prisma.DishWhereInput
+  data: Prisma.XOR<Prisma.DishUpdateWithoutBookmarksInput, Prisma.DishUncheckedUpdateWithoutBookmarksInput>
+}
+
+export type DishUpdateWithoutBookmarksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  calories?: Prisma.IntFieldUpdateOperationsInput | number
+  dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
+  allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scan?: Prisma.MenuScanUpdateOneRequiredWithoutDishesNestedInput
+}
+
+export type DishUncheckedUpdateWithoutBookmarksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  scanId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  calories?: Prisma.IntFieldUpdateOperationsInput | number
+  dietScore?: Prisma.IntFieldUpdateOperationsInput | number
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiFactors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumDishCategoryFieldUpdateOperationsInput | $Enums.DishCategory
+  allergenFlags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  explanation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  macros?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  nutritionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  nutritionConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type DishCreateManyScanInput = {
   id?: string
   name: string
@@ -771,6 +891,7 @@ export type DishUpdateWithoutScanInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.DishBookmarkUpdateManyWithoutDishNestedInput
 }
 
 export type DishUncheckedUpdateWithoutScanInput = {
@@ -789,6 +910,7 @@ export type DishUncheckedUpdateWithoutScanInput = {
   embedding?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedUpdateManyWithoutDishNestedInput
 }
 
 export type DishUncheckedUpdateManyWithoutScanInput = {
@@ -810,6 +932,35 @@ export type DishUncheckedUpdateManyWithoutScanInput = {
 }
 
 
+/**
+ * Count Type DishCountOutputType
+ */
+
+export type DishCountOutputType = {
+  bookmarks: number
+}
+
+export type DishCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  bookmarks?: boolean | DishCountOutputTypeCountBookmarksArgs
+}
+
+/**
+ * DishCountOutputType without action
+ */
+export type DishCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DishCountOutputType
+   */
+  select?: Prisma.DishCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * DishCountOutputType without action
+ */
+export type DishCountOutputTypeCountBookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DishBookmarkWhereInput
+}
+
 
 export type DishSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -829,6 +980,8 @@ export type DishSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   scan?: boolean | Prisma.MenuScanDefaultArgs<ExtArgs>
+  bookmarks?: boolean | Prisma.Dish$bookmarksArgs<ExtArgs>
+  _count?: boolean | Prisma.DishCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["dish"]>
 
 export type DishSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -893,6 +1046,8 @@ export type DishSelectScalar = {
 export type DishOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scanId" | "name" | "calories" | "dietScore" | "naiScore" | "naiFactors" | "category" | "allergenFlags" | "explanation" | "macros" | "nutritionSource" | "nutritionConfidence" | "embedding" | "createdAt" | "updatedAt", ExtArgs["result"]["dish"]>
 export type DishInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scan?: boolean | Prisma.MenuScanDefaultArgs<ExtArgs>
+  bookmarks?: boolean | Prisma.Dish$bookmarksArgs<ExtArgs>
+  _count?: boolean | Prisma.DishCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type DishIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scan?: boolean | Prisma.MenuScanDefaultArgs<ExtArgs>
@@ -905,6 +1060,7 @@ export type $DishPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "Dish"
   objects: {
     scan: Prisma.$MenuScanPayload<ExtArgs>
+    bookmarks: Prisma.$DishBookmarkPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1318,6 +1474,7 @@ readonly fields: DishFieldRefs;
 export interface Prisma__DishClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   scan<T extends Prisma.MenuScanDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MenuScanDefaultArgs<ExtArgs>>): Prisma.Prisma__MenuScanClient<runtime.Types.Result.GetResult<Prisma.$MenuScanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  bookmarks<T extends Prisma.Dish$bookmarksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Dish$bookmarksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DishBookmarkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1761,6 +1918,30 @@ export type DishDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Dishes to delete.
    */
   limit?: number
+}
+
+/**
+ * Dish.bookmarks
+ */
+export type Dish$bookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DishBookmark
+   */
+  select?: Prisma.DishBookmarkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DishBookmark
+   */
+  omit?: Prisma.DishBookmarkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DishBookmarkInclude<ExtArgs> | null
+  where?: Prisma.DishBookmarkWhereInput
+  orderBy?: Prisma.DishBookmarkOrderByWithRelationInput | Prisma.DishBookmarkOrderByWithRelationInput[]
+  cursor?: Prisma.DishBookmarkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DishBookmarkScalarFieldEnum | Prisma.DishBookmarkScalarFieldEnum[]
 }
 
 /**

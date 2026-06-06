@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   MenuScan: 'MenuScan',
   Dish: 'Dish',
+  DishBookmark: 'DishBookmark',
   NutritionCache: 'NutritionCache',
   UserDietPattern: 'UserDietPattern'
 } as const
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "menuScan" | "dish" | "nutritionCache" | "userDietPattern"
+    modelProps: "menuScan" | "dish" | "dishBookmark" | "nutritionCache" | "userDietPattern"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -552,6 +553,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.DishCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.DishCountAggregateOutputType> | number
+        }
+      }
+    }
+    DishBookmark: {
+      payload: Prisma.$DishBookmarkPayload<ExtArgs>
+      fields: Prisma.DishBookmarkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DishBookmarkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DishBookmarkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        findFirst: {
+          args: Prisma.DishBookmarkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DishBookmarkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        findMany: {
+          args: Prisma.DishBookmarkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>[]
+        }
+        create: {
+          args: Prisma.DishBookmarkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        createMany: {
+          args: Prisma.DishBookmarkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DishBookmarkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>[]
+        }
+        delete: {
+          args: Prisma.DishBookmarkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        update: {
+          args: Prisma.DishBookmarkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        deleteMany: {
+          args: Prisma.DishBookmarkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DishBookmarkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DishBookmarkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>[]
+        }
+        upsert: {
+          args: Prisma.DishBookmarkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishBookmarkPayload>
+        }
+        aggregate: {
+          args: Prisma.DishBookmarkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDishBookmark>
+        }
+        groupBy: {
+          args: Prisma.DishBookmarkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DishBookmarkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DishBookmarkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DishBookmarkCountAggregateOutputType> | number
         }
       }
     }
@@ -784,6 +859,17 @@ export const DishScalarFieldEnum = {
 } as const
 
 export type DishScalarFieldEnum = (typeof DishScalarFieldEnum)[keyof typeof DishScalarFieldEnum]
+
+
+export const DishBookmarkScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  dishId: 'dishId',
+  scanId: 'scanId',
+  createdAt: 'createdAt'
+} as const
+
+export type DishBookmarkScalarFieldEnum = (typeof DishBookmarkScalarFieldEnum)[keyof typeof DishBookmarkScalarFieldEnum]
 
 
 export const NutritionCacheScalarFieldEnum = {
@@ -1059,6 +1145,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   menuScan?: Prisma.MenuScanOmit
   dish?: Prisma.DishOmit
+  dishBookmark?: Prisma.DishBookmarkOmit
   nutritionCache?: Prisma.NutritionCacheOmit
   userDietPattern?: Prisma.UserDietPatternOmit
 }

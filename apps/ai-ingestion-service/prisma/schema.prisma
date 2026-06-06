@@ -39,6 +39,7 @@ model MenuScan {
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
   dishes Dish[]
+  bookmarks DishBookmark[]
 
   @@index([userId, scanTime])
   @@map("ingestion_menu_scans")
@@ -63,9 +64,27 @@ model Dish {
   updatedAt           DateTime     @updatedAt @map("updated_at")
 
   scan MenuScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  bookmarks DishBookmark[]
 
   @@index([scanId])
   @@map("ingestion_dishes")
+}
+
+model DishBookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  dishId    String   @map("dish_id") @db.Uuid
+  scanId    String   @map("scan_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  dish Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  scan MenuScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dishId])
+  @@index([userId, createdAt])
+  @@index([dishId])
+  @@index([scanId])
+  @@map("ingestion_dish_bookmarks")
 }
 
 model NutritionCache {

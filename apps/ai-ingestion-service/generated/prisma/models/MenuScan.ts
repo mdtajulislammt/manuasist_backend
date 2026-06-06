@@ -297,6 +297,7 @@ export type MenuScanWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
+  bookmarks?: Prisma.DishBookmarkListRelationFilter
 }
 
 export type MenuScanOrderByWithRelationInput = {
@@ -317,6 +318,7 @@ export type MenuScanOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   dishes?: Prisma.DishOrderByRelationAggregateInput
+  bookmarks?: Prisma.DishBookmarkOrderByRelationAggregateInput
 }
 
 export type MenuScanWhereUniqueInput = Prisma.AtLeast<{
@@ -340,6 +342,7 @@ export type MenuScanWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
+  bookmarks?: Prisma.DishBookmarkListRelationFilter
 }, "id">
 
 export type MenuScanOrderByWithAggregationInput = {
@@ -406,6 +409,7 @@ export type MenuScanCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishCreateNestedManyWithoutScanInput
+  bookmarks?: Prisma.DishBookmarkCreateNestedManyWithoutScanInput
 }
 
 export type MenuScanUncheckedCreateInput = {
@@ -426,6 +430,7 @@ export type MenuScanUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishUncheckedCreateNestedManyWithoutScanInput
+  bookmarks?: Prisma.DishBookmarkUncheckedCreateNestedManyWithoutScanInput
 }
 
 export type MenuScanUpdateInput = {
@@ -446,6 +451,7 @@ export type MenuScanUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUpdateManyWithoutScanNestedInput
+  bookmarks?: Prisma.DishBookmarkUpdateManyWithoutScanNestedInput
 }
 
 export type MenuScanUncheckedUpdateInput = {
@@ -466,6 +472,7 @@ export type MenuScanUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUncheckedUpdateManyWithoutScanNestedInput
+  bookmarks?: Prisma.DishBookmarkUncheckedUpdateManyWithoutScanNestedInput
 }
 
 export type MenuScanCreateManyInput = {
@@ -629,6 +636,20 @@ export type MenuScanUpdateOneRequiredWithoutDishesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.MenuScanUpdateToOneWithWhereWithoutDishesInput, Prisma.MenuScanUpdateWithoutDishesInput>, Prisma.MenuScanUncheckedUpdateWithoutDishesInput>
 }
 
+export type MenuScanCreateNestedOneWithoutBookmarksInput = {
+  create?: Prisma.XOR<Prisma.MenuScanCreateWithoutBookmarksInput, Prisma.MenuScanUncheckedCreateWithoutBookmarksInput>
+  connectOrCreate?: Prisma.MenuScanCreateOrConnectWithoutBookmarksInput
+  connect?: Prisma.MenuScanWhereUniqueInput
+}
+
+export type MenuScanUpdateOneRequiredWithoutBookmarksNestedInput = {
+  create?: Prisma.XOR<Prisma.MenuScanCreateWithoutBookmarksInput, Prisma.MenuScanUncheckedCreateWithoutBookmarksInput>
+  connectOrCreate?: Prisma.MenuScanCreateOrConnectWithoutBookmarksInput
+  upsert?: Prisma.MenuScanUpsertWithoutBookmarksInput
+  connect?: Prisma.MenuScanWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MenuScanUpdateToOneWithWhereWithoutBookmarksInput, Prisma.MenuScanUpdateWithoutBookmarksInput>, Prisma.MenuScanUncheckedUpdateWithoutBookmarksInput>
+}
+
 export type MenuScanCreateWithoutDishesInput = {
   id?: string
   userId: string
@@ -646,6 +667,7 @@ export type MenuScanCreateWithoutDishesInput = {
   summary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.DishBookmarkCreateNestedManyWithoutScanInput
 }
 
 export type MenuScanUncheckedCreateWithoutDishesInput = {
@@ -665,6 +687,7 @@ export type MenuScanUncheckedCreateWithoutDishesInput = {
   summary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedCreateNestedManyWithoutScanInput
 }
 
 export type MenuScanCreateOrConnectWithoutDishesInput = {
@@ -700,6 +723,7 @@ export type MenuScanUpdateWithoutDishesInput = {
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.DishBookmarkUpdateManyWithoutScanNestedInput
 }
 
 export type MenuScanUncheckedUpdateWithoutDishesInput = {
@@ -719,6 +743,103 @@ export type MenuScanUncheckedUpdateWithoutDishesInput = {
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.DishBookmarkUncheckedUpdateManyWithoutScanNestedInput
+}
+
+export type MenuScanCreateWithoutBookmarksInput = {
+  id?: string
+  userId: string
+  storedFileName?: string | null
+  contentType?: string | null
+  imageUrl?: string | null
+  menuText?: string | null
+  status: $Enums.MenuScanStatus
+  scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  naiScore?: number | null
+  naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  summary?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  dishes?: Prisma.DishCreateNestedManyWithoutScanInput
+}
+
+export type MenuScanUncheckedCreateWithoutBookmarksInput = {
+  id?: string
+  userId: string
+  storedFileName?: string | null
+  contentType?: string | null
+  imageUrl?: string | null
+  menuText?: string | null
+  status: $Enums.MenuScanStatus
+  scanTime?: Date | string
+  rawOcrText?: string | null
+  parseError?: string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  naiScore?: number | null
+  naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  summary?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  dishes?: Prisma.DishUncheckedCreateNestedManyWithoutScanInput
+}
+
+export type MenuScanCreateOrConnectWithoutBookmarksInput = {
+  where: Prisma.MenuScanWhereUniqueInput
+  create: Prisma.XOR<Prisma.MenuScanCreateWithoutBookmarksInput, Prisma.MenuScanUncheckedCreateWithoutBookmarksInput>
+}
+
+export type MenuScanUpsertWithoutBookmarksInput = {
+  update: Prisma.XOR<Prisma.MenuScanUpdateWithoutBookmarksInput, Prisma.MenuScanUncheckedUpdateWithoutBookmarksInput>
+  create: Prisma.XOR<Prisma.MenuScanCreateWithoutBookmarksInput, Prisma.MenuScanUncheckedCreateWithoutBookmarksInput>
+  where?: Prisma.MenuScanWhereInput
+}
+
+export type MenuScanUpdateToOneWithWhereWithoutBookmarksInput = {
+  where?: Prisma.MenuScanWhereInput
+  data: Prisma.XOR<Prisma.MenuScanUpdateWithoutBookmarksInput, Prisma.MenuScanUncheckedUpdateWithoutBookmarksInput>
+}
+
+export type MenuScanUpdateWithoutBookmarksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  storedFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contentType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  menuText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
+  scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  dishes?: Prisma.DishUpdateManyWithoutScanNestedInput
+}
+
+export type MenuScanUncheckedUpdateWithoutBookmarksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  storedFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contentType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  menuText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumMenuScanStatusFieldUpdateOperationsInput | $Enums.MenuScanStatus
+  scanTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rawOcrText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parseMetadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  dishes?: Prisma.DishUncheckedUpdateManyWithoutScanNestedInput
 }
 
 
@@ -728,10 +849,12 @@ export type MenuScanUncheckedUpdateWithoutDishesInput = {
 
 export type MenuScanCountOutputType = {
   dishes: number
+  bookmarks: number
 }
 
 export type MenuScanCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dishes?: boolean | MenuScanCountOutputTypeCountDishesArgs
+  bookmarks?: boolean | MenuScanCountOutputTypeCountBookmarksArgs
 }
 
 /**
@@ -749,6 +872,13 @@ export type MenuScanCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
  */
 export type MenuScanCountOutputTypeCountDishesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.DishWhereInput
+}
+
+/**
+ * MenuScanCountOutputType without action
+ */
+export type MenuScanCountOutputTypeCountBookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DishBookmarkWhereInput
 }
 
 
@@ -770,6 +900,7 @@ export type MenuScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   updatedAt?: boolean
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
+  bookmarks?: boolean | Prisma.MenuScan$bookmarksArgs<ExtArgs>
   _count?: boolean | Prisma.MenuScanCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["menuScan"]>
 
@@ -833,6 +964,7 @@ export type MenuScanSelectScalar = {
 export type MenuScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "storedFileName" | "contentType" | "imageUrl" | "menuText" | "status" | "scanTime" | "rawOcrText" | "parseError" | "parseMetadata" | "naiScore" | "naiBreakdown" | "summary" | "createdAt" | "updatedAt", ExtArgs["result"]["menuScan"]>
 export type MenuScanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
+  bookmarks?: boolean | Prisma.MenuScan$bookmarksArgs<ExtArgs>
   _count?: boolean | Prisma.MenuScanCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MenuScanIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -842,6 +974,7 @@ export type $MenuScanPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "MenuScan"
   objects: {
     dishes: Prisma.$DishPayload<ExtArgs>[]
+    bookmarks: Prisma.$DishBookmarkPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1255,6 +1388,7 @@ readonly fields: MenuScanFieldRefs;
 export interface Prisma__MenuScanClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   dishes<T extends Prisma.MenuScan$dishesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MenuScan$dishesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DishPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  bookmarks<T extends Prisma.MenuScan$bookmarksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MenuScan$bookmarksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DishBookmarkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1714,6 +1848,30 @@ export type MenuScan$dishesArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.DishScalarFieldEnum | Prisma.DishScalarFieldEnum[]
+}
+
+/**
+ * MenuScan.bookmarks
+ */
+export type MenuScan$bookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DishBookmark
+   */
+  select?: Prisma.DishBookmarkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DishBookmark
+   */
+  omit?: Prisma.DishBookmarkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DishBookmarkInclude<ExtArgs> | null
+  where?: Prisma.DishBookmarkWhereInput
+  orderBy?: Prisma.DishBookmarkOrderByWithRelationInput | Prisma.DishBookmarkOrderByWithRelationInput[]
+  cursor?: Prisma.DishBookmarkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DishBookmarkScalarFieldEnum | Prisma.DishBookmarkScalarFieldEnum[]
 }
 
 /**

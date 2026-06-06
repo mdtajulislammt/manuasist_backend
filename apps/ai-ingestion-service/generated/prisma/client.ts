@@ -52,6 +52,11 @@ export type MenuScan = Prisma.MenuScanModel
  */
 export type Dish = Prisma.DishModel
 /**
+ * Model DishBookmark
+ * 
+ */
+export type DishBookmark = Prisma.DishBookmarkModel
+/**
  * Model NutritionCache
  * 
  */
