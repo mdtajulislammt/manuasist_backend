@@ -47,3 +47,18 @@ export type RevenueCatWebhookEvent = Prisma.RevenueCatWebhookEventModel
  * 
  */
 export type UserUsageCredit = Prisma.UserUsageCreditModel
+/**
+ * Model UserNotification
+ * 
+ */
+export type UserNotification = Prisma.UserNotificationModel
+/**
+ * Model UserDeviceToken
+ * 
+ */
+export type UserDeviceToken = Prisma.UserDeviceTokenModel
+/**
+ * Model NotificationDelivery
+ * 
+ */
+export type NotificationDelivery = Prisma.NotificationDeliveryModel

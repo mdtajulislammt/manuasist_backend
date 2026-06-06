@@ -13,6 +13,7 @@ import { MembershipModule } from './membership/membership.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { UsersMeModule } from './users-me/users-me.module';
 import { HomeModule } from './home/home.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -62,6 +63,7 @@ const envFilePaths = [
     ApplicationOnboardingModule,
     InternalModule,
     HomeModule,
+    NotificationsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

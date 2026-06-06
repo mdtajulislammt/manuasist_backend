@@ -37,3 +37,43 @@ export const EntitlementStatus = {
 } as const
 
 export type EntitlementStatus = (typeof EntitlementStatus)[keyof typeof EntitlementStatus]
+
+
+export const NotificationType = {
+  SYSTEM: 'SYSTEM',
+  SCAN_PROCESSING: 'SCAN_PROCESSING',
+  SCAN_READY: 'SCAN_READY',
+  DAILY_PROGRESS: 'DAILY_PROGRESS',
+  WEEKLY_PROGRESS: 'WEEKLY_PROGRESS',
+  REMINDER: 'REMINDER'
+} as const
+
+export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
+
+
+export const DevicePlatform = {
+  ANDROID: 'ANDROID',
+  IOS: 'IOS',
+  WEB: 'WEB'
+} as const
+
+export type DevicePlatform = (typeof DevicePlatform)[keyof typeof DevicePlatform]
+
+
+export const NotificationChannel = {
+  SOCKET: 'SOCKET',
+  FCM: 'FCM'
+} as const
+
+export type NotificationChannel = (typeof NotificationChannel)[keyof typeof NotificationChannel]
+
+
+export const NotificationDeliveryStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  RETRYING: 'RETRYING',
+  CANCELED: 'CANCELED'
+} as const
+
+export type NotificationDeliveryStatus = (typeof NotificationDeliveryStatus)[keyof typeof NotificationDeliveryStatus]

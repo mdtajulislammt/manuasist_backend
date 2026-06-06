@@ -28,6 +28,34 @@ enum EntitlementStatus {
   EXPIRED
 }
 
+enum NotificationType {
+  SYSTEM
+  SCAN_PROCESSING
+  SCAN_READY
+  DAILY_PROGRESS
+  WEEKLY_PROGRESS
+  REMINDER
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum NotificationChannel {
+  SOCKET
+  FCM
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  RETRYING
+  CANCELED
+}
+
 model UserProfile {
   id                    String    @id @default(uuid()) @db.Uuid
   userId                String    @unique @map("user_id") @db.Uuid
@@ -117,4 +145,70 @@ model UserUsageCredit {
   updatedAt                DateTime  @updatedAt @map("updated_at")
 
   @@map("application_user_usage_credits")
+}
+
+model UserNotification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  title     String
+  body      String
+  type      NotificationType @default(SYSTEM)
+  icon      String           @default("bell")
+  data      Json             @default("{}")
+  readAt    DateTime?        @map("read_at")
+  expiresAt DateTime?        @map("expires_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  deliveries NotificationDelivery[]
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([expiresAt])
+  @@map("application_user_notifications")
+}
+
+model UserDeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  platform   DevicePlatform
+  deviceId   String         @map("device_id")
+  fcmToken   String         @map("fcm_token")
+  isActive   Boolean        @default(true) @map("is_active")
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  deliveries NotificationDelivery[]
+
+  @@unique([userId, deviceId])
+  @@index([userId, isActive])
+  @@index([fcmToken])
+  @@map("application_user_device_tokens")
+}
+
+model NotificationDelivery {
+  id                String                     @id @default(uuid()) @db.Uuid
+  notificationId    String                     @map("notification_id") @db.Uuid
+  userId            String                     @map("user_id") @db.Uuid
+  deviceTokenId     String?                    @map("device_token_id") @db.Uuid
+  channel           NotificationChannel
+  status            NotificationDeliveryStatus @default(PENDING)
+  attemptCount      Int                        @default(0) @map("attempt_count")
+  nextRetryAt       DateTime?                  @map("next_retry_at")
+  lastAttemptAt     DateTime?                  @map("last_attempt_at")
+  sentAt            DateTime?                  @map("sent_at")
+  lastError         String?                    @map("last_error")
+  providerMessageId String?                    @map("provider_message_id")
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+
+  notification UserNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  deviceToken  UserDeviceToken? @relation(fields: [deviceTokenId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([channel, status, nextRetryAt])
+  @@index([notificationId])
+  @@index([deviceTokenId])
+  @@map("application_notification_deliveries")
 }

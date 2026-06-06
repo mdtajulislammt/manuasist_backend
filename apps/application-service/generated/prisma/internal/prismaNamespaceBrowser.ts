@@ -56,7 +56,10 @@ export const ModelName = {
   UserOnboardingAnswer: 'UserOnboardingAnswer',
   UserEntitlement: 'UserEntitlement',
   RevenueCatWebhookEvent: 'RevenueCatWebhookEvent',
-  UserUsageCredit: 'UserUsageCredit'
+  UserUsageCredit: 'UserUsageCredit',
+  UserNotification: 'UserNotification',
+  UserDeviceToken: 'UserDeviceToken',
+  NotificationDelivery: 'NotificationDelivery'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -163,6 +166,58 @@ export const UserUsageCreditScalarFieldEnum = {
 } as const
 
 export type UserUsageCreditScalarFieldEnum = (typeof UserUsageCreditScalarFieldEnum)[keyof typeof UserUsageCreditScalarFieldEnum]
+
+
+export const UserNotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  body: 'body',
+  type: 'type',
+  icon: 'icon',
+  data: 'data',
+  readAt: 'readAt',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserNotificationScalarFieldEnum = (typeof UserNotificationScalarFieldEnum)[keyof typeof UserNotificationScalarFieldEnum]
+
+
+export const UserDeviceTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  platform: 'platform',
+  deviceId: 'deviceId',
+  fcmToken: 'fcmToken',
+  isActive: 'isActive',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserDeviceTokenScalarFieldEnum = (typeof UserDeviceTokenScalarFieldEnum)[keyof typeof UserDeviceTokenScalarFieldEnum]
+
+
+export const NotificationDeliveryScalarFieldEnum = {
+  id: 'id',
+  notificationId: 'notificationId',
+  userId: 'userId',
+  deviceTokenId: 'deviceTokenId',
+  channel: 'channel',
+  status: 'status',
+  attemptCount: 'attemptCount',
+  nextRetryAt: 'nextRetryAt',
+  lastAttemptAt: 'lastAttemptAt',
+  sentAt: 'sentAt',
+  lastError: 'lastError',
+  providerMessageId: 'providerMessageId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotificationDeliveryScalarFieldEnum = (typeof NotificationDeliveryScalarFieldEnum)[keyof typeof NotificationDeliveryScalarFieldEnum]
 
 
 export const SortOrder = {
