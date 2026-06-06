@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { EVENT_PATTERNS } from '@contracts/events';
 import type {
   ScanClassificationCompletedV1Payload,
+  ScanClassificationFailedV1Payload,
   ScanSubmittedV1Payload,
 } from '@contracts/ingestion-payloads';
 import { RMQ_EVENT_CLIENT } from '@messaging/tokens';
@@ -187,6 +188,7 @@ export class ScanProcessorService {
         dishCount: dishRows.length,
         naiScore: scanNai.naiScore,
       };
+      await this.applicationClient.notifyScanReady(userId, scanId);
       await firstValueFrom(
         this.rmq.emit(EVENT_PATTERNS.SCAN_CLASSIFICATION_COMPLETED_V1, done),
       );
@@ -203,6 +205,32 @@ export class ScanProcessorService {
           parseError: msg.slice(0, 2000),
         },
       });
+      await this.emitScanFailedBestEffort({
+        scanId,
+        userId,
+        error: msg.slice(0, 2000),
+      });
+      await this.applicationClient.notifyScanFailed(
+        userId,
+        scanId,
+        msg.slice(0, 2000),
+      );
+    }
+  }
+
+  private async emitScanFailedBestEffort(
+    payload: ScanClassificationFailedV1Payload,
+  ) {
+    try {
+      await firstValueFrom(
+        this.rmq.emit(EVENT_PATTERNS.SCAN_CLASSIFICATION_FAILED_V1, payload),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to emit ${EVENT_PATTERNS.SCAN_CLASSIFICATION_FAILED_V1} for scan=${payload.scanId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 

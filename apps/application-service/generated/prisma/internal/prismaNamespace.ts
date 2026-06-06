@@ -1215,6 +1215,7 @@ export const UserNotificationScalarFieldEnum = {
   type: 'type',
   icon: 'icon',
   data: 'data',
+  dedupeKey: 'dedupeKey',
   readAt: 'readAt',
   expiresAt: 'expiresAt',
   createdAt: 'createdAt',

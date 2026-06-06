@@ -8,6 +8,7 @@ export const EVENT_PATTERNS = {
   SCAN_SUBMITTED_V1: 'scan.submitted.v1',
   SCAN_PARSING_REQUESTED_V1: 'scan.parsing_requested.v1',
   SCAN_CLASSIFICATION_COMPLETED_V1: 'scan.classification_completed.v1',
+  SCAN_CLASSIFICATION_FAILED_V1: 'scan.classification_failed.v1',
 } as const;
 
 export type EventPattern = (typeof EVENT_PATTERNS)[keyof typeof EVENT_PATTERNS];

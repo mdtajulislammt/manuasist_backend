@@ -24,10 +24,12 @@ export function createRmqPublisherOptions(queueSuffix: string): RmqBrokerOptions
   };
 }
 
-export function createRmqMicroserviceOptions(): RmqBrokerOptions {
+export function createRmqMicroserviceOptions(
+  queue = RMQ_AI_INGESTION_QUEUE,
+): RmqBrokerOptions {
   return {
     urls: baseUrls(),
-    queue: RMQ_AI_INGESTION_QUEUE,
+    queue,
     exchange: RMQ_EVENTS_EXCHANGE,
     exchangeType: 'topic',
     queueOptions: { durable: true },

@@ -22,6 +22,8 @@ export type DietaryContextResponse = {
   };
 };
 
+type ScanNotificationType = 'processing' | 'ready' | 'failed';
+
 @Injectable()
 export class ApplicationClientService {
   private readonly logger = new Logger(ApplicationClientService.name);
@@ -57,6 +59,18 @@ export class ApplicationClientService {
 
   async assertPremiumAccess(userId: string) {
     return this.getInternal(`/internal/users/${userId}/premium-access`);
+  }
+
+  async notifyScanProcessing(userId: string, scanId: string) {
+    await this.notifyScanEventBestEffort('processing', userId, scanId);
+  }
+
+  async notifyScanReady(userId: string, scanId: string) {
+    await this.notifyScanEventBestEffort('ready', userId, scanId);
+  }
+
+  async notifyScanFailed(userId: string, scanId: string, error: string) {
+    await this.notifyScanEventBestEffort('failed', userId, scanId, error);
   }
 
   private async fetchDietaryContext(userId: string): Promise<DietaryContextResponse> {
@@ -95,16 +109,24 @@ export class ApplicationClientService {
     return res.json() as Promise<T>;
   }
 
-  private async postInternal<T = unknown>(path: string): Promise<T> {
+  private async postInternal<T = unknown>(
+    path: string,
+    body?: Record<string, unknown>,
+  ): Promise<T> {
     const base = this.config
       .getOrThrow<string>('APPLICATION_SERVICE_URL')
       .replace(/\/$/, '');
     const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    const headers: Record<string, string> = { 'x-internal-api-key': key };
+    if (body) {
+      headers['content-type'] = 'application/json';
+    }
     let res: Response;
     try {
       res = await fetch(`${base}${path}`, {
         method: 'POST',
-        headers: { 'x-internal-api-key': key },
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
       });
     } catch (e) {
       throw new BadGatewayException(
@@ -124,6 +146,28 @@ export class ApplicationClientService {
       );
     }
     return res.json() as Promise<T>;
+  }
+
+  private async notifyScanEventBestEffort(
+    type: ScanNotificationType,
+    userId: string,
+    scanId: string,
+    error?: string,
+  ) {
+    try {
+      await this.postInternal('/internal/notifications/scan-event', {
+        type,
+        userId,
+        scanId,
+        ...(error ? { error } : {}),
+      });
+    } catch (e) {
+      this.logger.warn(
+        `Could not create ${type} notification for scan ${scanId}: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
   }
 
   private parseErrorPayload(text: string, status: number) {

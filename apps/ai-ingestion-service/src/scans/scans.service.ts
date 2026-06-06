@@ -141,6 +141,7 @@ export class ScansService {
    * Also emits to RabbitMQ when available (consumer may no-op if already claimed).
    */
   private dispatchScanSubmitted(payload: ScanSubmittedV1Payload) {
+    void this.applicationClient.notifyScanProcessing(payload.userId, payload.scanId);
     void this.emitScanSubmittedBestEffort(payload);
     setImmediate(() => {
       void this.scanProcessor.handleScanSubmitted(payload).catch((err) => {

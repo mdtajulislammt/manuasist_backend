@@ -31,6 +31,7 @@ type NotificationCreateInput = {
     type?: NotificationType;
     icon?: string;
     data?: Record<string, unknown>;
+    dedupeKey?: string;
     expiresAt?: Date;
 };
 
@@ -231,7 +232,23 @@ export class NotificationsService {
     }
 
     async createNotification(input: NotificationCreateInput) {
-        const notification = await this.prisma.userNotification.create({
+      if (input.dedupeKey) {
+        const existing = await this.prisma.userNotification.findUnique({
+          where: {
+            userId_dedupeKey: {
+              userId: input.userId,
+              dedupeKey: input.dedupeKey,
+            },
+          },
+        });
+        if (existing) {
+          return existing;
+        }
+      }
+
+        let notification: Prisma.UserNotificationModel;
+        try {
+          notification = await this.prisma.userNotification.create({
             data: {
                 userId: input.userId,
                 title: input.title,
@@ -239,9 +256,26 @@ export class NotificationsService {
                 type: input.type ?? NotificationType.SYSTEM,
                 icon: input.icon ?? 'bell',
                 data: (input.data ?? {}) as Prisma.InputJsonValue,
+                dedupeKey: input.dedupeKey,
                 expiresAt: input.expiresAt,
             },
-        });
+          });
+        } catch (error) {
+          if (input.dedupeKey && this.isUniqueConflict(error)) {
+            const existing = await this.prisma.userNotification.findUnique({
+              where: {
+                userId_dedupeKey: {
+                  userId: input.userId,
+                  dedupeKey: input.dedupeKey,
+                },
+              },
+            });
+            if (existing) {
+              return existing;
+            }
+          }
+          throw error;
+        }
 
     try {
       await this.recordSocketDelivery(notification);
@@ -257,12 +291,14 @@ export class NotificationsService {
         return notification;
     }
 
-    async notifyScanProcessing(userId: string) {
+    async notifyScanProcessing(userId: string, scanId?: string) {
         return this.createNotification({
             userId,
             type: NotificationType.SCAN_PROCESSING,
             title: 'Hold tight!',
             body: 'Our AI is reviewing the menu and preparing personalized food recommendations for you.',
+            data: scanId ? { scanId } : undefined,
+            dedupeKey: scanId ? `scan:${scanId}:processing` : undefined,
         });
     }
 
@@ -273,8 +309,23 @@ export class NotificationsService {
             title: 'Your Results Are Ready!',
             body: 'Check out recommended options tailored to your preferences.',
             data: { scanId },
+            dedupeKey: `scan:${scanId}:ready`,
         });
     }
+
+  async notifyScanFailed(userId: string, scanId: string, error: string) {
+    return this.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      title: 'Scan could not be completed',
+      body: "We couldn't analyze this menu. Please try again with a clearer photo or menu text.",
+      data: {
+        scanId,
+        error,
+      },
+      dedupeKey: `scan:${scanId}:failed`,
+    });
+  }
 
     @Interval(60_000)
     async retryPendingDeliveries() {
@@ -516,6 +567,15 @@ export class NotificationsService {
         }
         return value as Record<string, unknown>;
     }
+
+  private isUniqueConflict(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code: unknown }).code === 'P2002'
+    );
+  }
 
     private toDevicePlatform(platform: DevicePlatformDto): DevicePlatform {
         switch (platform) {

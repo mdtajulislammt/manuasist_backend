@@ -31,6 +31,7 @@ export type UserNotificationMinAggregateOutputType = {
   body: string | null
   type: $Enums.NotificationType | null
   icon: string | null
+  dedupeKey: string | null
   readAt: Date | null
   expiresAt: Date | null
   createdAt: Date | null
@@ -44,6 +45,7 @@ export type UserNotificationMaxAggregateOutputType = {
   body: string | null
   type: $Enums.NotificationType | null
   icon: string | null
+  dedupeKey: string | null
   readAt: Date | null
   expiresAt: Date | null
   createdAt: Date | null
@@ -58,6 +60,7 @@ export type UserNotificationCountAggregateOutputType = {
   type: number
   icon: number
   data: number
+  dedupeKey: number
   readAt: number
   expiresAt: number
   createdAt: number
@@ -73,6 +76,7 @@ export type UserNotificationMinAggregateInputType = {
   body?: true
   type?: true
   icon?: true
+  dedupeKey?: true
   readAt?: true
   expiresAt?: true
   createdAt?: true
@@ -86,6 +90,7 @@ export type UserNotificationMaxAggregateInputType = {
   body?: true
   type?: true
   icon?: true
+  dedupeKey?: true
   readAt?: true
   expiresAt?: true
   createdAt?: true
@@ -100,6 +105,7 @@ export type UserNotificationCountAggregateInputType = {
   type?: true
   icon?: true
   data?: true
+  dedupeKey?: true
   readAt?: true
   expiresAt?: true
   createdAt?: true
@@ -187,6 +193,7 @@ export type UserNotificationGroupByOutputType = {
   type: $Enums.NotificationType
   icon: string
   data: runtime.JsonValue
+  dedupeKey: string | null
   readAt: Date | null
   expiresAt: Date | null
   createdAt: Date
@@ -222,6 +229,7 @@ export type UserNotificationWhereInput = {
   type?: Prisma.EnumNotificationTypeFilter<"UserNotification"> | $Enums.NotificationType
   icon?: Prisma.StringFilter<"UserNotification"> | string
   data?: Prisma.JsonFilter<"UserNotification">
+  dedupeKey?: Prisma.StringNullableFilter<"UserNotification"> | string | null
   readAt?: Prisma.DateTimeNullableFilter<"UserNotification"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"UserNotification"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"UserNotification"> | Date | string
@@ -237,6 +245,7 @@ export type UserNotificationOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   icon?: Prisma.SortOrder
   data?: Prisma.SortOrder
+  dedupeKey?: Prisma.SortOrderInput | Prisma.SortOrder
   readAt?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -246,6 +255,7 @@ export type UserNotificationOrderByWithRelationInput = {
 
 export type UserNotificationWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  userId_dedupeKey?: Prisma.UserNotificationUserIdDedupeKeyCompoundUniqueInput
   AND?: Prisma.UserNotificationWhereInput | Prisma.UserNotificationWhereInput[]
   OR?: Prisma.UserNotificationWhereInput[]
   NOT?: Prisma.UserNotificationWhereInput | Prisma.UserNotificationWhereInput[]
@@ -255,12 +265,13 @@ export type UserNotificationWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.EnumNotificationTypeFilter<"UserNotification"> | $Enums.NotificationType
   icon?: Prisma.StringFilter<"UserNotification"> | string
   data?: Prisma.JsonFilter<"UserNotification">
+  dedupeKey?: Prisma.StringNullableFilter<"UserNotification"> | string | null
   readAt?: Prisma.DateTimeNullableFilter<"UserNotification"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"UserNotification"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"UserNotification"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"UserNotification"> | Date | string
   deliveries?: Prisma.NotificationDeliveryListRelationFilter
-}, "id">
+}, "id" | "userId_dedupeKey">
 
 export type UserNotificationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -270,6 +281,7 @@ export type UserNotificationOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   icon?: Prisma.SortOrder
   data?: Prisma.SortOrder
+  dedupeKey?: Prisma.SortOrderInput | Prisma.SortOrder
   readAt?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -290,6 +302,7 @@ export type UserNotificationScalarWhereWithAggregatesInput = {
   type?: Prisma.EnumNotificationTypeWithAggregatesFilter<"UserNotification"> | $Enums.NotificationType
   icon?: Prisma.StringWithAggregatesFilter<"UserNotification"> | string
   data?: Prisma.JsonWithAggregatesFilter<"UserNotification">
+  dedupeKey?: Prisma.StringNullableWithAggregatesFilter<"UserNotification"> | string | null
   readAt?: Prisma.DateTimeNullableWithAggregatesFilter<"UserNotification"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"UserNotification"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"UserNotification"> | Date | string
@@ -304,6 +317,7 @@ export type UserNotificationCreateInput = {
   type?: $Enums.NotificationType
   icon?: string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: string | null
   readAt?: Date | string | null
   expiresAt?: Date | string | null
   createdAt?: Date | string
@@ -319,6 +333,7 @@ export type UserNotificationUncheckedCreateInput = {
   type?: $Enums.NotificationType
   icon?: string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: string | null
   readAt?: Date | string | null
   expiresAt?: Date | string | null
   createdAt?: Date | string
@@ -334,6 +349,7 @@ export type UserNotificationUpdateInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -349,6 +365,7 @@ export type UserNotificationUncheckedUpdateInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -364,6 +381,7 @@ export type UserNotificationCreateManyInput = {
   type?: $Enums.NotificationType
   icon?: string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: string | null
   readAt?: Date | string | null
   expiresAt?: Date | string | null
   createdAt?: Date | string
@@ -378,6 +396,7 @@ export type UserNotificationUpdateManyMutationInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -392,10 +411,16 @@ export type UserNotificationUncheckedUpdateManyInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type UserNotificationUserIdDedupeKeyCompoundUniqueInput = {
+  userId: string
+  dedupeKey: string
 }
 
 export type UserNotificationCountOrderByAggregateInput = {
@@ -406,6 +431,7 @@ export type UserNotificationCountOrderByAggregateInput = {
   type?: Prisma.SortOrder
   icon?: Prisma.SortOrder
   data?: Prisma.SortOrder
+  dedupeKey?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -419,6 +445,7 @@ export type UserNotificationMaxOrderByAggregateInput = {
   body?: Prisma.SortOrder
   type?: Prisma.SortOrder
   icon?: Prisma.SortOrder
+  dedupeKey?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -432,6 +459,7 @@ export type UserNotificationMinOrderByAggregateInput = {
   body?: Prisma.SortOrder
   type?: Prisma.SortOrder
   icon?: Prisma.SortOrder
+  dedupeKey?: Prisma.SortOrder
   readAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -469,6 +497,7 @@ export type UserNotificationCreateWithoutDeliveriesInput = {
   type?: $Enums.NotificationType
   icon?: string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: string | null
   readAt?: Date | string | null
   expiresAt?: Date | string | null
   createdAt?: Date | string
@@ -483,6 +512,7 @@ export type UserNotificationUncheckedCreateWithoutDeliveriesInput = {
   type?: $Enums.NotificationType
   icon?: string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: string | null
   readAt?: Date | string | null
   expiresAt?: Date | string | null
   createdAt?: Date | string
@@ -513,6 +543,7 @@ export type UserNotificationUpdateWithoutDeliveriesInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -527,6 +558,7 @@ export type UserNotificationUncheckedUpdateWithoutDeliveriesInput = {
   type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
   icon?: Prisma.StringFieldUpdateOperationsInput | string
   data?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  dedupeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   readAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -572,6 +604,7 @@ export type UserNotificationSelect<ExtArgs extends runtime.Types.Extensions.Inte
   type?: boolean
   icon?: boolean
   data?: boolean
+  dedupeKey?: boolean
   readAt?: boolean
   expiresAt?: boolean
   createdAt?: boolean
@@ -588,6 +621,7 @@ export type UserNotificationSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   type?: boolean
   icon?: boolean
   data?: boolean
+  dedupeKey?: boolean
   readAt?: boolean
   expiresAt?: boolean
   createdAt?: boolean
@@ -602,6 +636,7 @@ export type UserNotificationSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   type?: boolean
   icon?: boolean
   data?: boolean
+  dedupeKey?: boolean
   readAt?: boolean
   expiresAt?: boolean
   createdAt?: boolean
@@ -616,13 +651,14 @@ export type UserNotificationSelectScalar = {
   type?: boolean
   icon?: boolean
   data?: boolean
+  dedupeKey?: boolean
   readAt?: boolean
   expiresAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserNotificationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "title" | "body" | "type" | "icon" | "data" | "readAt" | "expiresAt" | "createdAt" | "updatedAt", ExtArgs["result"]["userNotification"]>
+export type UserNotificationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "title" | "body" | "type" | "icon" | "data" | "dedupeKey" | "readAt" | "expiresAt" | "createdAt" | "updatedAt", ExtArgs["result"]["userNotification"]>
 export type UserNotificationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   deliveries?: boolean | Prisma.UserNotification$deliveriesArgs<ExtArgs>
   _count?: boolean | Prisma.UserNotificationCountOutputTypeDefaultArgs<ExtArgs>
@@ -643,6 +679,7 @@ export type $UserNotificationPayload<ExtArgs extends runtime.Types.Extensions.In
     type: $Enums.NotificationType
     icon: string
     data: runtime.JsonValue
+    dedupeKey: string | null
     readAt: Date | null
     expiresAt: Date | null
     createdAt: Date
@@ -1078,6 +1115,7 @@ export interface UserNotificationFieldRefs {
   readonly type: Prisma.FieldRef<"UserNotification", 'NotificationType'>
   readonly icon: Prisma.FieldRef<"UserNotification", 'String'>
   readonly data: Prisma.FieldRef<"UserNotification", 'Json'>
+  readonly dedupeKey: Prisma.FieldRef<"UserNotification", 'String'>
   readonly readAt: Prisma.FieldRef<"UserNotification", 'DateTime'>
   readonly expiresAt: Prisma.FieldRef<"UserNotification", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"UserNotification", 'DateTime'>

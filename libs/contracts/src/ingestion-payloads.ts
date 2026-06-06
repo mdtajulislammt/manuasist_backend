@@ -18,3 +18,10 @@ export type ScanClassificationCompletedV1Payload = {
   dishCount: number;
   naiScore?: number;
 };
+
+/** Payload for `scan.classification_failed.v1` */
+export type ScanClassificationFailedV1Payload = {
+  scanId: string;
+  userId: string;
+  error: string;
+};
