@@ -77,3 +77,13 @@ export const NotificationDeliveryStatus = {
 } as const
 
 export type NotificationDeliveryStatus = (typeof NotificationDeliveryStatus)[keyof typeof NotificationDeliveryStatus]
+
+
+export const MealSlot = {
+  BREAKFAST: 'BREAKFAST',
+  LUNCH: 'LUNCH',
+  DINNER: 'DINNER',
+  SNACKS: 'SNACKS'
+} as const
+
+export type MealSlot = (typeof MealSlot)[keyof typeof MealSlot]

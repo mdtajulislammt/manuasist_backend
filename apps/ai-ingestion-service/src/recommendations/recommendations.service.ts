@@ -1,5 +1,10 @@
 import { HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { DishCategory, MenuScanStatus } from '../../generated/prisma/enums';
+import {
+  buildDishDescription,
+  buildDishTags,
+  type DishPresentationSource,
+} from '../dishes/dish-presentation.util';
 import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 import {
@@ -8,18 +13,7 @@ import {
   RecommendationSort,
 } from './dto/get-scan-recommendations-query.dto';
 
-type JsonRecord = Record<string, unknown>;
-type DishCardSource = {
-  id: string;
-  name: string;
-  calories: number;
-  dietScore: number;
-  naiScore: number | null;
-  category: DishCategory;
-  allergenFlags: unknown;
-  explanation: unknown;
-  macros: unknown;
-};
+type DishCardSource = DishPresentationSource;
 
 @Injectable()
 export class RecommendationsService {
@@ -275,73 +269,10 @@ export class RecommendationsService {
       naiScore: score,
       scoreLabel: `${score}% match`,
       caloriesLabel: `${dish.calories} kcal`,
-      tags: this.buildTags(dish),
-      description: this.buildDescription(dish),
+      tags: buildDishTags(dish),
+      description: buildDishDescription(dish),
       isBookmarked: bookmarkedDishIds.has(dish.id),
     };
-  }
-
-  private buildTags(dish: DishCardSource): string[] {
-    const tags: string[] = [];
-
-    if (dish.category === DishCategory.RECOMMENDED) {
-      this.pushUnique(tags, 'Best Match');
-    } else if (dish.category === DishCategory.CAUTION) {
-      this.pushUnique(tags, 'Review First');
-    } else if (dish.category === DishCategory.AVOID) {
-      this.pushUnique(tags, 'Avoid');
-    }
-
-    const macros = this.asRecord(dish.macros);
-    const proteinG = this.numberValue(macros?.proteinG);
-    const carbG = this.numberValue(macros?.carbG);
-    const fatG = this.numberValue(macros?.fatG);
-
-    if (proteinG !== null && proteinG >= 20) {
-      this.pushUnique(tags, 'High Protein');
-    } else if (proteinG !== null && proteinG >= 10) {
-      this.pushUnique(tags, 'Protein Source');
-    }
-    if (carbG !== null && carbG <= 20) {
-      this.pushUnique(tags, 'Low Carb');
-    }
-    if (fatG !== null && fatG <= 10) {
-      this.pushUnique(tags, 'Low Fat');
-    }
-    if (dish.calories <= 450) {
-      this.pushUnique(tags, 'Light Option');
-    }
-
-    const allergenFlags = this.asRecord(dish.allergenFlags);
-    const hasAllergenAlert =
-      allergenFlags &&
-      Object.values(allergenFlags).some((value) => value === true);
-    if (hasAllergenAlert) {
-      this.pushUnique(tags, 'Allergen Alert');
-    }
-
-    return tags.slice(0, 3);
-  }
-
-  private buildDescription(dish: DishCardSource): string {
-    const explanation = this.asRecord(dish.explanation);
-    const summary = this.stringValue(explanation?.summary);
-    if (summary) {
-      return summary;
-    }
-
-    const reasons = this.stringArrayValue(explanation?.reasons);
-    if (reasons.length > 0) {
-      return reasons[0];
-    }
-
-    if (dish.category === DishCategory.RECOMMENDED) {
-      return 'A strong match for your dietary profile.';
-    }
-    if (dish.category === DishCategory.CAUTION) {
-      return 'Review this dish before ordering.';
-    }
-    return 'This dish may not align with your dietary profile.';
   }
 
   private countDishCategories(dishes: Array<{ category: DishCategory }>) {
@@ -369,39 +300,5 @@ export class RecommendationsService {
       return `Moderate menu fit (NAI ${naiScore}). ${recommendedCount} good options; check cautions.`;
     }
     return `Limited menu fit (NAI ${naiScore}). ${avoidCount} items may conflict with your goals.`;
-  }
-
-  private asRecord(value: unknown): JsonRecord | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return null;
-    }
-    return value as JsonRecord;
-  }
-
-  private numberValue(value: unknown): number | null {
-    return typeof value === 'number' && Number.isFinite(value) ? value : null;
-  }
-
-  private stringValue(value: unknown): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-
-  private stringArrayValue(value: unknown): string[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    return value
-      .map((item) => this.stringValue(item))
-      .filter((item): item is string => item !== null);
-  }
-
-  private pushUnique(values: string[], value: string) {
-    if (!values.includes(value)) {
-      values.push(value);
-    }
   }
 }

@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate --schema ./prisma/schema.prisma && node ../../scripts/patch-prisma-client-cjs.mjs ."
   },
   "dependencies": {
+    "@menu-assist/ai-pipeline": "workspace:*",
     "@menu-assist/api-auth": "workspace:*",
     "@menu-assist/contracts": "workspace:*",
     "@menu-assist/file-storage": "workspace:*",

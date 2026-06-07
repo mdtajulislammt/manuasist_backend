@@ -288,6 +288,9 @@ importers:
 
   apps/application-service:
     dependencies:
+      '@menu-assist/ai-pipeline':
+        specifier: workspace:*
+        version: link:../../libs/ai-pipeline
       '@menu-assist/api-auth':
         specifier: workspace:*
         version: link:../../libs/api-auth

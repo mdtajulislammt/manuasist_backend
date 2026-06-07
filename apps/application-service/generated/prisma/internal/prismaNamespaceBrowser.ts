@@ -59,7 +59,8 @@ export const ModelName = {
   UserUsageCredit: 'UserUsageCredit',
   UserNotification: 'UserNotification',
   UserDeviceToken: 'UserDeviceToken',
-  NotificationDelivery: 'NotificationDelivery'
+  NotificationDelivery: 'NotificationDelivery',
+  MealLogEntry: 'MealLogEntry'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -219,6 +220,28 @@ export const NotificationDeliveryScalarFieldEnum = {
 } as const
 
 export type NotificationDeliveryScalarFieldEnum = (typeof NotificationDeliveryScalarFieldEnum)[keyof typeof NotificationDeliveryScalarFieldEnum]
+
+
+export const MealLogEntryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  dishId: 'dishId',
+  scanId: 'scanId',
+  mealDate: 'mealDate',
+  mealSlot: 'mealSlot',
+  portionFactor: 'portionFactor',
+  calories: 'calories',
+  proteinG: 'proteinG',
+  carbG: 'carbG',
+  fatG: 'fatG',
+  naiScore: 'naiScore',
+  isAdjusted: 'isAdjusted',
+  loggedAt: 'loggedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MealLogEntryScalarFieldEnum = (typeof MealLogEntryScalarFieldEnum)[keyof typeof MealLogEntryScalarFieldEnum]
 
 
 export const SortOrder = {

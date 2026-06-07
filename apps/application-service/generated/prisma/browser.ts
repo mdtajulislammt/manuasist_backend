@@ -62,3 +62,8 @@ export type UserDeviceToken = Prisma.UserDeviceTokenModel
  * 
  */
 export type NotificationDelivery = Prisma.NotificationDeliveryModel
+/**
+ * Model MealLogEntry
+ * 
+ */
+export type MealLogEntry = Prisma.MealLogEntryModel

@@ -56,6 +56,13 @@ enum NotificationDeliveryStatus {
   CANCELED
 }
 
+enum MealSlot {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
+
 model UserProfile {
   id                    String    @id @default(uuid()) @db.Uuid
   userId                String    @unique @map("user_id") @db.Uuid
@@ -213,4 +220,27 @@ model NotificationDelivery {
   @@index([notificationId])
   @@index([deviceTokenId])
   @@map("application_notification_deliveries")
+}
+
+model MealLogEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  dishId        String   @map("dish_id") @db.Uuid
+  scanId        String?  @map("scan_id") @db.Uuid
+  mealDate      DateTime @map("meal_date") @db.Date
+  mealSlot      MealSlot @map("meal_slot")
+  portionFactor Float    @map("portion_factor")
+  calories      Int
+  proteinG      Float?   @map("protein_g")
+  carbG         Float?   @map("carb_g")
+  fatG          Float?   @map("fat_g")
+  naiScore      Int      @map("nai_score")
+  isAdjusted    Boolean  @default(false) @map("is_adjusted")
+  loggedAt      DateTime @default(now()) @map("logged_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, mealDate])
+  @@index([userId, loggedAt])
+  @@map("application_meal_log_entries")
 }

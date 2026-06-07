@@ -23,10 +23,11 @@
         "admin_internal_api_key": "dev-internal-onboarding-key",
         "ingestion_internal_api_key": "dev-internal-ingestion-key",
         "access_token": "",
-        "refresh_token": ""
+        "refresh_token": "",
+        "dish_id": ""
       },
       "dataPropertyOrder": {
-        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "ingestion_direct_url", "admin_internal_api_key", "ingestion_internal_api_key", "access_token", "refresh_token"]
+        "&": ["gateway_url", "auth_direct_url", "admin_direct_url", "ingestion_direct_url", "admin_internal_api_key", "ingestion_internal_api_key", "access_token", "refresh_token", "dish_id"]
       },
       "color": null,
       "isPrivate": false,
@@ -640,6 +641,150 @@
       ],
       "authentication": {},
       "metaSortKey": -992,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_meals_prefill",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET meals/dishes/:dishId/prefill",
+      "description": "Add to Today's Meal screen defaults. Set dish_id from scan recommendations.",
+      "url": "{{ gateway_url }}/v1/app/meals/dishes/{{ dish_id }}/prefill",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -991.5,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_meals_preview",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "POST meals/preview",
+      "description": "Preview scaled nutrition and NAI impact before logging.",
+      "url": "{{ gateway_url }}/v1/app/meals/preview",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dishId\": \"{{ dish_id }}\",\n  \"portionFactor\": 1,\n  \"mealSlot\": \"BREAKFAST\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -991.4,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_meals_today_post",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "POST meals/today",
+      "description": "Log a meal for today.",
+      "url": "{{ gateway_url }}/v1/app/meals/today",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dishId\": \"{{ dish_id }}\",\n  \"portionFactor\": 1,\n  \"mealSlot\": \"BREAKFAST\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -991.3,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_meals_today_get",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET meals/today",
+      "description": "List today's logged meals grouped by meal slot.",
+      "url": "{{ gateway_url }}/v1/app/meals/today",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -991.2,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_v1_app_home",
+      "parentId": "fld_v1_app",
+      "_type": "request",
+      "name": "GET home",
+      "description": "Home dashboard; dailyIntake and todayNai reflect logged meals when present.",
+      "url": "{{ gateway_url }}/v1/app/home",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -991.1,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

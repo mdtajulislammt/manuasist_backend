@@ -4,6 +4,7 @@ import {
   AiHomeSummaryPayload,
   AiIngestionHomeClientService,
 } from './ai-ingestion-home-client.service';
+import { MealsService } from '../meals/meals.service';
 import { GetHomeQueryDto } from './dto/get-home-query.dto';
 
 @Injectable()
@@ -11,24 +12,31 @@ export class HomeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiHome: AiIngestionHomeClientService,
+    private readonly meals: MealsService,
   ) { }
 
   async getHome(userId: string, query: GetHomeQueryDto = {}) {
     try {
       const trackingRange = query.trackingRange ?? 'weekly';
-      const [profile, preferences, aiSummary] = await Promise.all([
+      const [profile, preferences, aiSummary, mealStats] = await Promise.all([
         this.prisma.userProfile.findUnique({ where: { userId } }),
         this.prisma.preferences.findUnique({ where: { userId } }),
         this.aiHome.getHomeSummary(userId, trackingRange),
+        this.meals.getTodayMealStats(userId),
       ]);
 
       const displayName = this.displayName(profile?.fullName);
       const calorieTarget = preferences?.calorieTarget ?? 1050;
-      const dailyCalories =
-        aiSummary.todayCalories > 0
+      const usesMealLogs = mealStats.mealCount > 0;
+      const dailyCalories = usesMealLogs
+        ? mealStats.calories
+        : aiSummary.todayCalories > 0
           ? aiSummary.todayCalories
           : aiSummary.latestCalories;
       const dailyProgress = this.percent(dailyCalories, calorieTarget);
+      const todayNaiScore = usesMealLogs
+        ? mealStats.dailyNai
+        : aiSummary.latestScore;
 
       return {
         success: true,
@@ -40,7 +48,13 @@ export class HomeService {
             avatarUrl: profile?.avatarUrl ?? null,
             notificationCount: 0,
           },
-          todayNai: this.todayNai(aiSummary, dailyCalories, calorieTarget),
+          todayNai: this.todayNai(
+            aiSummary,
+            dailyCalories,
+            calorieTarget,
+            todayNaiScore,
+            usesMealLogs,
+          ),
           naiTracking: {
             selectedRange: aiSummary.trackingRange,
             warning: aiSummary.warning,
@@ -74,16 +88,19 @@ export class HomeService {
     summary: AiHomeSummaryPayload,
     dailyCalories: number,
     calorieTarget: number,
+    score: number | null,
+    usesMealLogs: boolean,
   ) {
-    const score = summary.latestScore;
     return {
       title: "Today's NAI Score",
       score,
       scoreLabel: score === null ? '- / 100' : `${score} / 100`,
       rating: this.scoreRating(score),
-      subtitle: summary.hasCompletedScan
-        ? 'Based on your latest menu scan'
-        : 'Scan your first menu',
+      subtitle: usesMealLogs
+        ? "Based on today's logged meals"
+        : summary.hasCompletedScan
+          ? 'Based on your latest menu scan'
+          : 'Scan your first menu',
       changeText:
         summary.scoreChangePercent === null
           ? null

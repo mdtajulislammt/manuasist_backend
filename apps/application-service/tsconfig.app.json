@@ -9,6 +9,7 @@
   "include": [
     "src/**/*.ts",
     "generated/**/*.ts",
-    "../../libs/contracts/src/**/*.ts"
+    "../../libs/contracts/src/**/*.ts",
+    "../../libs/ai-pipeline/src/**/*.ts"
   ]
 }
