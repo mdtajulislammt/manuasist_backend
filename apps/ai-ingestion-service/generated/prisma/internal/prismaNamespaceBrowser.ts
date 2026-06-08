@@ -100,6 +100,7 @@ export const DishScalarFieldEnum = {
   id: 'id',
   scanId: 'scanId',
   name: 'name',
+  imageUrl: 'imageUrl',
   calories: 'calories',
   dietScore: 'dietScore',
   naiScore: 'naiScore',

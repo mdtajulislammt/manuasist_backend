@@ -20,6 +20,7 @@ import {
   LlmClient,
   OpenFoodFactsProvider,
   type OcrProviderPort,
+  SpoonacularClient,
   type UserPreferenceHints,
   UsdaFdcProvider,
 } from '../../../../libs/ai-pipeline/src';
@@ -42,6 +43,7 @@ export class ScanProcessorService {
   private readonly embeddings: EmbeddingClient;
   private readonly nutrition: CompositeNutritionProvider;
   private readonly ocr: OcrProviderPort;
+  private readonly spoonacular: SpoonacularClient;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -74,6 +76,9 @@ export class ScanProcessorService {
       googleVisionApiKey: this.config.get<string>('GOOGLE_VISION_API_KEY'),
       provider: this.config.get<string>('OCR_PROVIDER'),
     });
+    this.spoonacular = new SpoonacularClient(
+      this.config.get<string>('SPOONACULAR_API_KEY'),
+    );
   }
 
   async handleScanSubmitted(payload: ScanSubmittedV1Payload) {
@@ -105,6 +110,7 @@ export class ScanProcessorService {
       for (const line of extraction.dishes) {
         const classification = await classifyDish(line, prefs, this.llm);
         const nf = await this.lookupNutritionCached(line.name);
+        const dishImageUrl = await this.spoonacular.getDishImage(line.name);
         const nai = computeDishNai({
           dietScore: classification.dietScore,
           nutritionConfidence: nf.confidence,
@@ -124,6 +130,7 @@ export class ScanProcessorService {
           id: randomUUID(),
           scanId,
           name: line.name.slice(0, 500),
+          imageUrl: dishImageUrl,
           calories: nf.calories,
           dietScore: classification.dietScore,
           naiScore: nai.naiScore,

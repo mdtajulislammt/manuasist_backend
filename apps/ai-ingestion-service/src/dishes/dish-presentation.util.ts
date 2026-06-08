@@ -5,6 +5,7 @@ type JsonRecord = Record<string, unknown>;
 export type DishPresentationSource = {
   id: string;
   name: string;
+  imageUrl: string | null;
   calories: number;
   dietScore: number;
   naiScore: number | null;

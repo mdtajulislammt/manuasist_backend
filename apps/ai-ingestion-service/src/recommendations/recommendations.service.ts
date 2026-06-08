@@ -264,7 +264,7 @@ export class RecommendationsService {
     return {
       dishId: dish.id,
       name: dish.name,
-      imageUrl: null,
+      imageUrl: dish.imageUrl,
       category: dish.category,
       naiScore: score,
       scoreLabel: `${score}% match`,

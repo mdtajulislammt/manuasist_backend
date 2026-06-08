@@ -44,6 +44,7 @@ export type DishMinAggregateOutputType = {
   id: string | null
   scanId: string | null
   name: string | null
+  imageUrl: string | null
   calories: number | null
   dietScore: number | null
   naiScore: number | null
@@ -58,6 +59,7 @@ export type DishMaxAggregateOutputType = {
   id: string | null
   scanId: string | null
   name: string | null
+  imageUrl: string | null
   calories: number | null
   dietScore: number | null
   naiScore: number | null
@@ -72,6 +74,7 @@ export type DishCountAggregateOutputType = {
   id: number
   scanId: number
   name: number
+  imageUrl: number
   calories: number
   dietScore: number
   naiScore: number
@@ -107,6 +110,7 @@ export type DishMinAggregateInputType = {
   id?: true
   scanId?: true
   name?: true
+  imageUrl?: true
   calories?: true
   dietScore?: true
   naiScore?: true
@@ -121,6 +125,7 @@ export type DishMaxAggregateInputType = {
   id?: true
   scanId?: true
   name?: true
+  imageUrl?: true
   calories?: true
   dietScore?: true
   naiScore?: true
@@ -135,6 +140,7 @@ export type DishCountAggregateInputType = {
   id?: true
   scanId?: true
   name?: true
+  imageUrl?: true
   calories?: true
   dietScore?: true
   naiScore?: true
@@ -241,6 +247,7 @@ export type DishGroupByOutputType = {
   id: string
   scanId: string
   name: string
+  imageUrl: string | null
   calories: number
   dietScore: number
   naiScore: number | null
@@ -283,6 +290,7 @@ export type DishWhereInput = {
   id?: Prisma.UuidFilter<"Dish"> | string
   scanId?: Prisma.UuidFilter<"Dish"> | string
   name?: Prisma.StringFilter<"Dish"> | string
+  imageUrl?: Prisma.StringNullableFilter<"Dish"> | string | null
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
   naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
@@ -304,6 +312,7 @@ export type DishOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   scanId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
   naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -328,6 +337,7 @@ export type DishWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.DishWhereInput | Prisma.DishWhereInput[]
   scanId?: Prisma.UuidFilter<"Dish"> | string
   name?: Prisma.StringFilter<"Dish"> | string
+  imageUrl?: Prisma.StringNullableFilter<"Dish"> | string | null
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
   naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
@@ -349,6 +359,7 @@ export type DishOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   scanId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
   naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -376,6 +387,7 @@ export type DishScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Dish"> | string
   scanId?: Prisma.UuidWithAggregatesFilter<"Dish"> | string
   name?: Prisma.StringWithAggregatesFilter<"Dish"> | string
+  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Dish"> | string | null
   calories?: Prisma.IntWithAggregatesFilter<"Dish"> | number
   dietScore?: Prisma.IntWithAggregatesFilter<"Dish"> | number
   naiScore?: Prisma.IntNullableWithAggregatesFilter<"Dish"> | number | null
@@ -394,6 +406,7 @@ export type DishScalarWhereWithAggregatesInput = {
 export type DishCreateInput = {
   id?: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -415,6 +428,7 @@ export type DishUncheckedCreateInput = {
   id?: string
   scanId: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -434,6 +448,7 @@ export type DishUncheckedCreateInput = {
 export type DishUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -455,6 +470,7 @@ export type DishUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scanId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -475,6 +491,7 @@ export type DishCreateManyInput = {
   id?: string
   scanId: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -493,6 +510,7 @@ export type DishCreateManyInput = {
 export type DishUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -512,6 +530,7 @@ export type DishUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scanId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -541,6 +560,7 @@ export type DishCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scanId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
   naiScore?: Prisma.SortOrder
@@ -567,6 +587,7 @@ export type DishMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scanId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
   naiScore?: Prisma.SortOrder
@@ -581,6 +602,7 @@ export type DishMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scanId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   calories?: Prisma.SortOrder
   dietScore?: Prisma.SortOrder
   naiScore?: Prisma.SortOrder
@@ -682,6 +704,7 @@ export type DishUpdateOneRequiredWithoutBookmarksNestedInput = {
 export type DishCreateWithoutScanInput = {
   id?: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -701,6 +724,7 @@ export type DishCreateWithoutScanInput = {
 export type DishUncheckedCreateWithoutScanInput = {
   id?: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -750,6 +774,7 @@ export type DishScalarWhereInput = {
   id?: Prisma.UuidFilter<"Dish"> | string
   scanId?: Prisma.UuidFilter<"Dish"> | string
   name?: Prisma.StringFilter<"Dish"> | string
+  imageUrl?: Prisma.StringNullableFilter<"Dish"> | string | null
   calories?: Prisma.IntFilter<"Dish"> | number
   dietScore?: Prisma.IntFilter<"Dish"> | number
   naiScore?: Prisma.IntNullableFilter<"Dish"> | number | null
@@ -768,6 +793,7 @@ export type DishScalarWhereInput = {
 export type DishCreateWithoutBookmarksInput = {
   id?: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -788,6 +814,7 @@ export type DishUncheckedCreateWithoutBookmarksInput = {
   id?: string
   scanId: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -822,6 +849,7 @@ export type DishUpdateToOneWithWhereWithoutBookmarksInput = {
 export type DishUpdateWithoutBookmarksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -842,6 +870,7 @@ export type DishUncheckedUpdateWithoutBookmarksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scanId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -860,6 +889,7 @@ export type DishUncheckedUpdateWithoutBookmarksInput = {
 export type DishCreateManyScanInput = {
   id?: string
   name: string
+  imageUrl?: string | null
   calories: number
   dietScore: number
   naiScore?: number | null
@@ -878,6 +908,7 @@ export type DishCreateManyScanInput = {
 export type DishUpdateWithoutScanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -897,6 +928,7 @@ export type DishUpdateWithoutScanInput = {
 export type DishUncheckedUpdateWithoutScanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -916,6 +948,7 @@ export type DishUncheckedUpdateWithoutScanInput = {
 export type DishUncheckedUpdateManyWithoutScanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   calories?: Prisma.IntFieldUpdateOperationsInput | number
   dietScore?: Prisma.IntFieldUpdateOperationsInput | number
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -966,6 +999,7 @@ export type DishSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   scanId?: boolean
   name?: boolean
+  imageUrl?: boolean
   calories?: boolean
   dietScore?: boolean
   naiScore?: boolean
@@ -988,6 +1022,7 @@ export type DishSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   scanId?: boolean
   name?: boolean
+  imageUrl?: boolean
   calories?: boolean
   dietScore?: boolean
   naiScore?: boolean
@@ -1008,6 +1043,7 @@ export type DishSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   scanId?: boolean
   name?: boolean
+  imageUrl?: boolean
   calories?: boolean
   dietScore?: boolean
   naiScore?: boolean
@@ -1028,6 +1064,7 @@ export type DishSelectScalar = {
   id?: boolean
   scanId?: boolean
   name?: boolean
+  imageUrl?: boolean
   calories?: boolean
   dietScore?: boolean
   naiScore?: boolean
@@ -1043,7 +1080,7 @@ export type DishSelectScalar = {
   updatedAt?: boolean
 }
 
-export type DishOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scanId" | "name" | "calories" | "dietScore" | "naiScore" | "naiFactors" | "category" | "allergenFlags" | "explanation" | "macros" | "nutritionSource" | "nutritionConfidence" | "embedding" | "createdAt" | "updatedAt", ExtArgs["result"]["dish"]>
+export type DishOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scanId" | "name" | "imageUrl" | "calories" | "dietScore" | "naiScore" | "naiFactors" | "category" | "allergenFlags" | "explanation" | "macros" | "nutritionSource" | "nutritionConfidence" | "embedding" | "createdAt" | "updatedAt", ExtArgs["result"]["dish"]>
 export type DishInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scan?: boolean | Prisma.MenuScanDefaultArgs<ExtArgs>
   bookmarks?: boolean | Prisma.Dish$bookmarksArgs<ExtArgs>
@@ -1066,6 +1103,7 @@ export type $DishPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     scanId: string
     name: string
+    imageUrl: string | null
     calories: number
     dietScore: number
     naiScore: number | null
@@ -1507,6 +1545,7 @@ export interface DishFieldRefs {
   readonly id: Prisma.FieldRef<"Dish", 'String'>
   readonly scanId: Prisma.FieldRef<"Dish", 'String'>
   readonly name: Prisma.FieldRef<"Dish", 'String'>
+  readonly imageUrl: Prisma.FieldRef<"Dish", 'String'>
   readonly calories: Prisma.FieldRef<"Dish", 'Int'>
   readonly dietScore: Prisma.FieldRef<"Dish", 'Int'>
   readonly naiScore: Prisma.FieldRef<"Dish", 'Int'>

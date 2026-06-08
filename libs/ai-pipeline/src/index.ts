@@ -11,3 +11,4 @@ export * from './ocr/ocr-provider.port';
 export * from './ocr/create-ocr-provider';
 export * from './nai/compute-nai';
 export * from './patterns/cuisine-tags';
+export * from './spoonacular';

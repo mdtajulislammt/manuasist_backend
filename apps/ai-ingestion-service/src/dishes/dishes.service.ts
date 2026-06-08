@@ -52,7 +52,7 @@ export class DishesService {
         category: dish.category,
         tags: buildDishTags(dish),
         description: buildDishDescription(dish),
-        imageUrl: dish.scan.imageUrl ?? null,
+        imageUrl: dish.imageUrl ?? dish.scan.imageUrl ?? null,
         baseNutrition: {
           calories: dish.calories,
           proteinG: macros.proteinG,

@@ -49,6 +49,7 @@ model Dish {
   id                  String       @id @default(uuid()) @db.Uuid
   scanId              String       @map("scan_id") @db.Uuid
   name                String
+  imageUrl            String?      @map("image_url")
   calories            Int
   dietScore           Int          @map("diet_score")
   naiScore            Int?         @map("nai_score")
