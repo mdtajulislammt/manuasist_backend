@@ -30,6 +30,8 @@ import {
   randomState,
 } from 'openid-client';
 import { PrismaService } from './prisma.service';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { isError } from 'node:util';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -432,59 +434,66 @@ export class AuthService implements OnModuleInit {
   }
 
   async rotate(refreshRaw: string): Promise<TokenPairResponse> {
-    const tokenLookup = sha256Hex(refreshRaw);
-    const row = await this.prisma.authRefreshToken.findUnique({
-      where: { tokenLookup },
-      include: {
-        user: {
-          include: { roles: { include: { role: true } } },
+    try {
+      const tokenLookup = sha256Hex(refreshRaw);
+      const row = await this.prisma.authRefreshToken.findUnique({
+        where: { tokenLookup },
+        include: {
+          user: {
+            include: { roles: { include: { role: true } } },
+          },
         },
-      },
-    });
+      });
 
-    if (!row || row.revokedAt) {
-      throw new UnauthorizedException('Invalid refresh token');
+      if (!row || row.revokedAt) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+      if (row.expiresAt < new Date()) {
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      if (row.replacedById) {
+        await this.revokeFamily(row.familyId);
+        throw new UnauthorizedException('Refresh token reuse detected');
+      }
+
+      const userId = row.userId;
+      const familyId = row.familyId;
+      const roleNames = row.user.roles.map((ur) => ur.role.name);
+
+      const newRaw = randomBytes(48).toString('base64url');
+      const newLookup = sha256Hex(newRaw);
+      const expiresAt = new Date(Date.now() + this.refreshTtlMs());
+
+      const newRow = await this.prisma.authRefreshToken.create({
+        data: {
+          userId,
+          familyId,
+          tokenLookup: newLookup,
+          expiresAt,
+        },
+      });
+
+      await this.prisma.authRefreshToken.update({
+        where: { id: row.id },
+        data: { replacedById: newRow.id },
+      });
+
+      const access_token = await this.signAccessToken(userId, roleNames);
+      return {
+        success: true,
+        message: 'Refresh successful.',
+        access_token,
+        token_type: 'Bearer',
+        expires_in: this.accessTtlSec(),
+        refresh_token: newRaw,
+      };
+    } catch (error) {
+      if (isError(error) && error.message.includes('Invalid')) {
+        throw new UnauthorizedException(error.message);
+      }
+      throw error;
     }
-    if (row.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token expired');
-    }
-
-    if (row.replacedById) {
-      await this.revokeFamily(row.familyId);
-      throw new UnauthorizedException('Refresh token reuse detected');
-    }
-
-    const userId = row.userId;
-    const familyId = row.familyId;
-    const roleNames = row.user.roles.map((ur) => ur.role.name);
-
-    const newRaw = randomBytes(48).toString('base64url');
-    const newLookup = sha256Hex(newRaw);
-    const expiresAt = new Date(Date.now() + this.refreshTtlMs());
-
-    const newRow = await this.prisma.authRefreshToken.create({
-      data: {
-        userId,
-        familyId,
-        tokenLookup: newLookup,
-        expiresAt,
-      },
-    });
-
-    await this.prisma.authRefreshToken.update({
-      where: { id: row.id },
-      data: { replacedById: newRow.id },
-    });
-
-    const access_token = await this.signAccessToken(userId, roleNames);
-    return {
-      success: true,
-      message: 'Refresh successful.',
-      access_token,
-      token_type: 'Bearer',
-      expires_in: this.accessTtlSec(),
-      refresh_token: newRaw,
-    };
   }
 
   async revoke(
@@ -570,93 +579,100 @@ export class AuthService implements OnModuleInit {
     confirmPassword: string;
     referralCode?: string;
   }): Promise<RegisterPendingVerificationResponse> {
-    const { password, confirmPassword } = input;
-    if (password !== confirmPassword) {
-      throw new BadRequestException(
-        'Password and confirm password do not match',
-      );
-    }
-
-    const referrerCode = this.normalizeReferralCode(input.referralCode);
-    const referralCodeForNewUser = await this.generateUniqueReferralCode();
-    let referredById: string | undefined;
-
-    if (referrerCode) {
-      const referrer = await this.prisma.authUser.findUnique({
-        where: { referralCode: referrerCode },
-        select: { id: true },
-      });
-      if (!referrer) {
-        throw new BadRequestException('Invalid referral code');
+    try {
+      const { password, confirmPassword } = input;
+      if (password !== confirmPassword) {
+        throw new BadRequestException(
+          'Password and confirm password do not match',
+        );
       }
-      referredById = referrer.id;
-    }
 
-    const { email: normalizedEmail, phone: normalizedPhone } =
-      normalizeIdentifier(input.identifier);
-    if (!normalizedEmail && !normalizedPhone) {
-      throw new BadRequestException(
-        'Identifier must be a valid email or E.164 phone number',
-      );
-    }
+      const referrerCode = this.normalizeReferralCode(input.referralCode);
+      const referralCodeForNewUser = await this.generateUniqueReferralCode();
+      let referredById: string | undefined;
 
-    if (normalizedEmail) {
-      const existingEmail = await this.prisma.authUser.findUnique({
-        where: { email: normalizedEmail },
-      });
-      if (existingEmail) {
-        throw new ConflictException('An account with this email already exists');
+      if (referrerCode) {
+        const referrer = await this.prisma.authUser.findUnique({
+          where: { referralCode: referrerCode },
+          select: { id: true },
+        });
+        if (!referrer) {
+          throw new BadRequestException('Invalid referral code');
+        }
+        referredById = referrer.id;
       }
-    }
 
-    if (normalizedPhone) {
-      const existingPhone = await this.prisma.authUser.findUnique({
-        where: { phone: normalizedPhone },
-      });
-      if (existingPhone) {
-        throw new ConflictException('An account with this phone already exists');
+      const { email: normalizedEmail, phone: normalizedPhone } =
+        normalizeIdentifier(input.identifier);
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new BadRequestException(
+          'Identifier must be a valid email or E.164 phone number',
+        );
       }
-    }
 
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await this.prisma.authUser.create({
-      data: {
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        passwordHash,
-        referralCode: referralCodeForNewUser,
-        referredById,
-        roles: {
-          create: {
-            role: { connect: { name: 'user' } },
+      if (normalizedEmail) {
+        const existingEmail = await this.prisma.authUser.findUnique({
+          where: { email: normalizedEmail },
+        });
+        if (existingEmail) {
+          throw new ConflictException('An account with this email already exists');
+        }
+      }
+
+      if (normalizedPhone) {
+        const existingPhone = await this.prisma.authUser.findUnique({
+          where: { phone: normalizedPhone },
+        });
+        if (existingPhone) {
+          throw new ConflictException('An account with this phone already exists');
+        }
+      }
+
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+      const user = await this.prisma.authUser.create({
+        data: {
+          email: normalizedEmail,
+          phone: normalizedPhone,
+          passwordHash,
+          referralCode: referralCodeForNewUser,
+          referredById,
+          roles: {
+            create: {
+              role: { connect: { name: 'user' } },
+            },
           },
         },
-      },
-    });
+      });
 
-    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
-    const targetIdentifier = normalizedPhone ?? normalizedEmail!;
-    const expiresInSeconds = this.signupOtpTtlSec();
-    const { otp } = await this.createOtpChallenge(
-      user.id,
-      channel,
-      'SIGNUP',
-      targetIdentifier,
-      expiresInSeconds,
-    );
+      const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+      const targetIdentifier = normalizedPhone ?? normalizedEmail!;
+      const expiresInSeconds = this.signupOtpTtlSec();
+      const { otp } = await this.createOtpChallenge(
+        user.id,
+        channel,
+        'SIGNUP',
+        targetIdentifier,
+        expiresInSeconds,
+      );
 
-    return {
-      success: true,
-      message:
-        channel === 'SMS'
-          ? 'Account created. A verification code was sent to your phone.'
-          : 'Account created. A verification code was sent to your email.',
-      status: 'PENDING_VERIFICATION',
-      channel: channel === 'SMS' ? 'sms' : 'email',
-      identifier: targetIdentifier,
-      expires_in_seconds: expiresInSeconds,
-      ...this.otpDebugResponse(otp),
-    };
+      return {
+        success: true,
+        message:
+          channel === 'SMS'
+            ? 'Account created. A verification code was sent to your phone.'
+            : 'Account created. A verification code was sent to your email.',
+        status: 'PENDING_VERIFICATION',
+        channel: channel === 'SMS' ? 'sms' : 'email',
+        identifier: targetIdentifier,
+        expires_in_seconds: expiresInSeconds,
+        ...this.otpDebugResponse(otp),
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('An account with this identifier already exists');
+      }
+      throw error;
+    }
   }
 
   async requestOtp(input: {
@@ -728,25 +744,32 @@ export class AuthService implements OnModuleInit {
     newPassword?: string;
     confirmPassword?: string;
   }): Promise<OtpVerifyResponse> {
-    const { identifier, type, otp } = input;
-    if (type === 'SIGNUP') {
-      const tokenPair = await this.verifySignupOtp(identifier, otp);
+    try {
+      const { identifier, type, otp } = input;
+      if (type === 'SIGNUP') {
+        const tokenPair = await this.verifySignupOtp(identifier, otp);
+        return {
+          success: true,
+          message: tokenPair.message,
+          tokenPair,
+        };
+      }
+
+
+      const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
+      if (!verifyOtpResponse.success) {
+        throw new UnauthorizedException(verifyOtpResponse.message);
+      }
       return {
         success: true,
-        message: tokenPair.message,
-        tokenPair,
+        message: verifyOtpResponse.message,
       };
+    } catch (error) {
+      if (isError(error) && (error.message.includes('Invalid OTP') || error.message.includes('OTP expired') || error.message.includes('OTP attempt limit exceeded'))) {
+        throw new UnauthorizedException(error.message);
+      }
+      throw error;
     }
-
-
-    const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
-    if (!verifyOtpResponse.success) {
-      throw new UnauthorizedException(verifyOtpResponse.message);
-    }
-    return {
-      success: true,
-      message: verifyOtpResponse.message,
-    };
   }
 
   async requestPasswordReset(
@@ -881,85 +904,92 @@ export class AuthService implements OnModuleInit {
     newPassword: string;
     confirmPassword: string;
   }): Promise<PasswordResetResponse> {
-    const { identifier, otp, newPassword, confirmPassword } = input;
-    if (newPassword !== confirmPassword) {
-      throw new BadRequestException(
-        'New password and confirm password do not match',
-      );
-    }
+    try {
+      const { identifier, otp, newPassword, confirmPassword } = input;
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException(
+          'New password and confirm password do not match',
+        );
+      }
 
-    const { email: normalizedEmail, phone: normalizedPhone } =
-      normalizeIdentifier(identifier);
-    if (!normalizedEmail && !normalizedPhone) {
-      throw new BadRequestException(
-        'Identifier must be a valid email or E.164 phone number',
-      );
-    }
+      const { email: normalizedEmail, phone: normalizedPhone } =
+        normalizeIdentifier(identifier);
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new BadRequestException(
+          'Identifier must be a valid email or E.164 phone number',
+        );
+      }
 
-    const user = await this.prisma.authUser.findFirst({
-      where: {
-        OR: [
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-        ],
-      },
-    });
-    if (!user) {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
-    const otpRow = await this.prisma.authOtpToken.findFirst({
-      where: {
-        userId: user.id,
-        channel,
-        purpose: 'PASSWORD_RESET',
-        consumedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
-    }
-
-    if (otpRow.attempts >= 5) {
-      throw new UnauthorizedException('OTP attempt limit exceeded');
-    }
-
-    const codeHash = sha256Hex(otp);
-    if (otpRow.codeHash !== codeHash) {
-      await this.prisma.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { consumedAt: new Date() },
-      });
-
-      await tx.authUser.update({
-        where: { id: user.id },
-        data: {
-          passwordHash,
-          ...(normalizedPhone
-            ? { phoneVerifiedAt: new Date() }
-            : { emailVerifiedAt: new Date() }),
+      const user = await this.prisma.authUser.findFirst({
+        where: {
+          OR: [
+            ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+            ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+          ],
         },
       });
-    });
+      if (!user) {
+        throw new UnauthorizedException('Invalid OTP');
+      }
 
-    await this.revokeAllUserRefreshTokens(user.id);
-    return {
-      success: true,
-      message: 'Password reset successful. You can sign in with your new password.',
-      status: 'PASSWORD_RESET_SUCCESS',
-    };
+      const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+      const otpRow = await this.prisma.authOtpToken.findFirst({
+        where: {
+          userId: user.id,
+          channel,
+          purpose: 'PASSWORD_RESET',
+          consumedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpRow || otpRow.expiresAt < new Date()) {
+        throw new UnauthorizedException('OTP expired or invalid');
+      }
+
+      if (otpRow.attempts >= 5) {
+        throw new UnauthorizedException('OTP attempt limit exceeded');
+      }
+
+      const codeHash = sha256Hex(otp);
+      if (otpRow.codeHash !== codeHash) {
+        await this.prisma.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { attempts: { increment: 1 } },
+        });
+        throw new UnauthorizedException('Invalid OTP');
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+      await this.prisma.$transaction(async (tx) => {
+        await tx.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { consumedAt: new Date() },
+        });
+
+        await tx.authUser.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            ...(normalizedPhone
+              ? { phoneVerifiedAt: new Date() }
+              : { emailVerifiedAt: new Date() }),
+          },
+        });
+      });
+
+      await this.revokeAllUserRefreshTokens(user.id);
+      return {
+        success: true,
+        message: 'Password reset successful. You can sign in with your new password.',
+        status: 'PASSWORD_RESET_SUCCESS',
+      };
+    } catch (error) {
+      if (isError(error) && error.message.includes('Invalid OTP')) {
+        throw new UnauthorizedException(error.message);
+      }
+      throw error;
+    }
   }
 
 
@@ -967,42 +997,49 @@ export class AuthService implements OnModuleInit {
     identifier: string;
     password: string;
   }): Promise<TokenPairResponse> {
-    const { email: normalizedEmail, phone: normalizedPhone } =
-      normalizeIdentifier(input.identifier);
-    if (!normalizedEmail && !normalizedPhone) {
-      throw new BadRequestException(
-        'Identifier must be a valid email or E.164 phone number',
+    try {
+      const { email: normalizedEmail, phone: normalizedPhone } =
+        normalizeIdentifier(input.identifier);
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new BadRequestException(
+          'Identifier must be a valid email or E.164 phone number',
+        );
+      }
+
+      const user = await this.prisma.authUser.findFirst({
+        where: {
+          OR: [
+            ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+            ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+          ],
+        },
+      });
+      if (!user || !user.passwordHash) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      if (normalizedPhone && !user.phoneVerifiedAt) {
+        throw new UnauthorizedException('Phone not verified');
+      }
+      if (normalizedEmail && !user.emailVerifiedAt) {
+        throw new UnauthorizedException('Email not verified');
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        input.password,
+        user.passwordHash ?? '',
       );
-    }
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    const user = await this.prisma.authUser.findFirst({
-      where: {
-        OR: [
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-        ],
-      },
-    });
-    if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      return this.issuePairForUser(user.id);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Invalid credentials')) {
+        throw new UnauthorizedException(error.message);
+      }
+      throw error;
     }
-
-    if (normalizedPhone && !user.phoneVerifiedAt) {
-      throw new UnauthorizedException('Phone not verified');
-    }
-    if (normalizedEmail && !user.emailVerifiedAt) {
-      throw new UnauthorizedException('Email not verified');
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      input.password,
-      user.passwordHash ?? '',
-    );
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return this.issuePairForUser(user.id);
   }
 
   /**
