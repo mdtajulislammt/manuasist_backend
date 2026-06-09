@@ -8,6 +8,8 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.set('trust proxy', 1);
+  // Required for Apple Sign In form_post callback (application/x-www-form-urlencoded)
+  app.useBodyParser('urlencoded', { extended: true });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

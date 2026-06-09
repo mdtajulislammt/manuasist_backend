@@ -13,11 +13,11 @@ import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import * as nodemailer from 'nodemailer';
 // @ts-ignore
-import { decodeJwt } from 'jose';
+import { createRemoteJWKSet, decodeJwt } from 'jose';
 // @ts-ignore
 import { exportJWK, importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose';
 // @ts-ignore
-import type { JWK, KeyLike } from 'jose';
+import type { JWK, KeyLike, RemoteJWKSetOptions } from 'jose';
 import type { Configuration } from 'openid-client';
 import {
   authorizationCodeGrant,
@@ -136,6 +136,25 @@ export type ContactChangeVerifyResponse = {
 
 type PkceEntry = { codeVerifier: string; createdAt: number };
 
+/**
+ * Payload encoded as Base64 JSON in the OAuth `state` parameter.
+ * Carries the PKCE code-verifier key and an optional referral code
+ * so it survives the provider round-trip without any server-side state.
+ */
+type OAuthStatePayload = { key: string; referralCode?: string };
+
+/** Well-known JWKS endpoints for id_token verification (native SDK flow). */
+const PROVIDER_JWKS_URIS: Record<string, string> = {
+  google: 'https://www.googleapis.com/oauth2/v3/certs',
+  apple: 'https://appleid.apple.com/auth/keys',
+};
+
+/** Well-known OIDC issuers used for `iss` claim validation. */
+const PROVIDER_ISSUERS: Record<string, string> = {
+  google: 'https://accounts.google.com',
+  apple: 'https://appleid.apple.com',
+};
+
 @Injectable()
 export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
@@ -144,7 +163,14 @@ export class AuthService implements OnModuleInit {
   private publicKey!: KeyLike;
   private jwksBody!: { keys: JWK[] };
 
-  private oidcConfiguration?: Promise<Configuration>;
+  /**
+   * Cached OIDC Configuration per provider key ("google" | "apple").
+   * Lazy-initialised on first use.
+   */
+  private readonly oidcConfigurations = new Map<string, Promise<Configuration>>();
+
+  /** Remote JWKS sets for id_token verification, keyed by provider. */
+  private readonly remoteJwksSets = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
   private readonly pkceMap = new Map<string, PkceEntry>();
   private readonly pkceTtlMs = 10 * 60 * 1000;
@@ -1363,10 +1389,25 @@ export class AuthService implements OnModuleInit {
 
   // --- OIDC user sync (from UserSyncService) ---
 
+  /**
+   * Find or create a user for the given OIDC identity.
+   *
+   * On first sign-in a new AuthUser + AuthIdentity row is created.
+   * On subsequent sign-ins the existing user is returned; if the email
+   * changed at the provider it is updated here too.
+   *
+   * @param provider  Human-readable provider name: "google" | "apple" | "oidc".
+   * @param issuer    The `iss` claim from the id_token.
+   * @param subject   The `sub` claim from the id_token.
+   * @param email     Email from the id_token (may be undefined for Apple).
+   * @param referralCode  Optional referral code to apply on account creation.
+   */
   async upsertOidcUser(
+    provider: string,
     issuer: string,
     subject: string,
     email: string | undefined | null,
+    referralCode?: string,
   ) {
     const existing = await this.prisma.authIdentity.findUnique({
       where: {
@@ -1382,6 +1423,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existing) {
+      // Update email if it changed at the provider side
       if (email && existing.user.email !== email) {
         await this.prisma.authUser.update({
           where: { id: existing.userId },
@@ -1395,11 +1437,35 @@ export class AuthService implements OnModuleInit {
       return existing.user;
     }
 
+    // --- New user: resolve referral ---
+    const normalizedReferralCode = this.normalizeReferralCode(referralCode);
+    let referredById: string | undefined;
+    if (normalizedReferralCode) {
+      const referrer = await this.prisma.authUser.findUnique({
+        where: { referralCode: normalizedReferralCode },
+        select: { id: true },
+      });
+      if (!referrer) {
+        // Non-fatal: invalid referral codes are silently ignored for social sign-ups
+        this.logger.warn(
+          `Social sign-up: referral code "${normalizedReferralCode}" not found; ignoring.`,
+        );
+      } else {
+        referredById = referrer.id;
+      }
+    }
+
+    const referralCodeForNewUser = await this.generateUniqueReferralCode();
+
     return this.prisma.authUser.create({
       data: {
         email: email ?? undefined,
+        emailVerifiedAt: email ? new Date() : undefined,
+        referralCode: referralCodeForNewUser,
+        referredById,
         identities: {
           create: {
+            provider,
             issuer,
             subject,
             email: email ?? undefined,
@@ -1428,14 +1494,14 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  private pkceSet(state: string, codeVerifier: string) {
+  private pkceSet(key: string, codeVerifier: string) {
     this.pkceGc();
-    this.pkceMap.set(state, { codeVerifier, createdAt: Date.now() });
+    this.pkceMap.set(key, { codeVerifier, createdAt: Date.now() });
   }
 
-  private pkceTake(state: string): string | undefined {
-    const v = this.pkceMap.get(state);
-    this.pkceMap.delete(state);
+  private pkceTake(key: string): string | undefined {
+    const v = this.pkceMap.get(key);
+    this.pkceMap.delete(key);
     if (!v) {
       return undefined;
     }
@@ -1445,57 +1511,188 @@ export class AuthService implements OnModuleInit {
     return v.codeVerifier;
   }
 
-  // --- OIDC (from OidcService) ---
-
-  private getOidcConfiguration(): Promise<Configuration> {
-    if (!this.oidcConfiguration) {
-      const issuer = new URL(this.config.getOrThrow<string>('OIDC_ISSUER'));
-      const clientId = this.config.getOrThrow<string>('OIDC_CLIENT_ID');
-      const clientSecret = this.config.get<string>('OIDC_CLIENT_SECRET');
-      const auth = clientSecret ? ClientSecretPost(clientSecret) : None();
-      const meta = clientSecret
-        ? { client_secret: clientSecret }
-        : ({} as Record<string, never>);
-      this.oidcConfiguration = discovery(issuer, clientId, meta, auth);
-    }
-    return this.oidcConfiguration;
+  /**
+   * Encode an OAuthStatePayload as a URL-safe Base64 JSON string.
+   * The `key` field is used to look up the PKCE codeVerifier.
+   */
+  private encodeOAuthState(payload: OAuthStatePayload): string {
+    return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   }
 
-  async buildAuthorizationRedirect(): Promise<string> {
-    const oidc = await this.getOidcConfiguration();
-    const redirectUri = this.config.getOrThrow<string>('OIDC_REDIRECT_URI');
-    const scope =
-      this.config.get<string>('OIDC_SCOPES') ?? 'openid profile email';
+  /**
+   * Decode the state produced by encodeOAuthState.
+   * Returns undefined if the value is not a valid payload (e.g. plain random state).
+   */
+  private decodeOAuthState(state: string): OAuthStatePayload | undefined {
+    try {
+      const json = Buffer.from(state, 'base64url').toString('utf8');
+      const parsed = JSON.parse(json) as unknown;
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'key' in parsed &&
+        typeof (parsed as { key: unknown }).key === 'string'
+      ) {
+        return parsed as OAuthStatePayload;
+      }
+    } catch {
+      // Not our encoded state — ignore
+    }
+    return undefined;
+  }
+
+  // --- OIDC multi-provider configuration ---
+
+  /**
+   * Returns the OIDC Configuration for the given provider.
+   * Configurations are lazy-initialised and cached per provider.
+   *
+   * Supported providers: "google" | "apple"
+   */
+  private getOidcConfiguration(provider: 'google' | 'apple'): Promise<Configuration> {
+    const cached = this.oidcConfigurations.get(provider);
+    if (cached) return cached;
+
+    let configPromise: Promise<Configuration>;
+
+    if (provider === 'google') {
+      const issuerUrl = new URL('https://accounts.google.com');
+      const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
+      const clientSecret = this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
+      configPromise = discovery(
+        issuerUrl,
+        clientId,
+        { client_secret: clientSecret },
+        ClientSecretPost(clientSecret),
+      );
+    } else if (provider === 'apple') {
+      const issuerUrl = new URL('https://appleid.apple.com');
+      // Apple uses JWT-based client authentication (ES256 signed with the .p8 key).
+      // We use the `None` auth method with openid-client discovery and then
+      // supply the client_secret_jwt manually during the token exchange step.
+      const clientId = this.config.getOrThrow<string>('APPLE_CLIENT_ID');
+      configPromise = discovery(issuerUrl, clientId, {}, None());
+    } else {
+      throw new BadRequestException(`Unsupported OAuth provider: ${provider}`);
+    }
+
+    this.oidcConfigurations.set(provider, configPromise);
+    return configPromise;
+  }
+
+  /**
+   * Generate an Apple client_secret JWT (ES256) valid for up to 6 months.
+   * Apple requires this to be freshly generated for each token request.
+   * See: https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens
+   */
+  private async buildAppleClientSecret(): Promise<string> {
+    const teamId = this.config.getOrThrow<string>('APPLE_TEAM_ID');
+    const clientId = this.config.getOrThrow<string>('APPLE_CLIENT_ID');
+    const keyId = this.config.getOrThrow<string>('APPLE_KEY_ID');
+    const privateKeyPem = this.config.getOrThrow<string>('APPLE_PRIVATE_KEY');
+
+    // Apple accepts .p8 keys in PKCS#8 format (importPKCS8 handles this)
+    const applePrivateKey = await importPKCS8(privateKeyPem, 'ES256');
+
+    const now = Math.floor(Date.now() / 1000);
+    // Apple enforces a maximum 6-month expiry
+    const exp = now + 60 * 60 * 24 * 180;
+
+    return new SignJWT({})
+      .setProtectedHeader({ alg: 'ES256', kid: keyId })
+      .setIssuer(teamId)
+      .setIssuedAt(now)
+      .setExpirationTime(exp)
+      .setAudience('https://appleid.apple.com')
+      .setSubject(clientId)
+      .sign(applePrivateKey);
+  }
+
+  /**
+   * Get (or create) a cached remote JWKS set for the given provider.
+   * Used only by the native mobile id_token verification path.
+   */
+  private getRemoteJwksSet(provider: string): ReturnType<typeof createRemoteJWKSet> {
+    const cached = this.remoteJwksSets.get(provider);
+    if (cached) return cached;
+    const uri = PROVIDER_JWKS_URIS[provider];
+    if (!uri) {
+      throw new BadRequestException(`Unsupported provider for JWKS: ${provider}`);
+    }
+    const set = createRemoteJWKSet(new URL(uri));
+    this.remoteJwksSets.set(provider, set);
+    return set;
+  }
+
+  /**
+   * Build the authorization redirect URL for the given provider.
+   * Encodes an optional referral code inside the OAuth state parameter
+   * so it survives the round-trip to the IdP and back.
+   */
+  async buildAuthorizationRedirect(
+    provider: 'google' | 'apple',
+    referralCode?: string,
+  ): Promise<string> {
+    const oidc = await this.getOidcConfiguration(provider);
+
+    const redirectUri = provider === 'apple'
+      ? this.config.getOrThrow<string>('OAUTH_REDIRECT_URI_APPLE')
+      : this.config.getOrThrow<string>('OAUTH_REDIRECT_URI_GOOGLE');
+
+    const scope = provider === 'apple'
+      ? (this.config.get<string>('APPLE_SCOPES') ?? 'name email')
+      : (this.config.get<string>('GOOGLE_SCOPES') ?? 'openid profile email');
 
     const codeVerifier = randomPKCECodeVerifier();
     const codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
-    const state = randomState();
-    this.pkceSet(state, codeVerifier);
 
-    const url = buildAuthorizationUrl(oidc, {
+    // Use a random key as the PKCE store key; encode it + referralCode in state
+    const pkceKey = randomState();
+    this.pkceSet(pkceKey, codeVerifier);
+
+    const statePayload: OAuthStatePayload = { key: pkceKey, referralCode };
+    const state = this.encodeOAuthState(statePayload);
+
+    const params: Record<string, string> = {
       redirect_uri: redirectUri,
       scope,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state,
-    });
+    };
+
+    // Apple requires response_mode=form_post for the web flow
+    if (provider === 'apple') {
+      params['response_mode'] = 'form_post';
+    }
+
+    const url = buildAuthorizationUrl(oidc, params);
     return url.href;
   }
 
-  async handleCallback(callbackUrl: URL) {
-    const oidc = await this.getOidcConfiguration();
-    const state = callbackUrl.searchParams.get('state');
-    if (!state) {
+  /**
+   * Handle the GET OAuth callback (used by Google and as fallback).
+   * Decodes the state to retrieve the PKCE verifier and optional referral code.
+   */
+  async handleCallback(callbackUrl: URL, provider: 'google' | 'apple') {
+    const oidc = await this.getOidcConfiguration(provider);
+    const rawState = callbackUrl.searchParams.get('state');
+    if (!rawState) {
       throw new BadRequestException('Missing state');
     }
-    const codeVerifier = this.pkceTake(state);
+
+    const statePayload = this.decodeOAuthState(rawState);
+    const pkceKey = statePayload?.key ?? rawState;
+    const referralCode = statePayload?.referralCode;
+
+    const codeVerifier = this.pkceTake(pkceKey);
     if (!codeVerifier) {
       throw new BadRequestException('Invalid or expired OAuth state');
     }
 
     const tokens = await authorizationCodeGrant(oidc, callbackUrl, {
       pkceCodeVerifier: codeVerifier,
-      expectedState: state,
+      expectedState: rawState,
     });
 
     const idToken = tokens.id_token;
@@ -1517,7 +1714,150 @@ export class AuthService implements OnModuleInit {
           ? claims.preferred_username
           : undefined;
 
-    const user = await this.upsertOidcUser(iss, sub, email);
+    const user = await this.upsertOidcUser(provider, iss, sub, email, referralCode);
     return this.issuePairForUser(user.id, 'OAuth sign-in successful.');
+  }
+
+  /**
+   * Handle Apple's form_post callback (POST body instead of query params).
+   *
+   * Apple posts `code`, `state`, and optionally `user` (JSON string with
+   * name/email, sent ONLY on the very first authorization).
+   */
+  async handleAppleFormPost(body: {
+    code: string;
+    state: string;
+    user?: string;   // JSON string: { name: {...}, email: string }
+    id_token?: string;
+  }) {
+    const provider = 'apple' as const;
+    const oidc = await this.getOidcConfiguration(provider);
+    const redirectUri = this.config.getOrThrow<string>('OAUTH_REDIRECT_URI_APPLE');
+
+    const rawState = body.state;
+    const statePayload = this.decodeOAuthState(rawState);
+    const pkceKey = statePayload?.key ?? rawState;
+    const referralCode = statePayload?.referralCode;
+
+    const codeVerifier = this.pkceTake(pkceKey);
+    if (!codeVerifier) {
+      throw new BadRequestException('Invalid or expired OAuth state');
+    }
+
+    // Apple does not support PKCE for the form_post flow on older integrations,
+    // but we still attempt it. We reconstruct a synthetic callback URL from the
+    // posted code so openid-client can exchange it.
+    const syntheticUrl = new URL(redirectUri);
+    syntheticUrl.searchParams.set('code', body.code);
+    syntheticUrl.searchParams.set('state', rawState);
+
+    // Generate Apple's JWT client_secret on the fly
+    const clientSecret = await this.buildAppleClientSecret();
+    const clientId = this.config.getOrThrow<string>('APPLE_CLIENT_ID');
+
+    // Manually exchange the code using fetch since Apple requires
+    // client_secret_post with the dynamically-generated JWT secret
+    const tokenEndpoint = 'https://appleid.apple.com/auth/token';
+    const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: body.code,
+      redirect_uri: redirectUri,
+      client_id: clientId,
+      client_secret: clientSecret,
+    });
+
+    const tokenResponse = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const text = await tokenResponse.text();
+      this.logger.error(`Apple token exchange failed: ${text}`);
+      throw new InternalServerErrorException('Apple token exchange failed');
+    }
+
+    const tokenJson = (await tokenResponse.json()) as { id_token?: string };
+    const idToken = body.id_token ?? tokenJson.id_token;
+    if (typeof idToken !== 'string' || !idToken) {
+      throw new InternalServerErrorException('Apple did not return an id_token');
+    }
+
+    // Apple sends user info (name, email) only on first authorization
+    let appleEmail: string | undefined;
+    if (body.user) {
+      try {
+        const userObj = JSON.parse(body.user) as { email?: string };
+        appleEmail = typeof userObj.email === 'string' ? userObj.email : undefined;
+      } catch {
+        // Malformed user JSON — ignore
+      }
+    }
+
+    const claims = decodeJwt(idToken) as Record<string, unknown>;
+    const iss = typeof claims.iss === 'string' ? claims.iss : undefined;
+    const sub = typeof claims.sub === 'string' ? claims.sub : undefined;
+    if (!iss || !sub) {
+      throw new InternalServerErrorException('Apple id_token missing iss or sub');
+    }
+
+    // Prefer the email from the id_token claims; fall back to the form body
+    const email =
+      (typeof claims.email === 'string' ? claims.email : undefined) ?? appleEmail;
+
+    const user = await this.upsertOidcUser(provider, iss, sub, email, referralCode);
+    return this.issuePairForUser(user.id, 'Apple sign-in successful.');
+  }
+
+  /**
+   * Verify an id_token issued by a native SDK (Google Sign-In / Apple Sign In)
+   * and return a token pair. This is the mobile-native alternative to the
+   * redirect-based flow.
+   *
+   * The id_token signature is verified against the provider's remote JWKS.
+   */
+  async verifyIdToken(
+    provider: 'google' | 'apple',
+    idToken: string,
+    referralCode?: string,
+  ) {
+    const expectedIssuer = PROVIDER_ISSUERS[provider];
+    if (!expectedIssuer) {
+      throw new BadRequestException(`Unsupported provider: ${provider}`);
+    }
+
+    // For Google we also validate the audience against GOOGLE_CLIENT_ID
+    const audience = provider === 'google'
+      ? this.config.getOrThrow<string>('GOOGLE_CLIENT_ID')
+      : this.config.getOrThrow<string>('APPLE_CLIENT_ID');
+
+    const jwks = this.getRemoteJwksSet(provider);
+
+    let claims: Record<string, unknown>;
+    try {
+      const { payload } = await jwtVerify(idToken, jwks, {
+        issuer: expectedIssuer,
+        audience,
+      });
+      claims = payload as Record<string, unknown>;
+    } catch (err) {
+      this.logger.warn(`id_token verification failed for ${provider}: ${String(err)}`);
+      throw new UnauthorizedException('Invalid or expired id_token');
+    }
+
+    const iss = typeof claims.iss === 'string' ? claims.iss : undefined;
+    const sub = typeof claims.sub === 'string' ? claims.sub : undefined;
+    if (!iss || !sub) {
+      throw new UnauthorizedException('id_token missing required claims');
+    }
+
+    const email = typeof claims.email === 'string' ? claims.email : undefined;
+
+    const user = await this.upsertOidcUser(provider, iss, sub, email, referralCode);
+    const message = provider === 'apple'
+      ? 'Apple sign-in successful.'
+      : 'Google sign-in successful.';
+    return this.issuePairForUser(user.id, message);
   }
 }

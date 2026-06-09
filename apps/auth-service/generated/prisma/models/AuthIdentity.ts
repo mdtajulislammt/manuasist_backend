@@ -29,6 +29,7 @@ export type AuthIdentityMinAggregateOutputType = {
   userId: string | null
   issuer: string | null
   subject: string | null
+  provider: string | null
   email: string | null
   createdAt: Date | null
 }
@@ -38,6 +39,7 @@ export type AuthIdentityMaxAggregateOutputType = {
   userId: string | null
   issuer: string | null
   subject: string | null
+  provider: string | null
   email: string | null
   createdAt: Date | null
 }
@@ -47,6 +49,7 @@ export type AuthIdentityCountAggregateOutputType = {
   userId: number
   issuer: number
   subject: number
+  provider: number
   email: number
   createdAt: number
   _all: number
@@ -58,6 +61,7 @@ export type AuthIdentityMinAggregateInputType = {
   userId?: true
   issuer?: true
   subject?: true
+  provider?: true
   email?: true
   createdAt?: true
 }
@@ -67,6 +71,7 @@ export type AuthIdentityMaxAggregateInputType = {
   userId?: true
   issuer?: true
   subject?: true
+  provider?: true
   email?: true
   createdAt?: true
 }
@@ -76,6 +81,7 @@ export type AuthIdentityCountAggregateInputType = {
   userId?: true
   issuer?: true
   subject?: true
+  provider?: true
   email?: true
   createdAt?: true
   _all?: true
@@ -158,6 +164,7 @@ export type AuthIdentityGroupByOutputType = {
   userId: string
   issuer: string
   subject: string
+  provider: string | null
   email: string | null
   createdAt: Date
   _count: AuthIdentityCountAggregateOutputType | null
@@ -188,6 +195,7 @@ export type AuthIdentityWhereInput = {
   userId?: Prisma.UuidFilter<"AuthIdentity"> | string
   issuer?: Prisma.StringFilter<"AuthIdentity"> | string
   subject?: Prisma.StringFilter<"AuthIdentity"> | string
+  provider?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   email?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AuthIdentity"> | Date | string
   user?: Prisma.XOR<Prisma.AuthUserScalarRelationFilter, Prisma.AuthUserWhereInput>
@@ -198,6 +206,7 @@ export type AuthIdentityOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   issuer?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   user?: Prisma.AuthUserOrderByWithRelationInput
@@ -212,6 +221,7 @@ export type AuthIdentityWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.UuidFilter<"AuthIdentity"> | string
   issuer?: Prisma.StringFilter<"AuthIdentity"> | string
   subject?: Prisma.StringFilter<"AuthIdentity"> | string
+  provider?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   email?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AuthIdentity"> | Date | string
   user?: Prisma.XOR<Prisma.AuthUserScalarRelationFilter, Prisma.AuthUserWhereInput>
@@ -222,6 +232,7 @@ export type AuthIdentityOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   issuer?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.AuthIdentityCountOrderByAggregateInput
@@ -237,6 +248,7 @@ export type AuthIdentityScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"AuthIdentity"> | string
   issuer?: Prisma.StringWithAggregatesFilter<"AuthIdentity"> | string
   subject?: Prisma.StringWithAggregatesFilter<"AuthIdentity"> | string
+  provider?: Prisma.StringNullableWithAggregatesFilter<"AuthIdentity"> | string | null
   email?: Prisma.StringNullableWithAggregatesFilter<"AuthIdentity"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AuthIdentity"> | Date | string
 }
@@ -245,6 +257,7 @@ export type AuthIdentityCreateInput = {
   id?: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
   user: Prisma.AuthUserCreateNestedOneWithoutIdentitiesInput
@@ -255,6 +268,7 @@ export type AuthIdentityUncheckedCreateInput = {
   userId: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
 }
@@ -263,6 +277,7 @@ export type AuthIdentityUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.AuthUserUpdateOneRequiredWithoutIdentitiesNestedInput
@@ -273,6 +288,7 @@ export type AuthIdentityUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -282,6 +298,7 @@ export type AuthIdentityCreateManyInput = {
   userId: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
 }
@@ -290,6 +307,7 @@ export type AuthIdentityUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -299,6 +317,7 @@ export type AuthIdentityUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -323,6 +342,7 @@ export type AuthIdentityCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   issuer?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
   email?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -332,6 +352,7 @@ export type AuthIdentityMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   issuer?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
   email?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -341,6 +362,7 @@ export type AuthIdentityMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   issuer?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
   email?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -391,6 +413,7 @@ export type AuthIdentityCreateWithoutUserInput = {
   id?: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
 }
@@ -399,6 +422,7 @@ export type AuthIdentityUncheckedCreateWithoutUserInput = {
   id?: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
 }
@@ -437,6 +461,7 @@ export type AuthIdentityScalarWhereInput = {
   userId?: Prisma.UuidFilter<"AuthIdentity"> | string
   issuer?: Prisma.StringFilter<"AuthIdentity"> | string
   subject?: Prisma.StringFilter<"AuthIdentity"> | string
+  provider?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   email?: Prisma.StringNullableFilter<"AuthIdentity"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AuthIdentity"> | Date | string
 }
@@ -445,6 +470,7 @@ export type AuthIdentityCreateManyUserInput = {
   id?: string
   issuer: string
   subject: string
+  provider?: string | null
   email?: string | null
   createdAt?: Date | string
 }
@@ -453,6 +479,7 @@ export type AuthIdentityUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -461,6 +488,7 @@ export type AuthIdentityUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -469,6 +497,7 @@ export type AuthIdentityUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   issuer?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -480,6 +509,7 @@ export type AuthIdentitySelect<ExtArgs extends runtime.Types.Extensions.Internal
   userId?: boolean
   issuer?: boolean
   subject?: boolean
+  provider?: boolean
   email?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.AuthUserDefaultArgs<ExtArgs>
@@ -490,6 +520,7 @@ export type AuthIdentitySelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   userId?: boolean
   issuer?: boolean
   subject?: boolean
+  provider?: boolean
   email?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.AuthUserDefaultArgs<ExtArgs>
@@ -500,6 +531,7 @@ export type AuthIdentitySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   userId?: boolean
   issuer?: boolean
   subject?: boolean
+  provider?: boolean
   email?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.AuthUserDefaultArgs<ExtArgs>
@@ -510,11 +542,12 @@ export type AuthIdentitySelectScalar = {
   userId?: boolean
   issuer?: boolean
   subject?: boolean
+  provider?: boolean
   email?: boolean
   createdAt?: boolean
 }
 
-export type AuthIdentityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "issuer" | "subject" | "email" | "createdAt", ExtArgs["result"]["authIdentity"]>
+export type AuthIdentityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "issuer" | "subject" | "provider" | "email" | "createdAt", ExtArgs["result"]["authIdentity"]>
 export type AuthIdentityInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.AuthUserDefaultArgs<ExtArgs>
 }
@@ -535,6 +568,10 @@ export type $AuthIdentityPayload<ExtArgs extends runtime.Types.Extensions.Intern
     userId: string
     issuer: string
     subject: string
+    /**
+     * Social provider name: "google" | "apple" | "oidc". Nullable for backward compatibility.
+     */
+    provider: string | null
     email: string | null
     createdAt: Date
   }, ExtArgs["result"]["authIdentity"]>
@@ -965,6 +1002,7 @@ export interface AuthIdentityFieldRefs {
   readonly userId: Prisma.FieldRef<"AuthIdentity", 'String'>
   readonly issuer: Prisma.FieldRef<"AuthIdentity", 'String'>
   readonly subject: Prisma.FieldRef<"AuthIdentity", 'String'>
+  readonly provider: Prisma.FieldRef<"AuthIdentity", 'String'>
   readonly email: Prisma.FieldRef<"AuthIdentity", 'String'>
   readonly createdAt: Prisma.FieldRef<"AuthIdentity", 'DateTime'>
 }
