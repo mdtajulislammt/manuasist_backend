@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -262,6 +263,42 @@ export class WellKnownController {
 })
 export class InternalAuthController {
   constructor(private readonly auth: AuthService) { }
+
+  @Get('users')
+  @ApiOperation({ summary: 'Get all users paginated (internal)' })
+  @ApiOkResponse({ description: 'Users payload returned.' })
+  getAllUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
+    @Query('order') order?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.auth.getAllUsers(
+      isNaN(pageNum) ? 1 : pageNum,
+      isNaN(limitNum) ? 10 : limitNum,
+      sort || 'createdAt',
+      order || 'desc',
+    );
+  }
+
+  @Get('users/:userId')
+  @ApiOperation({ summary: 'Get user by id (internal)' })
+  @ApiOkResponse({ description: 'User payload returned.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  getUserById(@Param('userId') userId: string) {
+    return this.auth.getUserById(userId);
+  }
+
+  // Toogle User Status
+  @Patch('users/:userId/status')
+  @ApiOperation({ summary: 'Toggle user status (internal)' })
+  @ApiOkResponse({ description: 'User status toggled.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  toggleUserStatus(@Param('userId') userId: string) {
+    return this.auth.toggleUserStatus(userId);
+  }
 
   @Get('users/:userId/contact')
   @ApiOperation({ summary: 'Get auth contact/verification by user id (internal)' })

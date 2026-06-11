@@ -32,6 +32,7 @@ import {
 import { PrismaService } from './prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { isError } from 'node:util';
+import { UserStatus } from '../generated/prisma/enums';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -1290,6 +1291,150 @@ export class AuthService implements OnModuleInit {
           ? 'An account with this phone already exists'
           : 'An account with this email already exists',
       );
+    }
+  }
+
+  async getAllUsers(page = 1, limit = 10, sort = 'createdAt', order = 'desc') {
+    try {
+      const validSortFields = ['id', 'email', 'phone', 'createdAt', 'updatedAt', 'referralCode'];
+      const orderByField = validSortFields.includes(sort) ? sort : 'createdAt';
+      const orderByOrder = ['asc', 'desc'].includes(order.toLowerCase()) ? order.toLowerCase() : 'desc';
+
+      const skip = (page - 1) * limit;
+      const [users, total] = await Promise.all([
+        this.prisma.authUser.findMany({
+          skip,
+          take: limit,
+          orderBy: {
+            [orderByField]: orderByOrder,
+          },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            emailVerifiedAt: true,
+            phoneVerifiedAt: true,
+            referralCode: true,
+            referredById: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        }),
+        this.prisma.authUser.count(),
+      ]);
+
+      const formattedUsers = users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        emailVerified: !!user.emailVerifiedAt,
+        phoneVerified: !!user.phoneVerifiedAt,
+        referralCode: user.referralCode,
+        referredById: user.referredById,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        status: user.status
+      }));
+
+      return {
+        success: true,
+        message: 'Users retrieved successfully.',
+        data: {
+          users: formattedUsers,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async getUserById(userId: string) {
+    try {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          emailVerifiedAt: true,
+          phoneVerifiedAt: true,
+          referralCode: true,
+          referredById: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+        },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return {
+        success: true,
+        message: 'User retrived successfully.',
+        data: user,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async toggleUserStatus(userId: string) {
+    try {
+      // Fetch user by ID
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Toggle status (ACTIVE -> INACTIVE, INACTIVE -> ACTIVE)
+      const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+      // Update user status
+      const updatedUser = await this.prisma.authUser.update({
+        where: { id: userId },
+        data: { status: newStatus },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: `User status toggled from ${user.status} to ${newStatus}.`,
+        data: updatedUser,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException(error.message);
     }
   }
 
