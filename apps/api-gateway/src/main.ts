@@ -26,6 +26,10 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
 
+  // Enable cors
+  const corsOrigin = process.env.CORS_ORIGIN?.split(",") || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002'];
+  app.enableCors({ origin: corsOrigin, credentials: true });
+
   const proxy = app.get(GatewayProxyService);
 
   const mounts = [

@@ -31,8 +31,6 @@ import {
 } from 'openid-client';
 import { PrismaService } from './prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { isError } from 'node:util';
-import { UserStatus } from '../generated/prisma/enums';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -490,7 +488,7 @@ export class AuthService implements OnModuleInit {
         refresh_token: newRaw,
       };
     } catch (error) {
-      if (isError(error) && error.message.includes('Invalid')) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -749,6 +747,7 @@ export class AuthService implements OnModuleInit {
       const { identifier, type, otp } = input;
       if (type === 'SIGNUP') {
         const tokenPair = await this.verifySignupOtp(identifier, otp);
+        // console.log(tokenPair, 'token pair');
         return {
           success: true,
           message: tokenPair.message,
@@ -766,7 +765,7 @@ export class AuthService implements OnModuleInit {
         message: verifyOtpResponse.message,
       };
     } catch (error) {
-      if (isError(error) && (error.message.includes('Invalid OTP') || error.message.includes('OTP expired') || error.message.includes('OTP attempt limit exceeded'))) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -831,72 +830,82 @@ export class AuthService implements OnModuleInit {
     identifier: string,
     otp: string,
   ): Promise<TokenPairResponse> {
-    const { email: normalizedEmail, phone: normalizedPhone } =
-      normalizeIdentifier(identifier);
-    if (!normalizedEmail && !normalizedPhone) {
-      throw new BadRequestException(
-        'Identifier must be a valid email or E.164 phone number',
+    try {
+      const { email: normalizedEmail, phone: normalizedPhone } =
+        normalizeIdentifier(identifier);
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new BadRequestException(
+          'Identifier must be a valid email or E.164 phone number',
+        );
+      }
+
+      const user = await this.prisma.authUser.findFirst({
+        where: {
+          OR: [
+            ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+            ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+          ],
+        },
+      });
+
+
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid OTP');
+      }
+
+      const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+      const otpRow = await this.prisma.authOtpToken.findFirst({
+        where: {
+          userId: user.id,
+          channel,
+          purpose: 'SIGNUP',
+          consumedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpRow || otpRow.expiresAt < new Date()) {
+        throw new UnauthorizedException('OTP expired or invalid');
+      }
+
+      if (otpRow.attempts >= 5) {
+        throw new UnauthorizedException('OTP attempt limit exceeded');
+      }
+
+      const codeHash = sha256Hex(otp);
+      if (otpRow.codeHash !== codeHash) {
+        await this.prisma.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { attempts: { increment: 1 } },
+        });
+        throw new UnauthorizedException('Invalid OTP');
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { consumedAt: new Date() },
+        });
+
+        await tx.authUser.update({
+          where: { id: user.id },
+          data: normalizedPhone
+            ? { phoneVerifiedAt: new Date() }
+            : { emailVerifiedAt: new Date() },
+        });
+      });
+
+      return this.issuePairForUser(
+        user.id,
+        'Signup verified. You are signed in.',
       );
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Internal Server Error');
     }
-
-    const user = await this.prisma.authUser.findFirst({
-      where: {
-        OR: [
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-        ],
-      },
-    });
-    if (!user) {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
-    const otpRow = await this.prisma.authOtpToken.findFirst({
-      where: {
-        userId: user.id,
-        channel,
-        purpose: 'SIGNUP',
-        consumedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
-    }
-
-    if (otpRow.attempts >= 5) {
-      throw new UnauthorizedException('OTP attempt limit exceeded');
-    }
-
-    const codeHash = sha256Hex(otp);
-    if (otpRow.codeHash !== codeHash) {
-      await this.prisma.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { consumedAt: new Date() },
-      });
-
-      await tx.authUser.update({
-        where: { id: user.id },
-        data: normalizedPhone
-          ? { phoneVerifiedAt: new Date() }
-          : { emailVerifiedAt: new Date() },
-      });
-    });
-
-    return this.issuePairForUser(
-      user.id,
-      'Signup verified. You are signed in.',
-    );
   }
 
   async resetPasswordWithOtp(input: {
@@ -986,7 +995,7 @@ export class AuthService implements OnModuleInit {
         status: 'PASSWORD_RESET_SUCCESS',
       };
     } catch (error) {
-      if (isError(error) && error.message.includes('Invalid OTP')) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;

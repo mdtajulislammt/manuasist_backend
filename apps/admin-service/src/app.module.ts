@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { UsersModule } from './users/users.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -36,6 +37,7 @@ const envFilePaths = [
     ReferralsModule,
     SubscriptionsModule,
     UsersModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [],
