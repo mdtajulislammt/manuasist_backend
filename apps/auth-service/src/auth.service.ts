@@ -73,6 +73,7 @@ function normalizeIdentifier(identifier: string): { email?: string; phone?: stri
 export type TokenPairResponse = {
   success: boolean;
   message: string;
+  user_type: string;
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
@@ -411,6 +412,7 @@ export class AuthService implements OnModuleInit {
     return {
       success: true,
       message,
+      user_type: roleNames.includes('admin') ? 'admin' : 'user',
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -483,6 +485,7 @@ export class AuthService implements OnModuleInit {
       return {
         success: true,
         message: 'Refresh successful.',
+        user_type: roleNames.includes('admin') ? 'admin' : 'user',
         access_token,
         token_type: 'Bearer',
         expires_in: this.accessTtlSec(),
@@ -1470,16 +1473,16 @@ export class AuthService implements OnModuleInit {
         success: true,
         message: 'User retrived successfully.',
         data: {
-          ...user,
-          profile: profile ? {
-            id: profile.id,
-            fullName: profile.fullName,
-            avatarFileId: profile.avatarFileId,
-            avatarUrl: profile.avatarUrl,
-            onboardingCompletedAt: profile.onboardingCompletedAt,
-            createdAt: profile.createdAt,
-            updatedAt: profile.updatedAt,
-          } : null,
+          id: user.id,
+          fullName: profile?.fullName || null,
+          avatarUrl: profile?.avatarUrl || null,
+          email: user.email,
+          phone: user.phone,
+          emailVerified: !!user.emailVerifiedAt,
+          phoneVerified: !!user.phoneVerifiedAt,
+          registeredDate: user.createdAt,
+          status: user.status,
+          onboardingCompleted: !!profile?.onboardingCompletedAt,
         },
       };
     } catch (error) {
