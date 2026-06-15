@@ -268,6 +268,7 @@ export class InternalAuthController {
   @ApiOperation({ summary: 'Get all users paginated (internal)' })
   @ApiOkResponse({ description: 'Users payload returned.' })
   getAllUsers(
+    @Query('q') q?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('sort') sort?: string,
@@ -276,6 +277,7 @@ export class InternalAuthController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.auth.getAllUsers(
+      q,
       isNaN(pageNum) ? 1 : pageNum,
       isNaN(limitNum) ? 10 : limitNum,
       sort || 'createdAt',

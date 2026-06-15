@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -25,6 +27,27 @@ import { InternalUsersService } from './internal-users.service';
 @ApiUnauthorizedResponse({ description: 'Invalid or missing internal API key' })
 export class InternalUsersController {
   constructor(private readonly users: InternalUsersService) { }
+
+  @Get('profiles/search')
+  @ApiOperation({ summary: 'Search user profiles (internal)' })
+  @ApiOkResponse({ description: 'User profiles matching search term returned.' })
+  searchUserProfiles(@Query('q') q: string) {
+    return this.users.searchUserProfiles(q || '');
+  }
+
+  @Post('profiles/batch')
+  @ApiOperation({ summary: 'Get user profiles by batch of userIds (internal)' })
+  @ApiOkResponse({ description: 'User profiles returned.' })
+  getProfilesByUserIds(@Body('userIds') userIds: string[]) {
+    return this.users.getProfilesByUserIds(userIds || []);
+  }
+
+  @Get(':userId/profile')
+  @ApiOperation({ summary: 'Get user profile by userId (internal)' })
+  @ApiOkResponse({ description: 'User profile returned.' })
+  getUserProfile(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.users.getUserProfile(userId);
+  }
 
   @Get(':userId/dietary-context')
   @ApiOperation({ summary: 'Get user preferences and onboarding answers for AI pipeline' })

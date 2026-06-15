@@ -9,13 +9,14 @@ export class UsersService {
         private readonly config: ConfigService,
     ) { }
 
-    async getAll(page?: number, limit?: number, sort?: string, order?: string) {
+    async getAll(query?: string, page?: number, limit?: number, sort?: string, order?: string) {
         const base = this.config
             .getOrThrow<string>('AUTH_SERVICE_URL')
             .replace(/\/$/, '');
         const key = this.config.getOrThrow<string>('AUTH_INTERNAL_API_KEY');
 
         const params = new URLSearchParams();
+        if (query !== undefined) params.append('q', query);
         if (page !== undefined) params.append('page', page.toString());
         if (limit !== undefined) params.append('limit', limit.toString());
         if (sort !== undefined) params.append('sort', sort);

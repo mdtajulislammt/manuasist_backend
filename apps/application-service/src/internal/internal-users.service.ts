@@ -73,6 +73,44 @@ export class InternalUsersService {
     return this.membership.assertPremiumAccess(userId);
   }
 
+  async getUserProfile(userId: string) {
+    const profile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+    });
+    return {
+      success: true,
+      data: profile,
+    };
+  }
+
+  async getProfilesByUserIds(userIds: string[]) {
+    const profiles = await this.prisma.userProfile.findMany({
+      where: {
+        userId: { in: userIds },
+      },
+    });
+    return {
+      success: true,
+      data: profiles,
+    };
+  }
+
+  async searchUserProfiles(search: string) {
+    const profiles = await this.prisma.userProfile.findMany({
+      where: {
+        fullName: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+    });
+    return {
+      success: true,
+      data: profiles,
+    };
+  }
+
+
   private extractAllergies(
     answers: Array<{ value: unknown }>,
   ): string[] {

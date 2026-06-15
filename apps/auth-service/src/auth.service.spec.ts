@@ -17,7 +17,7 @@ jest.mock('openid-client', () => ({
 }));
 
 jest.mock('./prisma.service', () => ({
-  PrismaService: class PrismaService {},
+  PrismaService: class PrismaService { },
 }));
 
 import { AuthService } from './auth.service';
@@ -208,5 +208,174 @@ describe('AuthService refresh', () => {
       where: { familyId: 'fam-1' },
       data: expect.objectContaining({ revokedAt: expect.any(Date) }),
     });
+  });
+});
+
+describe('AuthService User Retrieval and Search', () => {
+  let prisma: {
+    role: { upsert: jest.Mock };
+    authUser: {
+      findMany: jest.Mock;
+      count: jest.Mock;
+      findUnique: jest.Mock;
+    };
+  };
+  let service: AuthService;
+  const mockFetch = jest.fn();
+
+  beforeEach(async () => {
+    mockFetch.mockReset();
+    global.fetch = mockFetch as any;
+
+    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    prisma = {
+      role: {
+        upsert: jest.fn().mockResolvedValue({}),
+      },
+      authUser: {
+        findMany: jest.fn(),
+        count: jest.fn(),
+        findUnique: jest.fn(),
+      },
+    };
+
+    const config = {
+      getOrThrow: (k: string) => {
+        const map: Record<string, string | number> = {
+          JWT_PRIVATE_KEY: privateKey,
+          JWT_PUBLIC_KEY: publicKey,
+          JWT_ISSUER: 'http://test',
+          JWT_AUDIENCE: 'menu-assist-api',
+          JWT_KID: 'test-kid',
+          ACCESS_TOKEN_TTL_SECONDS: 60,
+          APPLICATION_SERVICE_URL: 'http://application-service',
+          APPLICATION_INTERNAL_API_KEY: 'internal-key',
+        };
+        return map[k];
+      },
+      get: (k: string) => (k === 'JWT_KID' ? 'test-kid' : undefined),
+    };
+
+    service = new AuthService(
+      prisma as unknown as PrismaService,
+      config as unknown as ConfigService,
+    );
+    await service.onModuleInit();
+  });
+
+  it('getUserById retrieves user and merges profile', async () => {
+    const userRow = {
+      id: 'user-123',
+      email: 'test@example.com',
+      phone: '+1234567890',
+      emailVerifiedAt: new Date(),
+      phoneVerifiedAt: null,
+      referralCode: 'REF123',
+      referredById: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: 'ACTIVE',
+    };
+    prisma.authUser.findUnique.mockResolvedValue(userRow);
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          success: true,
+          data: [
+            {
+              userId: 'user-123',
+              id: 'profile-123',
+              fullName: 'John Doe',
+              avatarFileId: null,
+              avatarUrl: null,
+              onboardingCompletedAt: null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+    });
+
+    const result: any = await service.getUserById('user-123');
+
+    expect(result.success).toBe(true);
+    expect(result.data.id).toBe('user-123');
+    expect(result.data.profile).toBeDefined();
+    expect(result.data.profile.fullName).toBe('John Doe');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://application-service/internal/users/profiles/batch',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ userIds: ['user-123'] }),
+      }),
+    );
+  });
+
+  it('getAllUsers searches profiles case-insensitively and returns merged list', async () => {
+    const usersRows = [
+      {
+        id: 'user-123',
+        email: 'test@example.com',
+        phone: '+1234567890',
+        emailVerifiedAt: new Date(),
+        phoneVerifiedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: 'ACTIVE',
+      },
+    ];
+    prisma.authUser.findMany.mockResolvedValue(usersRows);
+    prisma.authUser.count.mockResolvedValue(1);
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            success: true,
+            data: [{ userId: 'user-123', fullName: 'John Doe' }],
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            success: true,
+            data: [
+              {
+                userId: 'user-123',
+                id: 'profile-123',
+                fullName: 'John Doe',
+                avatarFileId: null,
+                avatarUrl: null,
+                onboardingCompletedAt: null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            ],
+          }),
+      });
+
+    const result: any = await service.getAllUsers('John');
+
+    expect(result.success).toBe(true);
+    expect(result.data.users).toHaveLength(1);
+    expect(result.data.users[0].profile.fullName).toBe('John Doe');
+    expect(prisma.authUser.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { id: { in: ['user-123'] } },
+          ]),
+        }),
+      }),
+    );
   });
 });

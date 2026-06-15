@@ -31,6 +31,7 @@ import {
 } from 'openid-client';
 import { PrismaService } from './prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { Prisma } from '../generated/prisma/client';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -1303,65 +1304,141 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async getAllUsers(page = 1, limit = 10, sort = 'createdAt', order = 'desc') {
+  private async getProfilesFromApplicationService(userIds: string[]): Promise<any[]> {
+    if (userIds.length === 0) return [];
+    const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    const url = `${base}/internal/users/profiles/batch`;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key,
+        },
+        body: JSON.stringify({ userIds }),
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const json = (await res.json()) as { success: boolean; data?: any[] };
+      return json.data || [];
+    } catch (e) {
+      this.logger.warn(`Failed to fetch user profiles from application-service: ${e}`);
+      return [];
+    }
+  }
+
+  private async searchProfilesInApplicationService(search: string): Promise<string[]> {
+    if (!search) return [];
+    const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    const url = `${base}/internal/users/profiles/search?q=${encodeURIComponent(search)}`;
+    try {
+      const res = await fetch(url, {
+        headers: { 'x-internal-api-key': key },
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const json = (await res.json()) as { success: boolean; data?: any[] };
+      return (json.data || []).map((p: any) => p.userId);
+    } catch (e) {
+      this.logger.warn(`Failed to search user profiles from application-service: ${e}`);
+      return [];
+    }
+  }
+
+  async getAllUsers(search = '', page = 1, limit = 10, sort = 'createdAt', order = 'desc') {
     try {
       const validSortFields = ['id', 'email', 'phone', 'createdAt', 'updatedAt', 'referralCode'];
       const orderByField = validSortFields.includes(sort) ? sort : 'createdAt';
       const orderByOrder = ['asc', 'desc'].includes(order.toLowerCase()) ? order.toLowerCase() : 'desc';
 
       const skip = (page - 1) * limit;
+      const where: Prisma.AuthUserWhereInput = {};
+      if (search) {
+        const searchLower = search.toLowerCase();
+
+        // Search profiles in application-service
+        const matchedUserIds = await this.searchProfilesInApplicationService(search);
+
+        where.OR = [
+          {
+            email: {
+              contains: searchLower,
+              mode: 'insensitive'   // recommended for case-insensitive search
+            }
+          },
+          {
+            phone: {
+              contains: searchLower,
+              mode: 'insensitive'
+            }
+          },
+          ...(matchedUserIds.length > 0 ? [{ id: { in: matchedUserIds } }] : []),
+        ];
+      }
       const [users, total] = await Promise.all([
         this.prisma.authUser.findMany({
           skip,
           take: limit,
+          where,
           orderBy: {
             [orderByField]: orderByOrder,
           },
           select: {
             id: true,
+            identities: true,
             email: true,
             phone: true,
             emailVerifiedAt: true,
             phoneVerifiedAt: true,
-            referralCode: true,
-            referredById: true,
             createdAt: true,
             updatedAt: true,
             status: true,
           },
         }),
-        this.prisma.authUser.count(),
+        this.prisma.authUser.count({ where }),
       ]);
 
-      const formattedUsers = users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        phone: user.phone,
-        emailVerified: !!user.emailVerifiedAt,
-        phoneVerified: !!user.phoneVerifiedAt,
-        referralCode: user.referralCode,
-        referredById: user.referredById,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        status: user.status
-      }));
+      const userIds = users.map((user) => user.id);
+      const profiles = await this.getProfilesFromApplicationService(userIds);
+      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+
+      const formattedUsers = users.map((user) => {
+        const profile = profileMap.get(user.id);
+        return {
+          id: user.id,
+          fullName: profile?.fullName || null,
+          avatarUrl: profile?.avatarUrl || null,
+          email: user.email,
+          phone: user.phone,
+          emailVerified: !!user.emailVerifiedAt,
+          phoneVerified: !!user.phoneVerifiedAt,
+          registeredDate: user.createdAt,
+          status: user.status,
+        };
+      });
 
       return {
         success: true,
         message: 'Users retrieved successfully.',
         data: {
           users: formattedUsers,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          }
         },
       };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1385,16 +1462,34 @@ export class AuthService implements OnModuleInit {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
+
+      const profiles = await this.getProfilesFromApplicationService([userId]);
+      const profile = profiles[0] || null;
+
       return {
         success: true,
         message: 'User retrived successfully.',
-        data: user,
+        data: {
+          ...user,
+          profile: profile ? {
+            id: profile.id,
+            fullName: profile.fullName,
+            avatarFileId: profile.avatarFileId,
+            avatarUrl: profile.avatarUrl,
+            onboardingCompletedAt: profile.onboardingCompletedAt,
+            createdAt: profile.createdAt,
+            updatedAt: profile.updatedAt,
+          } : null,
+        },
       };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException(error.message);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
     }
   }
 
