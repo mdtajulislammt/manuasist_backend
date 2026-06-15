@@ -1332,6 +1332,30 @@ export class AuthService implements OnModuleInit {
     }
   }
 
+  private async updateProfileFromApplicationService(userId: string, data: any): Promise<any> {
+    try {
+      const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
+      const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+      const url = `${base}/internal/users/${userId}/profile`;
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        return null;
+      }
+      const json = (await res.json()) as { success: boolean; data?: any };
+      return json.data || null;
+    } catch (e) {
+      this.logger.warn(`Failed to fetch user profile from application-service: ${e}`);
+      return null;
+    }
+  }
+
   private async searchProfilesInApplicationService(search: string): Promise<string[]> {
     if (!search) return [];
     const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
@@ -1484,6 +1508,57 @@ export class AuthService implements OnModuleInit {
           status: user.status,
           onboardingCompleted: !!profile?.onboardingCompletedAt,
         },
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  // Update User with profile fullname
+  async updateUser(userId: string, data: any) {
+    try {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Update user
+      let updatedUser: any = await this.prisma.authUser.update({
+        where: { id: userId },
+        data: {
+          email: data.email,
+          phone: data.phone,
+          status: data.status,
+        },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+        },
+      });
+
+      if (data.fullName) {
+        const profile = await this.updateProfileFromApplicationService(userId, data);
+        if (profile) {
+          updatedUser = { ...updatedUser, fullName: profile.fullName, avatarUrl: profile.avatarUrl, address: profile?.address };
+        }
+      }
+
+      return {
+        success: true,
+        message: 'User updated successfully.',
+        data: updatedUser,
       };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

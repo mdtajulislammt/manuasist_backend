@@ -85,6 +85,7 @@ export const UserProfileScalarFieldEnum = {
   fullName: 'fullName',
   avatarFileId: 'avatarFileId',
   avatarUrl: 'avatarUrl',
+  address: 'address',
   onboardingCompletedAt: 'onboardingCompletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

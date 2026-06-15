@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -47,6 +48,14 @@ export class InternalUsersController {
   @ApiOkResponse({ description: 'User profile returned.' })
   getUserProfile(@Param('userId', ParseUUIDPipe) userId: string) {
     return this.users.getUserProfile(userId);
+  }
+
+  // update profile (internal)
+  @Patch(':userId/profile')
+  @ApiOperation({ summary: 'Update user profile (internal)' })
+  @ApiOkResponse({ description: 'User profile updated.' })
+  updateUserProfile(@Param('userId', ParseUUIDPipe) userId: string, @Body() body: any) {
+    return this.users.updateUserProfile(userId, body);
   }
 
   @Get(':userId/dietary-context')

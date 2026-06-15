@@ -293,6 +293,15 @@ export class InternalAuthController {
     return this.auth.getUserById(userId);
   }
 
+  // Update Profile
+  @Patch('users/:userId')
+  @ApiOperation({ summary: 'Update user (internal)' })
+  @ApiOkResponse({ description: 'User updated.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  updateUser(@Param('userId') userId: string, @Body() data: any) {
+    return this.auth.updateUser(userId, data);
+  }
+
   // Toogle User Status
   @Patch('users/:userId/status')
   @ApiOperation({ summary: 'Toggle user status (internal)' })

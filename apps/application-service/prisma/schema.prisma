@@ -69,6 +69,7 @@ model UserProfile {
   fullName              String?   @map("full_name")
   avatarFileId          String?   @map("avatar_file_id") @db.Uuid
   avatarUrl             String?   @map("avatar_url")
+  address               String?
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
@@ -170,10 +171,10 @@ model UserNotification {
 
   deliveries NotificationDelivery[]
 
+  @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
   @@index([userId, readAt])
   @@index([expiresAt])
-  @@unique([userId, dedupeKey])
   @@map("application_user_notifications")
 }
 

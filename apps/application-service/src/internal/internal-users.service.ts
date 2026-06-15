@@ -23,7 +23,7 @@ export class InternalUsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
-  ) {}
+  ) { }
 
   async getDietaryContext(userId: string) {
     const [preferences, answers] = await Promise.all([
@@ -40,11 +40,11 @@ export class InternalUsersService {
       userId,
       preferences: preferences
         ? {
-            dietType: preferences.dietType,
-            calorieTarget: preferences.calorieTarget,
-            spiceLevel: preferences.spiceLevel,
-            weightGoal: preferences.weightGoal,
-          }
+          dietType: preferences.dietType,
+          calorieTarget: preferences.calorieTarget,
+          spiceLevel: preferences.spiceLevel,
+          weightGoal: preferences.weightGoal,
+        }
         : null,
       onboardingAnswers: answers.map((a) => ({
         stepKey: a.stepKey,
@@ -76,6 +76,25 @@ export class InternalUsersService {
   async getUserProfile(userId: string) {
     const profile = await this.prisma.userProfile.findUnique({
       where: { userId },
+    });
+    return {
+      success: true,
+      data: profile,
+    };
+  }
+
+  async updateUserProfile(userId: string, body: any) {
+    const profile = await this.prisma.userProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        fullName: body?.fullName,
+        address: body?.address
+      },
+      update: {
+        fullName: body?.fullName,
+        address: body?.address
+      },
     });
     return {
       success: true,
