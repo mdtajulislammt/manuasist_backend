@@ -175,8 +175,12 @@ function decodeHeader(value?: string): string | undefined {
 function formatDate(date: Date, timeZone?: string): string {
   try {
     return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'medium',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
       timeZone,
       timeZoneName: 'short',
     }).format(date);
