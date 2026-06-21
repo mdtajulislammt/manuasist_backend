@@ -189,6 +189,54 @@ export class UsersMeService {
     }
   }
 
+  async getActiveFlowWithProgress(userId: string) {
+    try {
+      await this.ensureUserRows(userId);
+      const wrapped = await this.admin.getActiveFlow();
+      const flow = wrapped.data;
+      const steps = [...(flow.steps ?? [])].sort(
+        (a, b) => a.orderIndex - b.orderIndex,
+      );
+      const totalSteps = steps.length;
+
+      const answers = await this.prisma.userOnboardingAnswer.findMany({
+        where: { userId, flowVersion: flow.version },
+      });
+      const answersByStepId = new Map(
+        answers.map((a) => [a.stepKey, a.value]),
+      );
+      const stepsWithAnswers = steps.map((step) => {
+        const savedValue = answersByStepId.get(step.id);
+        return {
+          ...step,
+          completed: savedValue !== undefined,
+          value: savedValue ?? null,
+        };
+      });
+      const answeredSteps = stepsWithAnswers.filter((s) => s.completed).length;
+      const progress =
+        totalSteps === 0
+          ? 100
+          : Math.min(100, Math.round((answeredSteps / totalSteps) * 100));
+
+      return {
+        success: true,
+        message: 'Active flow retrieved successfully',
+        data: {
+          ...flow,
+          steps: stepsWithAnswers,
+          progress,
+          lastCompletedSteps: answeredSteps,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get active flow');
+    }
+  }
+
   async getOnboardingProgress(userId: string) {
     try {
       await this.ensureUserRows(userId);

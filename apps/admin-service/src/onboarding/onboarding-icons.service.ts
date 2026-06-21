@@ -140,6 +140,7 @@ export class OnboardingIconsService {
     const rows = await this.files.listByNamespace(NS);
     return {
       icons: rows.map((r) => ({
+        id: r.id,
         filename: r.storedName,
         iconUrl: process.env.FILE_STORAGE_PUBLIC_URL + r.publicUrl,
         ...(r.displayName ? { iconName: r.displayName } : {}),

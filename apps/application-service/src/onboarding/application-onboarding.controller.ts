@@ -14,7 +14,6 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AdminInternalClientService } from '../admin-internal/admin-internal-client.service';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
 import { PatchPreferencesDto } from '../users-me/dto/patch-preferences.dto';
 import { PreferencesResponseDto } from '../users-me/dto/preferences-response.dto';
@@ -33,20 +32,17 @@ import { OnboardingProgressResponseDto } from './dto/onboarding-progress-respons
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
 export class ApplicationOnboardingController {
-  constructor(
-    private readonly admin: AdminInternalClientService,
-    private readonly usersMe: UsersMeService,
-  ) {}
+  constructor(private readonly usersMe: UsersMeService) {}
 
   @Get('active-flow')
   @ApiOperation({
     summary: 'Get the active published onboarding flow',
     description:
-      'Returns steps and flow.version from admin-service. Use version with PUT /onboarding/answers.',
+      'Returns steps and flow.version from admin-service. Each step includes completed and value when the user has already answered, so the client can pre-select options. Use version with PUT /onboarding/answers.',
   })
   @ApiOkResponse({ type: AdminActiveFlowResponseDto })
-  getActiveFlow() {
-    return this.admin.getActiveFlow();
+  getActiveFlow(@CurrentUserId() userId: string | undefined) {
+    return this.usersMe.getActiveFlowWithProgress(this.requireUserId(userId));
   }
 
   @Get('progress')

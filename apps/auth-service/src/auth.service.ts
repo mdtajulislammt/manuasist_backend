@@ -1504,6 +1504,7 @@ export class AuthService implements OnModuleInit {
           phone: user.phone,
           emailVerified: !!user.emailVerifiedAt,
           phoneVerified: !!user.phoneVerifiedAt,
+          address: profile?.address || null,
           registeredDate: user.createdAt,
           status: user.status,
           onboardingCompleted: !!profile?.onboardingCompletedAt,

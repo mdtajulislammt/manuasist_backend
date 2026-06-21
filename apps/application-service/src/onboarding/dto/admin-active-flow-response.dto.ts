@@ -32,6 +32,22 @@ export class AdminOnboardingStepResponseDto {
 
   @ApiProperty({ format: 'date-time' })
   updatedAt!: string;
+
+  @ApiProperty({
+    description:
+      'True when this user has a saved answer for this step at the active flow version',
+  })
+  completed!: boolean;
+
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Saved answer for this step; use to pre-select options on screen (same shape as PUT /onboarding/answers value)',
+    type: 'object',
+    additionalProperties: true,
+    example: { dietType: 'vegetarian' },
+  })
+  value!: unknown | null;
 }
 
 export class AdminActiveFlowResponseDto {
@@ -61,4 +77,18 @@ export class AdminActiveFlowResponseDto {
 
   @ApiProperty({ type: [AdminOnboardingStepResponseDto] })
   steps!: AdminOnboardingStepResponseDto[];
+
+  @ApiProperty({
+    description: 'Logged-in user progress percent (answered steps / total steps)',
+    example: 33,
+    minimum: 0,
+    maximum: 100,
+  })
+  progress!: number;
+
+  @ApiProperty({
+    description: 'Number of steps the user has completed for this flow version',
+    example: 2,
+  })
+  lastCompletedSteps!: number;
 }

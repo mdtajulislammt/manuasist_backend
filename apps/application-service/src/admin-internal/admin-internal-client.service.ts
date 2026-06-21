@@ -96,8 +96,8 @@ export class AdminInternalClientService {
       data: {
         ...data,
         steps: Array.isArray(data.steps) ? data.steps : [],
-      } as AdminActiveFlowPayload
-    }
+      },
+    };
   }
 
   async getActiveSubscriptionCatalog(): Promise<AdminSubscriptionCatalogPayload> {
