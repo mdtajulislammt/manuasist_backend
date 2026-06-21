@@ -52,7 +52,17 @@ export class UserProfileResponseDto {
 
   @ApiPropertyOptional({
     description:
-      'Present when a profile update started email/phone verification and the client should ask for OTP.',
+      'Pending email/phone OTP verification (BullMQ job + Redis until verified or expiry). Keys are "email" and/or "phone".',
+    example: {
+      email: {
+        kind: 'email',
+        identifier: 'new@example.com',
+        channel: 'email',
+        status: 'OTP_SENT',
+        expiresInSeconds: 600,
+        sentAt: '2026-06-21T12:00:00.000Z',
+      },
+    },
   })
   pendingVerification?: Record<string, unknown>;
 }

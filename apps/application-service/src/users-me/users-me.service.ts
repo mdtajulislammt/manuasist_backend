@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma.service';
 import { PatchPreferencesDto } from './dto/patch-preferences.dto';
 import { PatchProfileDto } from './dto/patch-profile.dto';
 import { PutOnboardingAnswersDto } from './dto/put-onboarding-answers.dto';
+import { ProfileContactChangeService } from './profile-contact-change.service';
 
 function isSpiceLevel(v: string): v is SpiceLevel {
   return (Object.values(SpiceLevel) as string[]).includes(v);
@@ -68,6 +69,7 @@ export class UsersMeService {
     private readonly avatars: ProfileAvatarStorageService,
     private readonly admin: AdminInternalClientService,
     private readonly authInternal: AuthInternalClientService,
+    private readonly contactChange: ProfileContactChangeService,
   ) { }
 
   async getProfile(userId: string) {
@@ -76,10 +78,18 @@ export class UsersMeService {
       const profile = await this.prisma.userProfile.findUniqueOrThrow({
         where: { userId },
       });
+      const data = await this.withProfileResponse(profile);
+      const pendingVerification =
+        await this.contactChange.getPendingForUser(userId);
       return {
         success: true,
         message: 'Profile retrieved successfully',
-        data: await this.withProfileResponse(profile),
+        data: {
+          ...data,
+          ...(Object.keys(pendingVerification).length > 0
+            ? { pendingVerification }
+            : {}),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -124,12 +134,13 @@ export class UsersMeService {
             identifier: dto.email,
             otp: dto.emailOtp,
           });
+          await this.contactChange.clearPending(userId, 'email');
         } else {
-          pendingVerification.email =
-            await this.authInternal.requestContactChange(userId, {
-              kind: 'email',
-              identifier: dto.email,
-            });
+          pendingVerification.email = await this.contactChange.requestOtp(
+            userId,
+            'email',
+            dto.email,
+          );
         }
       }
       if (dto.phone) {
@@ -139,12 +150,13 @@ export class UsersMeService {
             identifier: dto.phone,
             otp: dto.phoneOtp,
           });
+          await this.contactChange.clearPending(userId, 'phone');
         } else {
-          pendingVerification.phone =
-            await this.authInternal.requestContactChange(userId, {
-              kind: 'phone',
-              identifier: dto.phone,
-            });
+          pendingVerification.phone = await this.contactChange.requestOtp(
+            userId,
+            'phone',
+            dto.phone,
+          );
         }
       }
 

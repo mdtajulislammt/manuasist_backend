@@ -53,7 +53,7 @@ export class UsersMeController {
   @ApiOperation({
     summary: 'Update profile fields, avatar, and contact change OTP flow',
     description:
-      'Single edit-profile endpoint. Sends OTP when email/phone changes without otp fields; verifies and applies when emailOtp/phoneOtp are provided. Avatar accepts multipart field `avatar` or `file`.',
+      'Single edit-profile endpoint. Sends OTP via BullMQ when email/phone changes without otp fields (pending state in Redis with resend cooldown); verifies and applies when emailOtp/phoneOtp are provided. Avatar accepts multipart field `avatar` or `file`.',
   })
   @ApiConsumes('application/json', 'multipart/form-data')
   @ApiBody({
