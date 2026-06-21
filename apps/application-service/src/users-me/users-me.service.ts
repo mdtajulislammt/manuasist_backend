@@ -79,7 +79,7 @@ export class UsersMeService {
       return {
         success: true,
         message: 'Profile retrieved successfully',
-        data: await this.withContact(profile),
+        data: await this.withProfileResponse(profile),
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -148,7 +148,7 @@ export class UsersMeService {
         }
       }
 
-      const profile = await this.withContact(updatedProfile);
+      const profile = await this.withProfileResponse(updatedProfile);
       return {
         success: true,
         message:
@@ -197,7 +197,6 @@ export class UsersMeService {
       const steps = [...(flow.steps ?? [])].sort(
         (a, b) => a.orderIndex - b.orderIndex,
       );
-      const totalSteps = steps.length;
 
       const answers = await this.prisma.userOnboardingAnswer.findMany({
         where: { userId, flowVersion: flow.version },
@@ -205,6 +204,7 @@ export class UsersMeService {
       const answersByStepId = new Map(
         answers.map((a) => [a.stepKey, a.value]),
       );
+      const answered = new Set(answers.map((a) => a.stepKey));
       const stepsWithAnswers = steps.map((step) => {
         const savedValue = answersByStepId.get(step.id);
         return {
@@ -214,10 +214,7 @@ export class UsersMeService {
         };
       });
       const answeredSteps = stepsWithAnswers.filter((s) => s.completed).length;
-      const progress =
-        totalSteps === 0
-          ? 100
-          : Math.min(100, Math.round((answeredSteps / totalSteps) * 100));
+      const progress = this.computeOnboardingAnswerPercent(steps, answered);
 
       return {
         success: true,
@@ -469,6 +466,50 @@ export class UsersMeService {
         phoneVerified: false,
       };
     }
+  }
+
+  private computeOnboardingAnswerPercent(
+    steps: Array<{ id: string }>,
+    answeredStepKeys: Set<string>,
+  ): number {
+    const totalSteps = steps.length;
+    if (totalSteps === 0) {
+      return 100;
+    }
+    const answeredSteps = steps.filter((s) => answeredStepKeys.has(s.id)).length;
+    return Math.min(100, Math.round((answeredSteps / totalSteps) * 100));
+  }
+
+  private async resolveProfileCompletePercent(userId: string): Promise<number> {
+    try {
+      const wrapped = await this.admin.getActiveFlow();
+      const flow = wrapped.data;
+      const steps = flow.steps ?? [];
+      const answers = await this.prisma.userOnboardingAnswer.findMany({
+        where: { userId, flowVersion: flow.version },
+        select: { stepKey: true },
+      });
+      const answered = new Set(answers.map((a) => a.stepKey));
+      return this.computeOnboardingAnswerPercent(steps, answered);
+    } catch (e) {
+      this.logger.warn(
+        `Profile completion lookup failed for user ${userId}: ${String(e)}`,
+      );
+      return 0;
+    }
+  }
+
+  private async withProfileResponse(
+    profile: Prisma.UserProfileGetPayload<Record<string, never>>,
+  ) {
+    const [contactProfile, profileCompletePercent] = await Promise.all([
+      this.withContact(profile),
+      this.resolveProfileCompletePercent(profile.userId),
+    ]);
+    return {
+      ...contactProfile,
+      profileCompletePercent,
+    };
   }
 
   private async withContact(

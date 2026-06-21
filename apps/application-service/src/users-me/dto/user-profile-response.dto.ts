@@ -41,6 +41,15 @@ export class UserProfileResponseDto {
   @ApiProperty({ format: 'date-time' })
   updatedAt!: Date;
 
+  @ApiProperty({
+    description:
+      'Profile completion percent from onboarding answers (PUT /onboarding/answers): answered steps / total steps in the active flow, 0-100',
+    example: 33,
+    minimum: 0,
+    maximum: 100,
+  })
+  profileCompletePercent!: number;
+
   @ApiPropertyOptional({
     description:
       'Present when a profile update started email/phone verification and the client should ask for OTP.',
