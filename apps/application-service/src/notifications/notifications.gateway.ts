@@ -15,6 +15,7 @@ import { Server, Socket } from 'socket.io';
 
 type NotificationSocketPayload = {
   id: string;
+  type: string;
   title: string;
   body: string;
   icon: string;

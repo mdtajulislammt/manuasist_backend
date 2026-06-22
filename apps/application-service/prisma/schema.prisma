@@ -31,6 +31,13 @@ enum EntitlementStatus {
 enum NotificationType {
   SYSTEM
   SCAN_PROCESSING
+  SCAN_RESULT_READY
+  SCAN_FAILED
+  PROFILE_UPDATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_EXPIRED
+  PROMOTION
+  // Legacy values retained for backward compatibility with existing rows.
   SCAN_READY
   DAILY_PROGRESS
   WEEKLY_PROGRESS

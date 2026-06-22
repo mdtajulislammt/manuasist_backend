@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
 import { ListNotificationsQueryDto } from './dto/list-notifications-query.dto';
+import { NotificationsListResponseDto } from './dto/notification-response.dto';
 import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -32,8 +33,12 @@ export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get grouped notification inbox for the user' })
-  @ApiOkResponse({ description: 'Notifications returned' })
+  @ApiOperation({
+    summary: 'Get grouped notification inbox for the user',
+    description:
+      'Each item includes a stable `type` (e.g. scan_result_ready) for client navigation; use `data` for identifiers such as scanId.',
+  })
+  @ApiOkResponse({ type: NotificationsListResponseDto })
   getNotifications(
     @CurrentUserId() userId: string | undefined,
     @Query() query: ListNotificationsQueryDto,

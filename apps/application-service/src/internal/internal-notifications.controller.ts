@@ -13,6 +13,7 @@ import {
   InternalScanNotificationType,
 } from './dto/internal-scan-notification.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { toNotificationTypeApi } from '../notifications/notification-type';
 
 @Controller('internal/notifications')
 @ApiTags('Internal — notifications')
@@ -43,6 +44,7 @@ export class InternalNotificationsController {
       message: 'Notification created',
       data: {
         id: notification.id,
+        type: toNotificationTypeApi(notification.type),
       },
     };
   }
