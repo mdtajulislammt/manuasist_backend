@@ -7,6 +7,7 @@ import {
   MaxLength,
   MinLength,
   IsOptional,
+  Matches,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -48,7 +49,7 @@ export class RegisterDto {
   })
   @IsOptional()
   @IsString()
-  @MinLength(6)
+  // @Matches(/^MENU-/, { message: 'referralCode must start with MENU-' })
   @MaxLength(64)
   referralCode?: string;
 }

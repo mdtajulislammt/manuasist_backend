@@ -247,7 +247,7 @@ export class AuthService implements OnModuleInit {
 
   private normalizeReferralCode(referralCode?: string): string | undefined {
     const code = referralCode?.trim();
-    return code ? code : undefined;
+    return code && code !== 'MENU-' ? code : undefined;
   }
 
   private generateReferralCodeCandidate(): string {
@@ -541,7 +541,7 @@ export class AuthService implements OnModuleInit {
       },
     });
     if (!user) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
@@ -556,16 +556,16 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
+      throw new BadRequestException('OTP expired or invalid');
     }
 
     if (otpRow.attempts >= 5) {
-      throw new UnauthorizedException('OTP attempt limit exceeded');
+      throw new BadRequestException('OTP attempt limit exceeded');
     }
 
     const codeHash = sha256Hex(otp);
     if (otpRow.codeHash !== codeHash) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     return {
@@ -855,7 +855,7 @@ export class AuthService implements OnModuleInit {
 
 
       if (!user) {
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       const channel = normalizedPhone ? 'SMS' : 'EMAIL';
@@ -883,7 +883,7 @@ export class AuthService implements OnModuleInit {
           where: { id: otpRow.id },
           data: { attempts: { increment: 1 } },
         });
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       await this.prisma.$transaction(async (tx) => {
@@ -943,7 +943,7 @@ export class AuthService implements OnModuleInit {
         },
       });
       if (!user) {
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       const channel = normalizedPhone ? 'SMS' : 'EMAIL';
@@ -971,7 +971,7 @@ export class AuthService implements OnModuleInit {
           where: { id: otpRow.id },
           data: { attempts: { increment: 1 } },
         });
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -1117,7 +1117,7 @@ export class AuthService implements OnModuleInit {
 
     const currentOk = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!currentOk) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new BadRequestException('Current password is incorrect');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -1216,7 +1216,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
+      throw new BadRequestException('OTP expired or invalid');
     }
 
     if (otpRow.attempts >= 5) {
@@ -1229,7 +1229,7 @@ export class AuthService implements OnModuleInit {
         where: { id: otpRow.id },
         data: { attempts: { increment: 1 } },
       });
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     await this.prisma.$transaction(async (tx) => {
