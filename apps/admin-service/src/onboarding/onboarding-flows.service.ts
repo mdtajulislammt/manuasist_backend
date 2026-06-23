@@ -57,12 +57,20 @@ export class OnboardingFlowsService {
     try {
       const flows = await this.prisma.onboardingFlow.findMany({
         orderBy: [{ name: 'asc' }, { version: 'desc' }],
-        include: { steps: { orderBy: { orderIndex: 'asc' } } },
+        include: { _count: { select: { steps: true } } },
       });
+      const flowsWithStepsCount = flows.map((flow) => {
+        const { _count, ...flowWithoutCount } = flow;
+        return {
+          ...flowWithoutCount,
+          stepsCount: _count.steps,
+        };
+      });
+  
       return {
         success: true,
         message: 'Flows listed successfully',
-        data: flows,
+        data: flowsWithStepsCount,
       };
     } catch (error) {
       if (error instanceof HttpException) {

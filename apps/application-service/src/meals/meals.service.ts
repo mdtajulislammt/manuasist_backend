@@ -1,6 +1,7 @@
 import { computeDishNai } from '../../../../libs/ai-pipeline/src/nai/compute-nai';
 import {
   MEAL_PORTION_OPTIONS,
+  MEAL_SLOT_OPTIONS,
   MealSlot,
   type MealLogEntrySummary,
   type MealNutrition,
@@ -39,18 +40,28 @@ export class MealsService {
 
   async getPrefill(userId: string, dishId: string) {
     await this.membership.assertPremiumAccess(userId);
-    const [dish, todayMeals] = await Promise.all([
+    const now = new Date();
+    const defaultMealSlot = this.defaultMealSlot(now);
+    const defaultPortionFactor = 1.0;
+
+    const [dish, todayMeals, userContext, scanBaselineNai] = await Promise.all([
       this.aiDishes.getDishForMealPrefill(userId, dishId),
       this.getTodayMeals(userId),
+      this.loadUserMealContext(userId),
+      this.getScanBaselineNai(userId),
     ]);
 
-    const defaultPortionFactor = 1.0;
     const defaultNutrition = this.scaleNutrition(
       dish.baseNutrition,
       defaultPortionFactor,
     );
-    const scanBaselineNai = await this.getScanBaselineNai(userId);
     const currentDailyNai = this.computeDailyNai(todayMeals, scanBaselineNai);
+    const naiScore = this.computeMealNai(dish, defaultNutrition, userContext);
+    const naiImpact = this.computeNaiImpact(
+      todayMeals,
+      { calories: defaultNutrition.calories, naiScore },
+      currentDailyNai,
+    );
 
     return {
       success: true,
@@ -63,12 +74,24 @@ export class MealsService {
           imageUrl: dish.imageUrl,
           tags: dish.tags,
           description: dish.description,
+          category: dish.category,
+          baseNaiScore: dish.baseNaiScore,
+          scoreLabel: dish.scoreLabel ?? `${dish.baseNaiScore}% match`,
+          caloriesLabel: `${defaultNutrition.calories} kcal`,
+          isBookmarked: dish.isBookmarked,
         },
         baseNutrition: dish.baseNutrition,
         portionOptions: MEAL_PORTION_OPTIONS,
-        defaultMealSlot: this.defaultMealSlot(),
+        mealSlotOptions: MEAL_SLOT_OPTIONS,
+        defaultMealSlot,
         defaultPortionFactor,
         defaultNutrition,
+        defaultLoggedAt: now.toISOString(),
+        defaultNaiPreview: {
+          naiScore,
+          naiImpact,
+        },
+        portionCaloriesHint: `Approx. ${defaultNutrition.calories} calories for this portion.`,
         todayContext: {
           loggedMealCount: todayMeals.length,
           currentDailyCalories: this.sumCalories(todayMeals),

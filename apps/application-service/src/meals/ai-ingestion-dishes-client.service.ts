@@ -21,6 +21,8 @@ export type IngestionDishPayload = {
     fatG: number | null;
   };
   baseNaiScore: number;
+  scoreLabel?: string;
+  caloriesLabel?: string;
   dietScore: number;
   allergenFlags?: Record<string, boolean>;
   nutritionConfidence: number | null;
