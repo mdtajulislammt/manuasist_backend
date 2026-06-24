@@ -11,7 +11,10 @@ import { CreateFlowDto } from './dto/create-flow.dto';
 import { CreateStepDto } from './dto/create-step.dto';
 import { UpdateFlowDto } from './dto/update-flow.dto';
 import { UpdateStepDto } from './dto/update-step.dto';
-import { assertValidOnboardingUiConfig } from './onboarding-ui-config.validator';
+import {
+  enrichStepUiConfigForResponse,
+  prepareOnboardingUiConfig,
+} from './onboarding-ui-config.normalizer';
 
 @Injectable()
 export class OnboardingFlowsService {
@@ -92,7 +95,13 @@ export class OnboardingFlowsService {
       return {
         success: true,
         message: 'Flow retrieved successfully',
-        data: flow,
+        data: {
+          ...flow,
+          steps: flow.steps.map((step) => ({
+            ...step,
+            uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+          })),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -180,33 +189,33 @@ export class OnboardingFlowsService {
       this.assertUniqueOrderIndexesInRequest(dtos);
       for (const dto of dtos) {
         try {
-          assertValidOnboardingUiConfig(dto.uiConfig);
+          prepareOnboardingUiConfig(dto.uiConfig);
         } catch (error) {
           if (error instanceof BadRequestException) {
             const detail = this.formatHttpExceptionMessage(error);
             throw new BadRequestException(
-              `Step orderIndex ${dto.orderIndex} (${dto.type}): ${detail}`,
+              `Step orderIndex ${dto.orderIndex}: ${detail}`,
             );
           }
           throw error;
         }
       }
       return await this.prisma.$transaction(
-        dtos.map((dto) =>
-          this.prisma.onboardingStep.create({
+        dtos.map((dto) => {
+          const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
+          return this.prisma.onboardingStep.create({
             data: {
               flowId,
               orderIndex: dto.orderIndex,
-              type: dto.type,
               title: dto.title,
               subtitle: dto.subtitle,
               uiConfig:
-                dto.uiConfig === undefined
-                  ? undefined
-                  : (dto.uiConfig as Prisma.InputJsonValue),
+                uiConfig === undefined ?
+                  undefined
+                : (uiConfig as Prisma.InputJsonValue),
             },
-          }),
-        ),
+          });
+        }),
       );
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -249,9 +258,6 @@ export class OnboardingFlowsService {
       if (dto.orderIndex !== undefined) {
         data.orderIndex = dto.orderIndex;
       }
-      if (dto.type !== undefined) {
-        data.type = dto.type;
-      }
       if (dto.title !== undefined) {
         data.title = dto.title;
       }
@@ -259,8 +265,8 @@ export class OnboardingFlowsService {
         data.subtitle = dto.subtitle;
       }
       if (dto.uiConfig !== undefined) {
-        assertValidOnboardingUiConfig(dto.uiConfig);
-        data.uiConfig = dto.uiConfig as Prisma.InputJsonValue;
+        const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
+        data.uiConfig = uiConfig as Prisma.InputJsonValue;
       }
       const updatedStep = await this.prisma.onboardingStep.update({
         where: { id: stepId },
@@ -369,7 +375,13 @@ export class OnboardingFlowsService {
       return {
         success: true,
         message: 'Active published flow retrieved successfully',
-        data: flow,
+        data: {
+          ...flow,
+          steps: flow.steps.map((step) => ({
+            ...step,
+            uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+          })),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {

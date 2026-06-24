@@ -8,8 +8,14 @@ export class OnboardingResumeNextStepDto {
   @ApiProperty()
   orderIndex!: number;
 
-  @ApiProperty()
-  type!: string;
+  @ApiProperty({
+    description:
+      'Wizard position percent for this step (computed from orderIndex and total steps)',
+    example: 33,
+    minimum: 0,
+    maximum: 100,
+  })
+  progressPercent!: number;
 
   @ApiProperty()
   title!: string;

@@ -21,14 +21,6 @@ export class UpdateStepDto {
   orderIndex?: number;
 
   @ApiPropertyOptional({
-    description: 'Updated step type',
-    example: 'DIET',
-  })
-  @IsOptional()
-  @IsString()
-  type?: string;
-
-  @ApiPropertyOptional({
     description: 'Updated step title',
     example: 'Choose dietary preferences',
   })
@@ -51,7 +43,6 @@ export class UpdateStepDto {
     additionalProperties: true,
     example: {
       kind: 'multi_select_cards',
-      progressPercent: 50,
       selection: {
         mode: 'multiple',
         required: false,

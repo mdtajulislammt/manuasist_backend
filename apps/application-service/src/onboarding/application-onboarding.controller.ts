@@ -38,7 +38,7 @@ export class ApplicationOnboardingController {
   @ApiOperation({
     summary: 'Get the active published onboarding flow',
     description:
-      'Returns steps and flow.version from admin-service. Each step includes completed and value when the user has already answered, so the client can pre-select options. Use version with PUT /onboarding/answers.',
+      'Returns steps and flow.version from admin-service. Each step includes progressPercent (computed from position in flow), completed and value when the user has already answered. Render UI from uiConfig.kind. Use version with PUT /onboarding/answers.',
   })
   @ApiOkResponse({ type: AdminActiveFlowResponseDto })
   getActiveFlow(@CurrentUserId() userId: string | undefined) {

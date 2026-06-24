@@ -33,14 +33,12 @@ async function main() {
   const steps = [
     {
       orderIndex: 1,
-      type: 'GOAL',
       title: 'Set your primary goal',
       subtitle: 'Weight loss, maintenance, or muscle gain',
       uiConfig: { kind: 'single_select', options: ['lose', 'maintain', 'gain'] },
     },
     {
       orderIndex: 2,
-      type: 'DIET',
       title: 'Choose dietary preferences',
       subtitle: 'We will tailor recommendations to your diet',
       uiConfig: {
@@ -50,7 +48,6 @@ async function main() {
     },
     {
       orderIndex: 3,
-      type: 'ALLERGIES',
       title: 'Tell us your allergies',
       subtitle: 'Select all that apply',
       uiConfig: {
@@ -60,7 +57,6 @@ async function main() {
     },
     {
       orderIndex: 4,
-      type: 'SUMMARY',
       title: 'Review and continue',
       subtitle: 'Confirm your onboarding selections',
       uiConfig: { kind: 'summary' },
@@ -101,7 +97,6 @@ async function main() {
           data: {
             flowId: flow.id,
             orderIndex: step.orderIndex,
-            type: step.type,
             title: step.title,
             subtitle: step.subtitle,
             uiConfig: step.uiConfig,

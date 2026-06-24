@@ -1,273 +1,199 @@
 {
-  "orderIndex": 0,
-  "type": "GENDER",
-  "title": "What is Your Gender?",
-  "subtitle": "Personalize your Menu Assist experience by creating an account",
-  "uiConfig": {
-    "kind": "single_select_cards",
-    "progressPercent": 10,
-    "selection": {
-      "mode": "single",
-      "required": true
-    },
-    "options": [
-      {
-        "value": "male",
-        "label": "Male",
-        "icon": "/onboarding/icons/{uuid-male}.png"
-      },
-      {
-        "value": "female",
-        "label": "Female",
-        "icon": "/onboarding/icons/{uuid-female}.png"
+  "steps": [
+    {
+      "orderIndex": 0,
+      "title": "What is Your Gender?",
+      "subtitle": "Personalize your Menu Assist experience by creating an account",
+      "uiConfig": {
+        "kind": "single_select_cards",
+        "selection": { "mode": "single", "required": true },
+        "options": [
+          { "label": "Male", "icon": "/onboarding/icons/{uuid-male}.png" },
+          { "label": "Female", "icon": "/onboarding/icons/{uuid-female}.png" }
+        ],
+        "defaultValue": "male"
       }
-    ],
-    "defaultValue": "male"
-  }
-}
-
-{
-  "orderIndex": 1,
-  "type": "BODY_METRICS",
-  "title": "What is your height, weight and age?",
-  "subtitle": "Personalize your MENU ASSIST experience by creating an account",
-  "uiConfig": {
-    "kind": "multi_slider",
-    "progressPercent": 20,
-    "fields": [
-      {
-        "key": "heightCm",
-        "label": "Height",
-        "unit": "CM",
-        "min": 0,
-        "max": 500,
-        "step": 1,
-        "default": 180,
-        "leftCaption": "0 CM",
-        "rightCaption": "500 CM"
-      },
-      {
-        "key": "weightKg",
-        "label": "Weight",
-        "unit": "KG",
-        "min": 0,
-        "max": 200,
-        "step": 1,
-        "default": 80,
-        "leftCaption": "0 KG",
-        "rightCaption": "200 KG"
-      },
-      {
-        "key": "ageYears",
-        "label": "Age",
-        "unit": "Years",
-        "min": 0,
-        "max": 100,
-        "step": 1,
-        "default": 56,
-        "leftCaption": "0 Year",
-        "rightCaption": "100 Years"
+    },
+    {
+      "orderIndex": 1,
+      "title": "What is your height, weight and age?",
+      "subtitle": "Personalize your MENU ASSIST experience by creating an account",
+      "uiConfig": {
+        "kind": "multi_slider",
+        "fields": [
+          {
+            "label": "Height",
+            "unit": "CM",
+            "min": 0,
+            "max": 500,
+            "step": 1,
+            "default": 180,
+            "leftCaption": "0 CM",
+            "rightCaption": "500 CM"
+          },
+          {
+            "label": "Weight",
+            "unit": "KG",
+            "min": 0,
+            "max": 200,
+            "step": 1,
+            "default": 80,
+            "leftCaption": "0 KG",
+            "rightCaption": "200 KG"
+          },
+          {
+            "label": "Age",
+            "unit": "Years",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "default": 56,
+            "leftCaption": "0 Year",
+            "rightCaption": "100 Years"
+          }
+        ]
       }
-    ]
-  }
-}
-
-{
-  "orderIndex": 2,
-  "type": "DIET_GOALS",
-  "title": "What is Your Diet Goals?",
-  "subtitle": "Single-select from a list of common diet goals.",
-  "uiConfig": {
-    "kind": "single_select_cards",
-    "progressPercent": 30,
-    "selection": {
-      "mode": "single",
-      "required": true
     },
-    "options": [
-      { "value": "weight_loss", "label": "Weight Loss", "icon": "weight_loss" },
-      { "value": "boost_metabolic_health", "label": "Boosting Metabolic Health", "icon": "metabolic_health" },
-      { "value": "gain_energy", "label": "Gain Energy", "icon": "energy" },
-      { "value": "increase_longevity", "label": "Increasing Longevity", "icon": "longevity" },
-      { "value": "maintain_hormonal_balance", "label": "Maintaining Hormonal Balance", "icon": "hormonal_balance" },
-      { "value": "enhance_digestive_system", "label": "Enhancing Digestive System", "icon": "digestive" },
-      { "value": "support_mental_clarity", "label": "Supporting Mental Clarity", "icon": "mental_clarity" }
-    ],
-    "defaultValue": "weight_loss"
-  }
-}
-
-
-{
-  "orderIndex": 3,
-  "type": "PRIMARY_DIET_PLAN",
-  "title": "What is Your Primary Diet or Eating Plan?",
-  "subtitle": "Single-select from a list of common diet types.",
-  "uiConfig": {
-    "kind": "single_select_cards",
-    "progressPercent": 40,
-    "selection": {
-      "mode": "single",
-      "required": true
-    },
-    "options": [
-      { "value": "keto", "label": "Keto / Ketogenic", "icon": "keto" },
-      { "value": "vegan", "label": "Vegan", "icon": "vegan" },
-      { "value": "vegetarian", "label": "Vegetarian", "icon": "vegetarian" },
-      { "value": "pescatarian", "label": "Pescatarian", "icon": "pescatarian" },
-      { "value": "paleo", "label": "Paleo", "icon": "paleo" },
-      { "value": "gluten_free", "label": "Gluten-Free", "icon": "gluten_free" },
-      { "value": "dairy_free", "label": "Dairy-Free", "icon": "dairy_free" },
-      { "value": "halal", "label": "Halal", "icon": "halal" },
-      { "value": "kosher", "label": "Kosher", "icon": "kosher" }
-    ],
-    "defaultValue": "keto"
-  }
-}
-
-{
-  "orderIndex": 4,
-  "type": "ALLERGIES_INTOLERANCES",
-  "title": "Do You Have any known Allergies or Food Intolerances?",
-  "subtitle": "Select all that apply for specific allergens/intolerances.",
-  "uiConfig": {
-    "kind": "multi_select_cards",
-    "progressPercent": 50,
-    "selection": {
-      "mode": "multiple",
-      "required": false,
-      "minSelections": 0,
-      "maxSelections": 10
-    },
-    "options": [
-      { "value": "peanuts", "label": "Peanuts", "icon": "peanuts" },
-      { "value": "tree_nuts", "label": "Tree Nuts", "icon": "tree_nuts" },
-      { "value": "dairy", "label": "Dairy / Milk", "icon": "dairy" },
-      { "value": "eggs", "label": "Eggs", "icon": "eggs" },
-      { "value": "soy", "label": "Soy", "icon": "soy" },
-      { "value": "gluten", "label": "Wheat / Gluten", "icon": "gluten" },
-      { "value": "fish", "label": "Fish", "icon": "fish" }
-    ],
-    "defaultValues": ["peanuts"]
-  }
-}
-
-{
-  "orderIndex": 5,
-  "type": "FAVORITE_CUISINES",
-  "title": "What Are Your Favorite Cuisines?",
-  "subtitle": "Multi-select chips for your favorite cuisines.",
-  "uiConfig": {
-    "kind": "multi_select_cards",
-    "progressPercent": 60,
-    "selection": {
-      "mode": "multiple",
-      "required": false,
-      "minSelections": 0,
-      "maxSelections": 10
-    },
-    "options": [
-      { "value": "italian", "label": "Italian", "icon": "italian" },
-      { "value": "mexican", "label": "Mexican", "icon": "mexican" },
-      { "value": "japanese", "label": "Japanese", "icon": "japanese" },
-      { "value": "thai", "label": "Thai", "icon": "thai" },
-      { "value": "indian", "label": "Indian", "icon": "indian" },
-      { "value": "mediterranean", "label": "Mediterranean", "icon": "mediterranean" },
-      { "value": "american", "label": "American", "icon": "american" }
-    ],
-    "defaultValues": ["italian"]
-  }
-}
-
-{
-  "orderIndex": 6,
-  "type": "SPICE_LEVEL",
-  "title": "What is Your Preferred Spice Level?",
-  "subtitle": "Select preferred spice level.",
-  "uiConfig": {
-    "kind": "single_select_cards",
-    "progressPercent": 70,
-    "selection": {
-      "mode": "single",
-      "required": true
-    },
-    "options": [
-      { "value": "none", "label": "None", "icon": "spice_none" },
-      { "value": "mild", "label": "Mild", "icon": "spice_mild" },
-      { "value": "medium", "label": "Medium", "icon": "spice_medium" },
-      { "value": "hot", "label": "Hot", "icon": "spice_hot" },
-      { "value": "extra", "label": "Extra", "icon": "spice_extra" }
-    ],
-    "defaultValue": "none"
-  }
-}
-
-{
-  "orderIndex": 7,
-  "type": "FITNESS_GOAL",
-  "title": "What is your goal?",
-  "subtitle": "Select fitness goal.",
-  "uiConfig": {
-    "kind": "single_select_cards",
-    "progressPercent": 80,
-    "selection": {
-      "mode": "single",
-      "required": true
-    },
-    "options": [
-      { "value": "eat_healthier", "label": "Eat Healthier", "icon": "goal_eat_healthier" },
-      { "value": "lose_weight", "label": "Lose Weight", "icon": "goal_lose_weight" },
-      { "value": "maintain_weight", "label": "Maintain Weight", "icon": "goal_maintain_weight" },
-      { "value": "gain_muscle_weight", "label": "Gain Muscle/Weight", "icon": "goal_gain_muscle_weight" },
-      { "value": "improve_fitness_performance", "label": "Improve Fitness Performance", "icon": "goal_fitness_performance" }
-    ],
-    "defaultValue": "eat_healthier"
-  }
-}
-
-{
-  "orderIndex": 8,
-  "type": "NUTRITIONAL_PREFERENCES",
-  "title": "What are your current nutritional preferences?",
-  "subtitle": "Help us track your nutritional targets.",
-  "uiConfig": {
-    "kind": "multi_scale",
-    "progressPercent": 90,
-    "fields": [
-      {
-        "key": "carbohydrates",
-        "label": "Carbohydrates",
-        "scale": ["low", "moderate", "high"],
-        "defaultValue": "moderate"
-      },
-      {
-        "key": "sodium",
-        "label": "Sodium",
-        "scale": ["low", "moderate", "high"],
-        "defaultValue": "moderate"
-      },
-      {
-        "key": "fat",
-        "label": "Fat",
-        "scale": ["low", "moderate", "high"],
-        "defaultValue": "moderate"
-      },
-      {
-        "key": "sugar",
-        "label": "Sugar",
-        "scale": ["low", "moderate", "high"],
-        "defaultValue": "moderate"
-      },
-      {
-        "key": "protein",
-        "label": "Protein",
-        "scale": ["low", "moderate", "high"],
-        "defaultValue": "moderate"
+    {
+      "orderIndex": 2,
+      "title": "What is Your Diet Goals?",
+      "subtitle": "Single-select from a list of common diet goals.",
+      "uiConfig": {
+        "kind": "single_select_cards",
+        "selection": { "mode": "single", "required": true },
+        "options": [
+          { "label": "Weight Loss", "icon": "weight_loss" },
+          { "label": "Boosting Metabolic Health", "icon": "metabolic_health" },
+          { "label": "Gain Energy", "icon": "energy" },
+          { "label": "Increasing Longevity", "icon": "longevity" },
+          { "label": "Maintaining Hormonal Balance", "icon": "hormonal_balance" },
+          { "label": "Enhancing Digestive System", "icon": "digestive" },
+          { "label": "Supporting Mental Clarity", "icon": "mental_clarity" }
+        ],
+        "defaultValue": "weight_loss"
       }
-    ],
-    "cta": {
-      "label": "Explore Menu Assist",
-      "action": "complete_onboarding"
+    },
+    {
+      "orderIndex": 3,
+      "title": "What is Your Primary Diet or Eating Plan?",
+      "subtitle": "Single-select from a list of common diet types.",
+      "uiConfig": {
+        "kind": "single_select_cards",
+        "selection": { "mode": "single", "required": true },
+        "options": [
+          { "label": "Keto / Ketogenic", "icon": "keto" },
+          { "label": "Vegan", "icon": "vegan" },
+          { "label": "Vegetarian", "icon": "vegetarian" },
+          { "label": "Pescatarian", "icon": "pescatarian" },
+          { "label": "Paleo", "icon": "paleo" },
+          { "label": "Gluten-Free", "icon": "gluten_free" },
+          { "label": "Dairy-Free", "icon": "dairy_free" },
+          { "label": "Halal", "icon": "halal" },
+          { "label": "Kosher", "icon": "kosher" }
+        ],
+        "defaultValue": "keto_ketogenic"
+      }
+    },
+    {
+      "orderIndex": 4,
+      "title": "Do You Have any known Allergies or Food Intolerances?",
+      "subtitle": "Select all that apply for specific allergens/intolerances.",
+      "uiConfig": {
+        "kind": "multi_select_cards",
+        "selection": {
+          "mode": "multiple",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 10
+        },
+        "options": [
+          { "label": "Peanuts", "icon": "peanuts" },
+          { "label": "Tree Nuts", "icon": "tree_nuts" },
+          { "label": "Dairy / Milk", "icon": "dairy" },
+          { "label": "Eggs", "icon": "eggs" },
+          { "label": "Soy", "icon": "soy" },
+          { "label": "Wheat / Gluten", "icon": "gluten" },
+          { "label": "Fish", "icon": "fish" }
+        ],
+        "defaultValues": ["peanuts"]
+      }
+    },
+    {
+      "orderIndex": 5,
+      "title": "What Are Your Favorite Cuisines?",
+      "subtitle": "Multi-select chips for your favorite cuisines.",
+      "uiConfig": {
+        "kind": "multi_select_cards",
+        "selection": {
+          "mode": "multiple",
+          "required": false,
+          "minSelections": 0,
+          "maxSelections": 10
+        },
+        "options": [
+          { "label": "Italian", "icon": "italian" },
+          { "label": "Mexican", "icon": "mexican" },
+          { "label": "Japanese", "icon": "japanese" },
+          { "label": "Thai", "icon": "thai" },
+          { "label": "Indian", "icon": "indian" },
+          { "label": "Mediterranean", "icon": "mediterranean" },
+          { "label": "American", "icon": "american" }
+        ],
+        "defaultValues": ["italian"]
+      }
+    },
+    {
+      "orderIndex": 6,
+      "title": "What is Your Preferred Spice Level?",
+      "subtitle": "Select preferred spice level.",
+      "uiConfig": {
+        "kind": "single_select_cards",
+        "selection": { "mode": "single", "required": true },
+        "options": [
+          { "label": "None", "icon": "spice_none" },
+          { "label": "Mild", "icon": "spice_mild" },
+          { "label": "Medium", "icon": "spice_medium" },
+          { "label": "Hot", "icon": "spice_hot" },
+          { "label": "Extra", "icon": "spice_extra" }
+        ],
+        "defaultValue": "none"
+      }
+    },
+    {
+      "orderIndex": 7,
+      "title": "What is your goal?",
+      "subtitle": "Select fitness goal.",
+      "uiConfig": {
+        "kind": "single_select_cards",
+        "selection": { "mode": "single", "required": true },
+        "options": [
+          { "label": "Eat Healthier", "icon": "goal_eat_healthier" },
+          { "label": "Lose Weight", "icon": "goal_lose_weight" },
+          { "label": "Maintain Weight", "icon": "goal_maintain_weight" },
+          { "label": "Gain Muscle/Weight", "icon": "goal_gain_muscle_weight" },
+          { "label": "Improve Fitness Performance", "icon": "goal_fitness_performance" }
+        ],
+        "defaultValue": "eat_healthier"
+      }
+    },
+    {
+      "orderIndex": 8,
+      "title": "What are your current nutritional preferences?",
+      "subtitle": "Help us track your nutritional targets.",
+      "uiConfig": {
+        "kind": "multi_scale",
+        "fields": [
+          { "label": "Carbohydrates", "scale": ["low", "moderate", "high"], "defaultValue": "moderate" },
+          { "label": "Sodium", "scale": ["low", "moderate", "high"], "defaultValue": "moderate" },
+          { "label": "Fat", "scale": ["low", "moderate", "high"], "defaultValue": "moderate" },
+          { "label": "Sugar", "scale": ["low", "moderate", "high"], "defaultValue": "moderate" },
+          { "label": "Protein", "scale": ["low", "moderate", "high"], "defaultValue": "moderate" }
+        ],
+        "cta": {
+          "label": "Explore Menu Assist",
+          "action": "complete_onboarding"
+        }
+      }
     }
-  }
+  ]
 }

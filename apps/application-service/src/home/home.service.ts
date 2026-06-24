@@ -42,12 +42,12 @@ export class HomeService {
         success: true,
         message: 'Home screen retrieved successfully',
         data: {
-          header: {
-            greeting: this.greeting(),
-            title: `Hello ${displayName}`,
-            avatarUrl: profile?.avatarUrl ?? null,
-            notificationCount: 0,
-          },
+          // header: {
+          //   greeting: this.greeting(),
+          //   title: `Hello ${displayName}`,
+          //   avatarUrl: profile?.avatarUrl ?? null,
+          //   notificationCount: 0,
+          // },
           todayNai: this.todayNai(
             aiSummary,
             dailyCalories,

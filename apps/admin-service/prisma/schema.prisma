@@ -99,7 +99,6 @@ model OnboardingStep {
   id         String   @id @default(uuid()) @db.Uuid
   flowId     String   @map("flow_id") @db.Uuid
   orderIndex Int      @map("order_index")
-  type       String
   title      String
   subtitle   String?
   uiConfig   Json?    @map("ui_config")

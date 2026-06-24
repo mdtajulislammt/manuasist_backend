@@ -10,8 +10,14 @@ export class AdminOnboardingStepResponseDto {
   @ApiProperty()
   orderIndex!: number;
 
-  @ApiProperty({ description: 'Step type key (e.g. single_choice, multi_choice)' })
-  type!: string;
+  @ApiProperty({
+    description:
+      'Wizard position percent for this step (computed from orderIndex and total steps)',
+    example: 33,
+    minimum: 0,
+    maximum: 100,
+  })
+  progressPercent!: number;
 
   @ApiProperty()
   title!: string;

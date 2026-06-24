@@ -120,7 +120,6 @@ export const OnboardingStepScalarFieldEnum = {
   id: 'id',
   flowId: 'flowId',
   orderIndex: 'orderIndex',
-  type: 'type',
   title: 'title',
   subtitle: 'subtitle',
   uiConfig: 'uiConfig',

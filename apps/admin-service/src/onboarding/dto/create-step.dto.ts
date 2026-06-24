@@ -21,14 +21,6 @@ export class CreateStepDto {
   orderIndex!: number;
 
   @ApiProperty({
-    description: 'Step type key',
-    example: 'GOAL',
-  })
-  @IsString()
-  @IsNotEmpty()
-  type!: string;
-
-  @ApiProperty({
     description: 'Step title shown to user',
     example: 'Set your primary goal',
   })
@@ -47,12 +39,12 @@ export class CreateStepDto {
   @ApiPropertyOptional({
     description:
       'UI config (JSON). Supported `kind` values: single_select | multi_slider | single_select_cards | multi_select_cards | multi_scale. ' +
+      'Field keys (`fields[].key`) and option values (`options[].value`) are auto-generated from labels when omitted. ' +
       'For card kinds, each option may include optional `icon` (string: asset key or image URL). See repo `steps.txt` for full payload examples.',
     type: 'object',
     additionalProperties: true,
     example: {
       kind: 'single_select_cards',
-      progressPercent: 30,
       selection: { mode: 'single', required: true },
       options: [
         { value: 'weight_loss', label: 'Weight Loss', icon: 'weight_loss' },

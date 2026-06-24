@@ -26,6 +26,7 @@ function isFiniteNumber(v: unknown): v is number {
 function optionValues(
   options: unknown[],
   path: string,
+  requireValue: boolean,
 ): { value: string; label: string; icon?: string }[] {
   const out: { value: string; label: string; icon?: string }[] = [];
   options.forEach((raw, i) => {
@@ -33,7 +34,7 @@ function optionValues(
     if (!isPlainObject(raw)) {
       throw new BadRequestException(`${p} must be an object with value and label`);
     }
-    if (!isNonEmptyString(raw.value)) {
+    if (requireValue && !isNonEmptyString(raw.value)) {
       throw new BadRequestException(`${p}.value must be a non-empty string`);
     }
     if (!isNonEmptyString(raw.label)) {
@@ -43,23 +44,19 @@ function optionValues(
       if (typeof raw.icon !== 'string' || !raw.icon.trim()) {
         throw new BadRequestException(`${p}.icon must be a non-empty string when set`);
       }
-      out.push({ value: raw.value.trim(), label: raw.label.trim(), icon: raw.icon.trim() });
+      out.push({
+        value: isNonEmptyString(raw.value) ? raw.value.trim() : '',
+        label: raw.label.trim(),
+        icon: raw.icon.trim(),
+      });
     } else {
-      out.push({ value: raw.value.trim(), label: raw.label.trim() });
+      out.push({
+        value: isNonEmptyString(raw.value) ? raw.value.trim() : '',
+        label: raw.label.trim(),
+      });
     }
   });
   return out;
-}
-
-function assertProgressPercent(obj: Record<string, unknown>, ctx: string) {
-  if (obj.progressPercent === undefined) return;
-  if (!isFiniteNumber(obj.progressPercent)) {
-    throw new BadRequestException(`${ctx}.progressPercent must be a number`);
-  }
-  const n = obj.progressPercent;
-  if (n < 0 || n > 100) {
-    throw new BadRequestException(`${ctx}.progressPercent must be between 0 and 100`);
-  }
 }
 
 function validateSingleSelect(obj: Record<string, unknown>) {
@@ -73,7 +70,10 @@ function validateSingleSelect(obj: Record<string, unknown>) {
   });
 }
 
-function validateMultiSlider(obj: Record<string, unknown>) {
+function validateMultiSlider(
+  obj: Record<string, unknown>,
+  requireStableKeys: boolean,
+) {
   if (!Array.isArray(obj.fields) || obj.fields.length === 0) {
     throw new BadRequestException('uiConfig.fields must be a non-empty array');
   }
@@ -82,7 +82,7 @@ function validateMultiSlider(obj: Record<string, unknown>) {
     if (!isPlainObject(raw)) {
       throw new BadRequestException(`${p} must be an object`);
     }
-    if (!isNonEmptyString(raw.key)) {
+    if (requireStableKeys && !isNonEmptyString(raw.key)) {
       throw new BadRequestException(`${p}.key must be a non-empty string`);
     }
     if (!isNonEmptyString(raw.label)) {
@@ -125,18 +125,29 @@ function validateSelectionBlock(sel: unknown, ctx: string, allowedModes: ('singl
   }
 }
 
-function validateSingleSelectCards(obj: Record<string, unknown>) {
-  assertProgressPercent(obj, 'uiConfig');
+function validateSingleSelectCards(
+  obj: Record<string, unknown>,
+  requireStableKeys: boolean,
+) {
   validateSelectionBlock(obj.selection, 'uiConfig.selection', ['single']);
   if (!Array.isArray(obj.options) || obj.options.length === 0) {
     throw new BadRequestException('uiConfig.options must be a non-empty array');
   }
-  const opts = optionValues(obj.options as unknown[], 'uiConfig.options');
+  const opts = optionValues(
+    obj.options as unknown[],
+    'uiConfig.options',
+    requireStableKeys,
+  );
   if (!isNonEmptyString(obj.defaultValue)) {
     throw new BadRequestException('uiConfig.defaultValue must be a non-empty string');
   }
-  const values = [...new Set(opts.map((o) => o.value))];
+  const values = [...new Set(opts.map((o) => o.value).filter(Boolean))];
   const defaultVal = (obj.defaultValue as string).trim();
+  if (requireStableKeys && values.length !== opts.length) {
+    throw new BadRequestException(
+      'uiConfig.options[].value must be set for every option (or omit to auto-generate from label)',
+    );
+  }
   if (!values.includes(defaultVal)) {
     throw new BadRequestException(
       `uiConfig.defaultValue "${defaultVal}" must match one of uiConfig.options[].value ` +
@@ -145,14 +156,25 @@ function validateSingleSelectCards(obj: Record<string, unknown>) {
   }
 }
 
-function validateMultiSelectCards(obj: Record<string, unknown>) {
-  assertProgressPercent(obj, 'uiConfig');
+function validateMultiSelectCards(
+  obj: Record<string, unknown>,
+  requireStableKeys: boolean,
+) {
   validateSelectionBlock(obj.selection, 'uiConfig.selection', ['multiple']);
   if (!Array.isArray(obj.options) || obj.options.length === 0) {
     throw new BadRequestException('uiConfig.options must be a non-empty array');
   }
-  const opts = optionValues(obj.options as unknown[], 'uiConfig.options');
-  const valueSet = new Set(opts.map((o) => o.value));
+  const opts = optionValues(
+    obj.options as unknown[],
+    'uiConfig.options',
+    requireStableKeys,
+  );
+  const valueSet = new Set(opts.map((o) => o.value).filter(Boolean));
+  if (requireStableKeys && valueSet.size !== opts.length) {
+    throw new BadRequestException(
+      'uiConfig.options[].value must be set for every option (or omit to auto-generate from label)',
+    );
+  }
   if (!Array.isArray(obj.defaultValues)) {
     throw new BadRequestException('uiConfig.defaultValues must be an array of strings');
   }
@@ -170,8 +192,10 @@ function validateMultiSelectCards(obj: Record<string, unknown>) {
   });
 }
 
-function validateMultiScale(obj: Record<string, unknown>) {
-  assertProgressPercent(obj, 'uiConfig');
+function validateMultiScale(
+  obj: Record<string, unknown>,
+  requireStableKeys: boolean,
+) {
   if (!Array.isArray(obj.fields) || obj.fields.length === 0) {
     throw new BadRequestException('uiConfig.fields must be a non-empty array');
   }
@@ -180,7 +204,7 @@ function validateMultiScale(obj: Record<string, unknown>) {
     if (!isPlainObject(raw)) {
       throw new BadRequestException(`${p} must be an object`);
     }
-    if (!isNonEmptyString(raw.key)) {
+    if (requireStableKeys && !isNonEmptyString(raw.key)) {
       throw new BadRequestException(`${p}.key must be a non-empty string`);
     }
     if (!isNonEmptyString(raw.label)) {
@@ -220,8 +244,13 @@ function validateMultiScale(obj: Record<string, unknown>) {
  * Validates `uiConfig` when present. Matches the onboarding step JSON shapes in `steps.txt`
  * (single_select, multi_slider, single_select_cards, multi_select_cards, multi_scale).
  * Optional per-option `icon` is allowed for card kinds (string: asset key or image URL).
+ * Field keys and option values may be omitted on input; use `prepareOnboardingUiConfig` to generate them.
  */
-export function assertValidOnboardingUiConfig(uiConfig: unknown): void {
+export function assertValidOnboardingUiConfig(
+  uiConfig: unknown,
+  options: { requireStableKeys?: boolean } = {},
+): void {
+  const requireStableKeys = options.requireStableKeys ?? false;
   if (uiConfig === undefined || uiConfig === null) {
     return;
   }
@@ -244,16 +273,16 @@ export function assertValidOnboardingUiConfig(uiConfig: unknown): void {
       validateSingleSelect(uiConfig);
       break;
     case 'multi_slider':
-      validateMultiSlider(uiConfig);
+      validateMultiSlider(uiConfig, requireStableKeys);
       break;
     case 'single_select_cards':
-      validateSingleSelectCards(uiConfig);
+      validateSingleSelectCards(uiConfig, requireStableKeys);
       break;
     case 'multi_select_cards':
-      validateMultiSelectCards(uiConfig);
+      validateMultiSelectCards(uiConfig, requireStableKeys);
       break;
     case 'multi_scale':
-      validateMultiScale(uiConfig);
+      validateMultiScale(uiConfig, requireStableKeys);
       break;
   }
 }

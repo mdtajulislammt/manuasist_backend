@@ -217,10 +217,15 @@ export class UsersMeService {
         answers.map((a) => [a.stepKey, a.value]),
       );
       const answered = new Set(answers.map((a) => a.stepKey));
+      const totalSteps = steps.length;
       const stepsWithAnswers = steps.map((step) => {
         const savedValue = answersByStepId.get(step.id);
         return {
           ...step,
+          progressPercent: this.computeStepPositionPercent(
+            step.orderIndex,
+            totalSteps,
+          ),
           completed: savedValue !== undefined,
           value: savedValue ?? null,
         };
@@ -311,7 +316,10 @@ export class UsersMeService {
             ? {
                 id: next.id,
                 orderIndex: next.orderIndex,
-                type: next.type,
+                progressPercent: this.computeStepPositionPercent(
+                  next.orderIndex,
+                  totalSteps,
+                ),
                 title: next.title,
                 subtitle: next.subtitle,
                 uiConfig: next.uiConfig,
@@ -431,8 +439,27 @@ export class UsersMeService {
     if (typeof uiConfig !== 'object' || Array.isArray(uiConfig)) {
       return true;
     }
-    const r = (uiConfig as { required?: boolean }).required;
-    return r !== false;
+    const config = uiConfig as {
+      required?: boolean;
+      selection?: { required?: boolean };
+    };
+    if (config.selection && typeof config.selection.required === 'boolean') {
+      return config.selection.required;
+    }
+    return config.required !== false;
+  }
+
+  private computeStepPositionPercent(
+    orderIndex: number,
+    totalSteps: number,
+  ): number {
+    if (totalSteps === 0) {
+      return 100;
+    }
+    return Math.min(
+      100,
+      Math.round(((orderIndex + 1) / totalSteps) * 100),
+    );
   }
 
   private async maybeCompleteOnboarding(
