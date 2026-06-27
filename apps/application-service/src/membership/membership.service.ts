@@ -212,10 +212,7 @@ export class MembershipService {
       }
 
       const userId = appUserId;
-      const entitlementKey =
-        this.stringValue(event, 'entitlement_id', 'entitlementId') ??
-        this.config.get<string>('REVENUECAT_ENTITLEMENT_ID') ??
-        'premium';
+      const entitlementKey = this.entitlementKeyFromEvent(event);
       const productId = this.stringValue(event, 'product_id', 'productId');
       const expiresAt = this.dateFromValue(
         this.value(event, 'expiration_at_ms', 'expires_at_ms', 'expiration_at'),
@@ -583,6 +580,21 @@ export class MembershipService {
     current: Prisma.UserEntitlementGetPayload<Record<string, never>>,
   ): boolean {
     return Boolean(current.priceId || current.priceLabel);
+  }
+
+  private entitlementKeyFromEvent(event: Record<string, unknown>): string {
+    const single = this.stringValue(event, 'entitlement_id', 'entitlementId');
+    if (single) {
+      return single;
+    }
+    const ids = this.value(event, 'entitlement_ids', 'entitlementIds');
+    if (Array.isArray(ids)) {
+      const first = ids.find((id) => typeof id === 'string' && id.trim());
+      if (typeof first === 'string') {
+        return first.trim();
+      }
+    }
+    return this.config.get<string>('REVENUECAT_ENTITLEMENT_ID') ?? 'premium';
   }
 
   private assertRevenueCatAuthorized(authorization: string | undefined) {

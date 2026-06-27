@@ -201,6 +201,21 @@ pnpm run backfill:stored-files
 
 **Internal upload (other services):** `POST /internal/files` with header `x-internal-api-key` and multipart `file` + `namespace`.
 
+## RevenueCat webhooks (subscriptions)
+
+Flutter purchases sync to `application-service` via:
+
+`POST /v1/app/internal/revenuecat/webhook` with `Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>`
+
+Full dashboard setup, ngrok local testing, and verification steps:
+[`docs/revenuecat-webhook-setup.md`](docs/revenuecat-webhook-setup.md)
+
+Quick local smoke test (gateway on port 5000):
+
+```powershell
+.\scripts\test-revenuecat-webhook.ps1 -UserId "<auth-user-uuid>"
+```
+
 For a command-focused reference, see `commands.md`.
 
 ## License
