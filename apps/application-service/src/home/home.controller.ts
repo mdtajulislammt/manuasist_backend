@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
 import { GetHomeQueryDto } from './dto/get-home-query.dto';
+import { HomeResponseDto } from './dto/home-response.dto';
 import { HomeService } from './home.service';
 
 @Controller('home')
@@ -19,7 +20,7 @@ export class HomeController {
 
   @Get()
   @ApiOperation({ summary: 'Get screen-ready home dashboard data' })
-  @ApiOkResponse({ description: 'Home screen data returned.' })
+  @ApiOkResponse({ type: HomeResponseDto, description: 'Home screen data returned.' })
   getHome(
     @CurrentUserId() userId: string | undefined,
     @Query() query: GetHomeQueryDto,

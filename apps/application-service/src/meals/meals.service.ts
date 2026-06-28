@@ -196,6 +196,18 @@ export class MealsService {
 
   async getTodayMealStats(userId: string) {
     const mealDate = this.toMealDate(new Date());
+    return this.getMealStatsForDate(userId, mealDate);
+  }
+
+  async getYesterdayMealStats(userId: string) {
+    const now = new Date();
+    const yesterday = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1),
+    );
+    return this.getMealStatsForDate(userId, yesterday);
+  }
+
+  private async getMealStatsForDate(userId: string, mealDate: Date) {
     const meals = await this.getTodayMeals(userId, mealDate);
     const scanBaselineNai = await this.getScanBaselineNai(userId);
 

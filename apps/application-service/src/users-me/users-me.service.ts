@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
-import { SpiceLevel, WeightGoal } from '../../generated/prisma/enums';
 import {
   ProfileAvatarStorageService,
   type ProfileAvatarUpload,
@@ -19,46 +18,12 @@ import { PatchPreferencesDto } from './dto/patch-preferences.dto';
 import { PatchProfileDto } from './dto/patch-profile.dto';
 import { PutOnboardingAnswersDto } from './dto/put-onboarding-answers.dto';
 import { ProfileContactChangeService } from './profile-contact-change.service';
-
-function isSpiceLevel(v: string): v is SpiceLevel {
-  return (Object.values(SpiceLevel) as string[]).includes(v);
-}
-
-function isWeightGoal(v: string): v is WeightGoal {
-  return (Object.values(WeightGoal) as string[]).includes(v);
-}
-
-function projectPreferencesFromValue(
-  value: unknown,
-): Prisma.PreferencesUpdateInput {
-  const data: Prisma.PreferencesUpdateInput = {};
-  if (value === null || value === undefined) {
-    return data;
-  }
-  if (typeof value !== 'object' || Array.isArray(value)) {
-    return data;
-  }
-  const o = value as Record<string, unknown>;
-  if (typeof o.dietType === 'string') {
-    data.dietType = o.dietType;
-  }
-  if (typeof o.calorieTarget === 'number' && Number.isInteger(o.calorieTarget)) {
-    data.calorieTarget = o.calorieTarget;
-  }
-  if (typeof o.spiceLevel === 'string' && isSpiceLevel(o.spiceLevel)) {
-    data.spiceLevel = o.spiceLevel;
-  }
-  if (typeof o.weightGoal === 'string' && isWeightGoal(o.weightGoal)) {
-    data.weightGoal = o.weightGoal;
-  }
-  return data;
-}
-
-function mergePreferenceUpdates(
-  updates: Prisma.PreferencesUpdateInput[],
-): Prisma.PreferencesUpdateInput {
-  return updates.reduce((acc, u) => ({ ...acc, ...u }), {});
-}
+import { DietaryPreferencesResolver } from './dietary-preferences.resolver';
+import {
+  mergePreferenceUpdates,
+  projectPreferencesFromValue,
+  toPreferencesUpdateInput,
+} from './project-preferences.util';
 
 @Injectable()
 export class UsersMeService {
@@ -70,6 +35,7 @@ export class UsersMeService {
     private readonly admin: AdminInternalClientService,
     private readonly authInternal: AuthInternalClientService,
     private readonly contactChange: ProfileContactChangeService,
+    private readonly dietary: DietaryPreferencesResolver,
   ) { }
 
   async getProfile(userId: string) {
@@ -185,13 +151,20 @@ export class UsersMeService {
   async getPreferences(userId: string) {
     try {
       await this.ensureUserRows(userId);
-      const preferences = await this.prisma.preferences.findUniqueOrThrow({
-        where: { userId },
-      });
+      const [preferences, resolved] = await Promise.all([
+        this.prisma.preferences.findUniqueOrThrow({
+          where: { userId },
+        }),
+        this.dietary.resolve(userId),
+      ]);
       return {
         success: true,
         message: 'Preferences retrieved successfully',
-        data: preferences,
+        data: {
+          ...preferences,
+          calorieTarget: resolved.calorieTarget,
+          calorieTargetSource: resolved.calorieTargetSource,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -360,10 +333,27 @@ export class UsersMeService {
         where: { userId },
         data,
       });
+
+      if (dto.calorieTarget === undefined && dto.weightGoal !== undefined) {
+        await this.dietary.syncComputedCalorieTargetToPreferences(userId);
+      }
+
+      const resolved = await this.dietary.resolve(userId);
+      const latestPreferences =
+        dto.calorieTarget === undefined && dto.weightGoal !== undefined
+          ? await this.prisma.preferences.findUniqueOrThrow({
+              where: { userId },
+            })
+          : updatedPreferences;
+
       return {
         success: true,
         message: 'Preferences updated successfully',
-        data: updatedPreferences,
+        data: {
+          ...latestPreferences,
+          calorieTarget: resolved.calorieTarget,
+          calorieTargetSource: resolved.calorieTargetSource,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -392,6 +382,17 @@ export class UsersMeService {
         projectPreferencesFromValue(a.value),
       );
       const prefMerged = mergePreferenceUpdates(prefUpdates);
+      const touchesBiometrics = dto.answers.some((answer) => {
+        const step = flow.data.steps.find((row) => row.id === answer.stepKey);
+        const kind =
+          step?.uiConfig &&
+          typeof step.uiConfig === 'object' &&
+          !Array.isArray(step.uiConfig) &&
+          typeof (step.uiConfig as Record<string, unknown>).kind === 'string'
+            ? String((step.uiConfig as Record<string, unknown>).kind)
+            : null;
+        return kind === 'multi_slider';
+      });
 
       await this.prisma.$transaction(async (tx) => {
         await this.ensureUserRowsTx(userId, tx);
@@ -416,11 +417,18 @@ export class UsersMeService {
         if (Object.keys(prefMerged).length > 0) {
           await tx.preferences.update({
             where: { userId },
-            data: prefMerged,
+            data: toPreferencesUpdateInput(prefMerged),
           });
         }
         await this.maybeCompleteOnboarding(userId, flow.data, dto.flowVersion, tx);
       });
+
+      if (
+        prefMerged.calorieTarget === undefined &&
+        (touchesBiometrics || prefMerged.weightGoal !== undefined)
+      ) {
+        await this.dietary.syncComputedCalorieTargetToPreferences(userId);
+      }
 
       return { success: true, message: 'Onboarding answers updated successfully' };
     } catch (error) {

@@ -253,10 +253,16 @@ export class ScansService {
     try {
       const trackingRange = this.homeTrackingRange(requestedRange);
       const now = new Date();
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);
-      const tomorrowStart = new Date(todayStart);
-      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+      const todayStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
+      const tomorrowStart = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() + 1,
+        ),
+      );
       const chartStart = this.homeChartStart(now, trackingRange);
 
       const [latestCompleted, previousCompleted, todayCompleted, chartScans] =

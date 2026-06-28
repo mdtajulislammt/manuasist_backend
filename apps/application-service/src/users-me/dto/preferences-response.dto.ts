@@ -24,6 +24,13 @@ export class PreferencesResponseDto {
   calorieTarget!: number | null;
 
   @ApiProperty({
+    enum: ['preferences', 'onboarding_answer', 'computed'],
+    nullable: true,
+    required: false,
+  })
+  calorieTargetSource?: 'preferences' | 'onboarding_answer' | 'computed' | null;
+
+  @ApiProperty({
     enum: spiceLevelEnum,
     nullable: true,
   })

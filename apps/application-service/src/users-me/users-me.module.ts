@@ -12,6 +12,7 @@ import {
 } from './profile-contact-change.constants';
 import { ProfileContactChangeOtpProcessor } from './profile-contact-change.processor';
 import { ProfileContactChangeService } from './profile-contact-change.service';
+import { DietaryPreferencesResolver } from './dietary-preferences.resolver';
 import { UsersMeController } from './users-me.controller';
 import { UsersMeService } from './users-me.service';
 
@@ -37,7 +38,8 @@ import { UsersMeService } from './users-me.service';
     ProfileContactChangeService,
     ProfileContactChangeOtpProcessor,
     UsersMeService,
+    DietaryPreferencesResolver,
   ],
-  exports: [UsersMeService],
+  exports: [UsersMeService, DietaryPreferencesResolver],
 })
 export class UsersMeModule {}
