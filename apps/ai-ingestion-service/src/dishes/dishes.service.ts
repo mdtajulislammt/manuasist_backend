@@ -8,8 +8,14 @@ import {
   buildScoreLabel,
   extractAllergenFlags,
   extractDishMacros,
+  extractMacrosFromJson,
   resolveDishImageUrl,
 } from './dish-presentation.util';
+
+type BatchDishRequest = {
+  userId: string;
+  dishIds: string[];
+};
 
 @Injectable()
 export class DishesService {
@@ -81,6 +87,49 @@ export class DishesService {
         nutritionConfidence: dish.nutritionConfidence,
         isBookmarked: bookmark !== null,
       },
+    };
+  }
+
+  async getDishesBatch({ userId, dishIds }: BatchDishRequest) {
+    const uniqueIds = [...new Set(dishIds)].filter(Boolean);
+    if (uniqueIds.length === 0) {
+      return {
+        success: true,
+        message: 'Dishes retrieved',
+        data: [],
+      };
+    }
+
+    const dishes = await this.prisma.dish.findMany({
+      where: {
+        id: { in: uniqueIds },
+        scan: { userId },
+      },
+      select: {
+        id: true,
+        name: true,
+        calories: true,
+        macros: true,
+        category: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Dishes retrieved',
+      data: dishes.map((dish) => {
+        const macros = extractMacrosFromJson(dish.macros);
+        return {
+          id: dish.id,
+          name: dish.name,
+          calories: dish.calories,
+          macros,
+          proteinG: macros.proteinG ?? 0,
+          carbG: macros.carbG ?? 0,
+          fatG: macros.fatG ?? 0,
+          category: dish.category,
+        };
+      }),
     };
   }
 }

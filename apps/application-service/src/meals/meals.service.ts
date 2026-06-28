@@ -207,6 +207,21 @@ export class MealsService {
     return this.getMealStatsForDate(userId, yesterday);
   }
 
+  async getMealsInRange(userId: string, from: Date, to: Date) {
+    const fromDate = this.toMealDate(from);
+    const toDate = this.toMealDate(to);
+    return this.prisma.mealLogEntry.findMany({
+      where: {
+        userId,
+        mealDate: {
+          gte: fromDate,
+          lt: toDate,
+        },
+      },
+      orderBy: [{ mealDate: 'asc' }, { loggedAt: 'asc' }],
+    });
+  }
+
   private async getMealStatsForDate(userId: string, mealDate: Date) {
     const meals = await this.getTodayMeals(userId, mealDate);
     const scanBaselineNai = await this.getScanBaselineNai(userId);

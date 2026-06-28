@@ -249,6 +249,58 @@ export class ScansService {
     }
   }
 
+  async getCompletedScansForUser(
+    userId: string,
+    from: Date,
+    to: Date,
+  ) {
+    try {
+      const scans = await this.prisma.menuScan.findMany({
+        where: {
+          userId,
+          status: MenuScanStatus.COMPLETED,
+          scanTime: { gte: from, lt: to },
+        },
+        orderBy: { scanTime: 'asc' },
+        include: { dishes: true },
+      });
+
+      return {
+        success: true,
+        message: 'Completed scans retrieved successfully.',
+        data: scans.map((scan) => ({
+          id: scan.id,
+          scanTime: scan.scanTime.toISOString(),
+          naiScore: scan.naiScore,
+          menuText: scan.menuText,
+          summary: scan.summary,
+          displayTitle: this.buildHistoryTitle(scan),
+          dishes: scan.dishes.map((dish) => {
+            const macros = this.extractScanDishMacros(dish.macros);
+            return {
+              id: dish.id,
+              name: dish.name,
+              calories: dish.calories,
+              macros,
+              proteinG: macros.proteinG,
+              carbG: macros.carbG,
+              fatG: macros.fatG,
+              category: dish.category,
+            };
+          }),
+        })),
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to list completed scans for analytics user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new InternalServerErrorException('Failed to list completed scans');
+    }
+  }
+
   async getHomeSummaryForUser(userId: string, requestedRange?: string) {
     try {
       const trackingRange = this.homeTrackingRange(requestedRange);
@@ -506,6 +558,18 @@ export class ScansService {
     return normalized.length > 48
       ? `${normalized.slice(0, 45).trim()}...`
       : normalized;
+  }
+
+  private extractScanDishMacros(macros: unknown) {
+    if (!macros || typeof macros !== 'object' || Array.isArray(macros)) {
+      return { proteinG: 0, carbG: 0, fatG: 0 };
+    }
+    const record = macros as Record<string, unknown>;
+    return {
+      proteinG: typeof record.proteinG === 'number' ? record.proteinG : 0,
+      carbG: typeof record.carbG === 'number' ? record.carbG : 0,
+      fatG: typeof record.fatG === 'number' ? record.fatG : 0,
+    };
   }
 
   private formatScannedAt(date: Date): string {

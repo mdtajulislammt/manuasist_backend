@@ -78,13 +78,17 @@ export function buildDishDescription(dish: DishPresentationSource): string {
   return 'This dish may not align with your dietary profile.';
 }
 
-export function extractDishMacros(dish: DishPresentationSource) {
-  const macros = asRecord(dish.macros);
+export function extractMacrosFromJson(macros: unknown) {
+  const record = asRecord(macros);
   return {
-    proteinG: numberValue(macros?.proteinG),
-    carbG: numberValue(macros?.carbG),
-    fatG: numberValue(macros?.fatG),
+    proteinG: numberValue(record?.proteinG),
+    carbG: numberValue(record?.carbG),
+    fatG: numberValue(record?.fatG),
   };
+}
+
+export function extractDishMacros(dish: DishPresentationSource) {
+  return extractMacrosFromJson(dish.macros);
 }
 
 export function extractAllergenFlags(

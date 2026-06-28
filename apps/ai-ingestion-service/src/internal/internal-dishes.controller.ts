@@ -1,9 +1,11 @@
 import { Public } from '@menu-assist/api-auth';
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -33,5 +35,14 @@ export class InternalDishesController {
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
     return this.dishes.getDishForMealPrefill(userId, dishId);
+  }
+
+  @Post('batch')
+  @ApiOperation({ summary: 'Batch fetch dishes for analytics' })
+  @ApiOkResponse({ description: 'Dishes returned' })
+  getDishesBatch(
+    @Body() body: { userId: string; dishIds: string[] },
+  ) {
+    return this.dishes.getDishesBatch(body);
   }
 }

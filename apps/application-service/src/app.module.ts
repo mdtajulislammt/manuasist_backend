@@ -17,6 +17,7 @@ import { HomeModule } from './home/home.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { MealsModule } from './meals/meals.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -79,6 +80,7 @@ const envFilePaths = [
     NotificationsModule,
     BookmarksModule,
     MealsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
