@@ -9,6 +9,8 @@ import {
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsRangeQueryDto } from './dto/analytics-range-query.dto';
+import { CaloriesScoreResponseDto } from './dto/calories-score-response.dto';
+import { MacrosOverTimeResponseDto } from './dto/macros-over-time-response.dto';
 
 @Controller('analytics')
 @ApiTags('Analytics')
@@ -26,7 +28,10 @@ export class AnalyticsController {
 
   @Get('calories-score')
   @ApiOperation({ summary: 'NAI calories score chart and daily calorie summary' })
-  @ApiOkResponse({ description: 'Calories score analytics returned.' })
+  @ApiOkResponse({
+    type: CaloriesScoreResponseDto,
+    description: 'Calories score analytics returned.',
+  })
   getCaloriesScore(
     @CurrentUserId() userId: string | undefined,
     @Query() query: AnalyticsRangeQueryDto,
@@ -36,7 +41,10 @@ export class AnalyticsController {
 
   @Get('macros-over-time')
   @ApiOperation({ summary: 'Macro distribution and deviation over time' })
-  @ApiOkResponse({ description: 'Macros analytics returned.' })
+  @ApiOkResponse({
+    type: MacrosOverTimeResponseDto,
+    description: 'Macros analytics returned.',
+  })
   getMacrosOverTime(
     @CurrentUserId() userId: string | undefined,
     @Query() query: AnalyticsRangeQueryDto,

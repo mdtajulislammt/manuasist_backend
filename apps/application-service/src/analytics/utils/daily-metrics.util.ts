@@ -1,4 +1,4 @@
-import { formatIsoDate, utcDayStart } from './analytics-date.util';
+import { buildRangeBuckets, formatIsoDate, utcDayStart } from './analytics-date.util';
 
 export type MealMetricRow = {
   mealDate: Date;
@@ -206,4 +206,53 @@ export function macroStatus(
     return 'slightly_off';
   }
   return 'out_of_range';
+}
+
+export type MacroRangeSummary = {
+  loggedDayCount: number;
+  outOfRangeDayCount: number;
+  slightlyOffDayCount: number;
+  avgDeviationPercent: number;
+};
+
+export function summarizeMacroRange(
+  dailyMap: Map<string, DailyMetrics>,
+  range: 'week' | 'month',
+): MacroRangeSummary {
+  const buckets = buildRangeBuckets(range);
+  let loggedDayCount = 0;
+  let outOfRangeDayCount = 0;
+  let slightlyOffDayCount = 0;
+  let deviationSum = 0;
+
+  for (const bucket of buckets) {
+    for (
+      let cursor = new Date(bucket.start);
+      cursor < bucket.end;
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    ) {
+      const metrics = getDailyMetrics(dailyMap, cursor);
+      if (metrics.dataSource === 'none') {
+        continue;
+      }
+      loggedDayCount++;
+      const deviation = macroDeviationPercent(
+        macroPercents(metrics.proteinG, metrics.carbG, metrics.fatG),
+      );
+      deviationSum += deviation;
+      if (deviation > 15) {
+        outOfRangeDayCount++;
+      } else if (deviation > 5) {
+        slightlyOffDayCount++;
+      }
+    }
+  }
+
+  return {
+    loggedDayCount,
+    outOfRangeDayCount,
+    slightlyOffDayCount,
+    avgDeviationPercent:
+      loggedDayCount > 0 ? Math.round(deviationSum / loggedDayCount) : 0,
+  };
 }

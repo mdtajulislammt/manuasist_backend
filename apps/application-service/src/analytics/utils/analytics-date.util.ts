@@ -150,3 +150,32 @@ export function scanVisitBuckets(
 
   return buildRangeBuckets(range, now);
 }
+
+export function formatHourLabel(hour: number): string {
+  if (hour === 0) {
+    return '12am';
+  }
+  if (hour === 12) {
+    return '12pm';
+  }
+  if (hour < 12) {
+    return `${hour}am`;
+  }
+  return `${hour - 12}pm`;
+}
+
+/** Cumulative macro checkpoints for today's line chart (6am → 10pm). */
+export function todayMacroTimeBuckets(now = new Date()): DateBucket[] {
+  const dayStart = utcDayStart(now);
+  const hours = [6, 10, 14, 18, 22];
+  return hours.map((hour) => {
+    const end = new Date(dayStart);
+    end.setUTCHours(hour, 0, 0, 0);
+    return {
+      label: formatHourLabel(hour),
+      date: end.toISOString(),
+      start: dayStart,
+      end,
+    };
+  });
+}

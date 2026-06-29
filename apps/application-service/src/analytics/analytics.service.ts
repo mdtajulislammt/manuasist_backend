@@ -16,17 +16,21 @@ import {
   lastNWeeks,
   resolveRangeWindow,
   scanVisitBuckets,
+  todayMacroTimeBuckets,
   utcDayStart,
 } from './utils/analytics-date.util';
 import {
   buildDailyMetricsMap,
+  computeDailyNaiFromMeals,
   getDailyMetrics,
   macroDeviationPercent,
   macroPercents,
   macroStatus,
+  summarizeMacroRange,
   DEFAULT_MACRO_GOAL,
   type DailyMetrics,
   type MealMetricRow,
+  type AnalyticsScan,
 } from './utils/daily-metrics.util';
 import {
   aggregateCuisineCalories,
@@ -49,6 +53,19 @@ const MEAL_SLOT_RATIOS: Record<MealSlot, number> = {
   DINNER: 0.3,
   SNACKS: 0.15,
 };
+
+const CALORIES_SCORE_CHART_LEGEND = [
+  { slot: MealSlot.BREAKFAST, label: 'Breakfast', colorKey: 'breakfast' },
+  { slot: MealSlot.LUNCH, label: 'Lunch', colorKey: 'lunch' },
+  { slot: MealSlot.SNACKS, label: 'Snacks', colorKey: 'snacks' },
+  { slot: MealSlot.DINNER, label: 'Dinner', colorKey: 'dinner' },
+] as const;
+
+const MACRO_CHART_LEGEND = [
+  { status: 'within_goal', label: 'Within goal', colorKey: 'green' },
+  { status: 'slightly_off', label: 'Slightly off', colorKey: 'orange' },
+  { status: 'out_of_range', label: 'Out of range', colorKey: 'red' },
+] as const;
 
 @Injectable()
 export class AnalyticsService {
@@ -171,34 +188,12 @@ export class AnalyticsService {
           ? [utcDayStart(new Date())]
           : buildRangeBuckets(range).map((bucket) => bucket.start);
 
-      const chartPoints = chartDays.map((day) => {
-        const metrics = getDailyMetrics(dailyMap, day);
-        const deltaFromTarget =
-          calorieTarget === null
-            ? 0
-            : metrics.calories - calorieTarget;
-        let status: 'under' | 'over' | 'on_track' | 'no_data' = 'no_data';
-        if (metrics.dataSource !== 'none') {
-          if (calorieTarget === null) {
-            status = 'on_track';
-          } else if (Math.abs(deltaFromTarget) <= calorieTarget * 0.1) {
-            status = 'on_track';
-          } else if (deltaFromTarget > 0) {
-            status = 'over';
-          } else {
-            status = 'under';
-          }
-        }
-        return {
-          label: day.getUTCDate().toString().padStart(2, '0'),
-          date: formatIsoDate(day),
-          naiScore: metrics.naiScore,
-          caloriesConsumed: metrics.calories,
-          calorieTarget,
-          deltaFromTarget,
-          status,
-        };
-      });
+      const chartBars = this.buildCaloriesScoreChartBars(
+        context.meals,
+        dailyMap,
+        chartDays,
+        calorieTarget,
+      );
 
       const today = utcDayStart(new Date());
       const todayMetrics = getDailyMetrics(dailyMap, today);
@@ -222,20 +217,16 @@ export class AnalyticsService {
           ? `To hit 100 CB score, you need to add today's calorie intake by ${remaining} kcal`
           : null;
 
-      const caloriesEaten =
-        range === 'today'
-          ? todayMetrics.calories
-          : context.meals.reduce((sum, meal) => sum + meal.calories, 0);
-
       return {
         success: true,
         message: 'Calories score analytics retrieved successfully',
         data: {
           selectedRange: range,
-          chartPoints,
+          chartLegend: CALORIES_SCORE_CHART_LEGEND,
+          chartBars,
           summary: {
             caloriesNeeded: calorieTarget,
-            caloriesEaten,
+            caloriesEaten: todayMetrics.calories,
           },
           mealSuggestions,
           insights,
@@ -254,52 +245,11 @@ export class AnalyticsService {
       const { from, to } = resolveRangeWindow(range);
       const context = await this.loadContext(userId, from, to);
       const dailyMap = buildDailyMetricsMap(context.meals, context.scans);
-      const buckets = buildRangeBuckets(range);
 
-      const chartPoints = buckets.map((bucket) => {
-        const metricsInBucket: DailyMetrics[] = [];
-        for (
-          let cursor = new Date(bucket.start);
-          cursor < bucket.end;
-          cursor.setUTCDate(cursor.getUTCDate() + 1)
-        ) {
-          const metrics = getDailyMetrics(dailyMap, cursor);
-          if (metrics.dataSource !== 'none') {
-            metricsInBucket.push(metrics);
-          }
-        }
-        if (metricsInBucket.length === 0) {
-          return {
-            label: bucket.label,
-            date: bucket.date,
-            deviationPercent: null,
-            status: 'within_goal' as const,
-          };
-        }
-        const deviationPercent = Math.round(
-          metricsInBucket.reduce((sum, metrics) => {
-            const percents = macroPercents(
-              metrics.proteinG,
-              metrics.carbG,
-              metrics.fatG,
-            );
-            return sum + macroDeviationPercent(percents);
-          }, 0) / metricsInBucket.length,
-        );
-        let status: 'within_goal' | 'slightly_off' | 'out_of_range' =
-          'within_goal';
-        if (deviationPercent > 15) {
-          status = 'out_of_range';
-        } else if (deviationPercent > 5) {
-          status = 'slightly_off';
-        }
-        return {
-          label: bucket.label,
-          date: bucket.date,
-          deviationPercent,
-          status,
-        };
-      });
+      const chartPoints =
+        range === 'today'
+          ? this.buildTodayMacroChartPoints(context.meals, context.scans)
+          : this.buildRangeMacroChartPoints(dailyMap, range);
 
       const todayMetrics = getDailyMetrics(dailyMap, utcDayStart(new Date()));
       const todayPercents = macroPercents(
@@ -325,31 +275,114 @@ export class AnalyticsService {
         ),
       };
 
+      const hasLoggedData =
+        range === 'today'
+          ? todayMetrics.dataSource !== 'none'
+          : summarizeMacroRange(
+              dailyMap,
+              range === 'month' ? 'month' : 'week',
+            ).loggedDayCount > 0;
+
+      const todayKey = formatIsoDate(utcDayStart(new Date()));
       const scanDayDates = new Set(
         context.scans.map((scan) => formatIsoDate(scan.scanTime)),
       );
-      const highFatScanDays = [...dailyMap.entries()].filter(([date, metrics]) => {
-        if (!scanDayDates.has(date) || metrics.dataSource === 'none') {
-          return false;
-        }
-        const percents = macroPercents(
-          metrics.proteinG,
-          metrics.carbG,
-          metrics.fatG,
-        );
-        return percents.fatPercent > DEFAULT_MACRO_GOAL.fatPercent + 10;
-      }).length;
+      const todayHasScan = scanDayDates.has(todayKey);
+      const todayMetricsEntry = dailyMap.get(todayKey);
+      const todayHighFat =
+        todayHasScan &&
+        todayMetricsEntry !== undefined &&
+        todayMetricsEntry.dataSource !== 'none' &&
+        macroPercents(
+          todayMetricsEntry.proteinG,
+          todayMetricsEntry.carbG,
+          todayMetricsEntry.fatG,
+        ).fatPercent > DEFAULT_MACRO_GOAL.fatPercent + 10;
 
-      const insights = buildMacroInsights({
-        scanDayCount: scanDayDates.size,
-        highFatScanDays,
-      });
+      const insights =
+        range === 'today'
+          ? buildMacroInsights({
+              scanDayCount: todayHasScan ? 1 : 0,
+              highFatScanDays: todayHighFat ? 1 : 0,
+              period: 'today',
+              hasLoggedData,
+              todayDistribution: {
+                carbs: {
+                  percent: todayDistribution.carbs.percent,
+                  status: todayDistribution.carbs.status,
+                },
+                fat: {
+                  percent: todayDistribution.fat.percent,
+                  status: todayDistribution.fat.status,
+                },
+                protein: {
+                  percent: todayDistribution.protein.percent,
+                  status: todayDistribution.protein.status,
+                },
+              },
+              chartPoints,
+            })
+          : buildMacroInsights({
+              scanDayCount: scanDayDates.size,
+              highFatScanDays: [...dailyMap.entries()].filter(
+                ([date, metrics]) => {
+                  if (!scanDayDates.has(date) || metrics.dataSource === 'none') {
+                    return false;
+                  }
+                  const percents = macroPercents(
+                    metrics.proteinG,
+                    metrics.carbG,
+                    metrics.fatG,
+                  );
+                  return (
+                    percents.fatPercent > DEFAULT_MACRO_GOAL.fatPercent + 10
+                  );
+                },
+              ).length,
+              period: 'range',
+              hasLoggedData,
+              todayDistribution: {
+                carbs: {
+                  percent: todayDistribution.carbs.percent,
+                  status: todayDistribution.carbs.status,
+                },
+                fat: {
+                  percent: todayDistribution.fat.percent,
+                  status: todayDistribution.fat.status,
+                },
+                protein: {
+                  percent: todayDistribution.protein.percent,
+                  status: todayDistribution.protein.status,
+                },
+              },
+              chartPoints,
+              rangeSummary:
+                range === 'month'
+                  ? summarizeMacroRange(dailyMap, 'month')
+                  : summarizeMacroRange(dailyMap, 'week'),
+            });
+
+      const chartTitle =
+        range === 'today'
+          ? "Today's Distribution vs. Goal"
+          : range === 'week'
+            ? 'Weekly Distribution vs. Goal'
+            : 'Monthly Distribution vs. Goal';
+      const insightTitle =
+        range === 'today'
+          ? 'Your Today Insight'
+          : range === 'week'
+            ? 'Your Weekly Insight'
+            : 'Your Monthly Insight';
 
       return {
         success: true,
         message: 'Macros over time analytics retrieved successfully',
         data: {
           selectedRange: range,
+          chartTitle,
+          insightTitle,
+          chartLegend: MACRO_CHART_LEGEND,
           chartPoints,
           goalSplit: DEFAULT_MACRO_GOAL,
           todayDistribution,
@@ -510,6 +543,104 @@ export class AnalyticsService {
     return { meals, scans, dishNamesById };
   }
 
+  private buildCaloriesScoreChartBars(
+    meals: MealMetricRow[],
+    dailyMap: Map<string, DailyMetrics>,
+    days: Date[],
+    calorieTarget: number | null,
+  ) {
+    const todayKey = formatIsoDate(utcDayStart(new Date()));
+    const bars: Array<{
+      label: string;
+      date: string;
+      mealSlot: MealSlot | null;
+      colorKey: string;
+      naiScore: number | null;
+      calories: number;
+      slotCalorieTarget: number | null;
+      deltaFromSlotTarget: number | null;
+      isToday: boolean;
+      status: 'under' | 'over' | 'on_track' | 'no_data';
+    }> = [];
+
+    for (const day of days) {
+      const dateKey = formatIsoDate(day);
+      const label = day.getUTCDate().toString().padStart(2, '0');
+      const dayMeals = meals.filter(
+        (meal) => formatIsoDate(meal.mealDate) === dateKey,
+      );
+
+      if (dayMeals.length > 0) {
+        for (const slot of Object.values(MealSlot)) {
+          const slotMeals = dayMeals.filter((meal) => meal.mealSlot === slot);
+          if (slotMeals.length === 0) {
+            continue;
+          }
+          const calories = slotMeals.reduce(
+            (sum, meal) => sum + meal.calories,
+            0,
+          );
+          const slotCalorieTarget =
+            calorieTarget === null
+              ? null
+              : Math.round(calorieTarget * MEAL_SLOT_RATIOS[slot]);
+          const deltaFromSlotTarget =
+            slotCalorieTarget === null ? null : calories - slotCalorieTarget;
+          bars.push({
+            label,
+            date: dateKey,
+            mealSlot: slot,
+            colorKey: slot.toLowerCase(),
+            naiScore: computeDailyNaiFromMeals(slotMeals),
+            calories,
+            slotCalorieTarget,
+            deltaFromSlotTarget,
+            isToday: dateKey === todayKey,
+            status: this.calorieBarStatus(calories, slotCalorieTarget),
+          });
+        }
+        continue;
+      }
+
+      const metrics = getDailyMetrics(dailyMap, day);
+      if (metrics.dataSource === 'none' || metrics.naiScore === null) {
+        continue;
+      }
+      bars.push({
+        label,
+        date: dateKey,
+        mealSlot: null,
+        colorKey: 'default',
+        naiScore: metrics.naiScore,
+        calories: metrics.calories,
+        slotCalorieTarget: calorieTarget,
+        deltaFromSlotTarget:
+          calorieTarget === null ? null : metrics.calories - calorieTarget,
+        isToday: dateKey === todayKey,
+        status: this.calorieBarStatus(metrics.calories, calorieTarget),
+      });
+    }
+
+    return bars;
+  }
+
+  private calorieBarStatus(
+    calories: number,
+    target: number | null,
+  ): 'under' | 'over' | 'on_track' | 'no_data' {
+    if (calories <= 0) {
+      return 'no_data';
+    }
+    if (target === null || target <= 0) {
+      return 'on_track';
+    }
+    const delta = calories - target;
+    if (Math.abs(delta) <= target * 0.1) {
+      return 'on_track';
+    }
+    return delta > 0 ? 'over' : 'under';
+  }
+
   private buildMealSuggestions(
     calorieTarget: number | null,
     todayMeals: MealMetricRow[],
@@ -535,6 +666,120 @@ export class AnalyticsService {
         suggestedCalories: Math.max(0, target - eaten),
       };
     });
+  }
+
+  private buildTodayMacroChartPoints(
+    meals: MealMetricRow[],
+    scans: AnalyticsScan[],
+  ) {
+    const todayStart = utcDayStart(new Date());
+    const todayMeals = meals.filter(
+      (meal) => utcDayStart(meal.mealDate).getTime() === todayStart.getTime(),
+    );
+    const todayScans = scans.filter(
+      (scan) => utcDayStart(scan.scanTime).getTime() === todayStart.getTime(),
+    );
+    const preferMeals = todayMeals.length > 0;
+
+    return todayMacroTimeBuckets().map((bucket) => {
+      let proteinG = 0;
+      let carbG = 0;
+      let fatG = 0;
+
+      if (preferMeals) {
+        for (const meal of todayMeals) {
+          if (meal.loggedAt <= bucket.end) {
+            proteinG += meal.proteinG ?? 0;
+            carbG += meal.carbG ?? 0;
+            fatG += meal.fatG ?? 0;
+          }
+        }
+      } else {
+        for (const scan of todayScans) {
+          if (scan.scanTime <= bucket.end) {
+            for (const dish of scan.dishes) {
+              proteinG += dish.proteinG;
+              carbG += dish.carbG;
+              fatG += dish.fatG;
+            }
+          }
+        }
+      }
+
+      const percents = macroPercents(proteinG, carbG, fatG);
+      if (percents.totalCalories === 0) {
+        return {
+          label: bucket.label,
+          date: bucket.date,
+          deviationPercent: 0,
+          status: 'within_goal' as const,
+        };
+      }
+
+      const deviationPercent = macroDeviationPercent(percents);
+      return {
+        label: bucket.label,
+        date: bucket.date,
+        deviationPercent,
+        status: this.macroDeviationStatus(deviationPercent),
+      };
+    });
+  }
+
+  private buildRangeMacroChartPoints(
+    dailyMap: Map<string, DailyMetrics>,
+    range: 'today' | 'week' | 'month',
+  ) {
+    const buckets = buildRangeBuckets(range);
+    return buckets.map((bucket) => {
+      const metricsInBucket: DailyMetrics[] = [];
+      for (
+        let cursor = new Date(bucket.start);
+        cursor < bucket.end;
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
+      ) {
+        const metrics = getDailyMetrics(dailyMap, cursor);
+        if (metrics.dataSource !== 'none') {
+          metricsInBucket.push(metrics);
+        }
+      }
+      if (metricsInBucket.length === 0) {
+        return {
+          label: bucket.label,
+          date: bucket.date,
+          deviationPercent: 0,
+          status: 'within_goal' as const,
+        };
+      }
+      const deviationPercent = Math.round(
+        metricsInBucket.reduce((sum, metrics) => {
+          const percents = macroPercents(
+            metrics.proteinG,
+            metrics.carbG,
+            metrics.fatG,
+          );
+          return sum + macroDeviationPercent(percents);
+        }, 0) / metricsInBucket.length,
+      );
+      return {
+        label: bucket.label,
+        date: bucket.date,
+        deviationPercent,
+        status: this.macroDeviationStatus(deviationPercent),
+      };
+    });
+  }
+
+  private macroDeviationStatus(
+    deviationPercent: number,
+  ): 'within_goal' | 'slightly_off' | 'out_of_range' {
+    if (deviationPercent > 15) {
+      return 'out_of_range';
+    }
+    if (deviationPercent > 5) {
+      return 'slightly_off';
+    }
+    return 'within_goal';
   }
 
   private macroCard(

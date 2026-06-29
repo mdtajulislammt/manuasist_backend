@@ -88,8 +88,52 @@ describe('AnalyticsService', () => {
     const result = await service.getCaloriesScore('user-1', { range: 'week' });
 
     expect(result.data.summary.caloriesNeeded).toBe(2000);
+    expect(result.data.chartLegend).toHaveLength(4);
+    expect(result.data.chartBars).toEqual([]);
     expect(result.data.mealSuggestions).toHaveLength(4);
     expect(membership.assertPremiumAccess).toHaveBeenCalledWith('user-1');
+  });
+
+  it('returns per-slot chart bars for logged meals', async () => {
+    const today = new Date();
+    const mealDate = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+    );
+    meals.getMealsInRange.mockResolvedValue([
+      {
+        mealDate,
+        mealSlot: 'BREAKFAST',
+        calories: 489,
+        proteinG: 20,
+        carbG: 40,
+        fatG: 15,
+        naiScore: 82,
+        loggedAt: mealDate,
+        dishId: 'dish-1',
+      },
+      {
+        mealDate,
+        mealSlot: 'DINNER',
+        calories: 700,
+        proteinG: 30,
+        carbG: 50,
+        fatG: 25,
+        naiScore: 70,
+        loggedAt: mealDate,
+        dishId: 'dish-2',
+      },
+    ]);
+
+    const result = await service.getCaloriesScore('user-1', { range: 'week' });
+
+    expect(result.data.chartBars.length).toBeGreaterThanOrEqual(2);
+    expect(result.data.chartBars[0]).toMatchObject({
+      mealSlot: 'BREAKFAST',
+      colorKey: 'breakfast',
+      naiScore: 82,
+      calories: 489,
+      isToday: true,
+    });
   });
 
   it('returns six good-week buckets', async () => {
@@ -97,5 +141,47 @@ describe('AnalyticsService', () => {
 
     expect(result.data.weeks).toHaveLength(6);
     expect(result.data.threshold).toBe(80);
+  });
+
+  it('returns today macro time buckets for range=today', async () => {
+    const today = new Date();
+    const mealDate = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+    );
+    const loggedAt = new Date(mealDate);
+    loggedAt.setUTCHours(11, 0, 0, 0);
+
+    meals.getMealsInRange.mockResolvedValue([
+      {
+        mealDate,
+        mealSlot: 'BREAKFAST',
+        calories: 400,
+        proteinG: 20,
+        carbG: 50,
+        fatG: 10,
+        naiScore: 85,
+        loggedAt,
+        dishId: 'dish-1',
+      },
+    ]);
+
+    const result = await service.getMacrosOverTime('user-1', { range: 'today' });
+
+    expect(result.data.chartTitle).toBe("Today's Distribution vs. Goal");
+    expect(result.data.insightTitle).toBe('Your Today Insight');
+    expect(result.data.chartLegend).toHaveLength(3);
+    expect(result.data.chartPoints).toHaveLength(5);
+    expect(result.data.chartPoints.map((point) => point.label)).toEqual([
+      '6am',
+      '10am',
+      '2pm',
+      '6pm',
+      '10pm',
+    ]);
+    const afterBreakfast = result.data.chartPoints.find(
+      (point) => point.label === '2pm',
+    );
+    expect(afterBreakfast?.deviationPercent).not.toBeNull();
+    expect(result.data.insights.length).toBeGreaterThan(0);
   });
 });
