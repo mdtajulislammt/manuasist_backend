@@ -6,10 +6,20 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
 } from 'class-validator';
 
 export class CreateStepDto {
+  @ApiPropertyOptional({
+    description:
+      'Existing step id. When set, updates that step instead of creating a new one.',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({
     description: 'Order index within the flow (0-based)',
     minimum: 0,

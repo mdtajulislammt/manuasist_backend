@@ -86,10 +86,11 @@ export class OnboardingFlowsController {
 
   @Post(':flowId/steps')
   @ApiOperation({
-    summary: 'Add one or more steps to a draft flow',
+    summary: 'Add or update one or more steps on a draft flow',
     description:
       'Accepts a single step object, `{ "steps": [...] }`, or a JSON array of steps. ' +
-      'All steps are validated and created in one transaction.',
+      'Creates a new step when `orderIndex` is unused; updates the existing step when `orderIndex` or `id` already exists. ' +
+      'All steps are validated and saved in one transaction.',
   })
   @ApiBody({
     schema: {
@@ -103,7 +104,7 @@ export class OnboardingFlowsController {
       ],
     },
   })
-  @ApiOkResponse({ description: 'Step(s) added.' })
+  @ApiOkResponse({ description: 'Step(s) saved (created or updated).' })
   @ApiBadRequestResponse({ description: 'Flow is not draft or payload invalid.' })
   @ApiNotFoundResponse({ description: 'Flow not found.' })
   addStep(

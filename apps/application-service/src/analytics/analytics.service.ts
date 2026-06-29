@@ -7,8 +7,11 @@ import { MealSlot } from '../../generated/prisma/enums';
 import { MealsService } from '../meals/meals.service';
 import { MembershipService } from '../membership/membership.service';
 import { DietaryPreferencesResolver } from '../users-me/dietary-preferences.resolver';
+import { PrismaService } from '../prisma.service';
+import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
 import { AiIngestionAnalyticsClientService } from './ai-ingestion-analytics-client.service';
 import type { AnalyticsRangeQueryDto } from './dto/analytics-range-query.dto';
+import type { NaiScoreDashboardQueryDto } from './dto/nai-score-dashboard-query.dto';
 import {
   GOOD_WEEK_NAI_THRESHOLD,
   buildRangeBuckets,
@@ -46,6 +49,12 @@ import {
   buildRestaurantInsights,
   type AnalyticsInsight,
 } from './utils/insights.engine';
+import {
+  buildNaiScoreBreakdown,
+  healthierThanPercent,
+  scoreRating,
+} from './utils/nai-score-breakdown.util';
+import { buildNaiScoreFeedback } from './utils/nai-score-feedback.util';
 
 const MEAL_SLOT_RATIOS: Record<MealSlot, number> = {
   BREAKFAST: 0.25,
@@ -74,6 +83,8 @@ export class AnalyticsService {
     private readonly meals: MealsService,
     private readonly dietary: DietaryPreferencesResolver,
     private readonly ingestion: AiIngestionAnalyticsClientService,
+    private readonly aiHome: AiIngestionHomeClientService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getGoodWeeksVsOffWeeks(userId: string) {
@@ -518,6 +529,225 @@ export class AnalyticsService {
     }
   }
 
+  async getNaiScoreDashboard(
+    userId: string,
+    query: NaiScoreDashboardQueryDto,
+  ) {
+    await this.membership.assertPremiumAccess(userId);
+    try {
+      const trackingRange = query.trackingRange ?? 'weekly';
+      const period = query.period ?? 'today';
+      const periodWindow = resolveRangeWindow(period);
+
+      const [
+        dietary,
+        todayMealStats,
+        aiTracking,
+        periodContext,
+        hasAllergies,
+      ] = await Promise.all([
+        this.dietary.resolve(userId),
+        this.meals.getTodayMealStats(userId),
+        this.aiHome.getHomeSummary(userId, trackingRange),
+        this.loadContext(userId, periodWindow.from, periodWindow.to),
+        this.userHasAllergies(userId),
+      ]);
+
+      const periodDailyMap = buildDailyMetricsMap(
+        periodContext.meals,
+        periodContext.scans,
+      );
+      const overallScore = this.resolvePeriodNaiScore(
+        period,
+        periodDailyMap,
+        todayMealStats,
+        aiTracking.latestScore,
+      );
+      const rating = scoreRating(overallScore);
+
+      const breakdown = buildNaiScoreBreakdown({
+        meals: periodContext.meals,
+        scans: periodContext.scans,
+        dishes: periodContext.dishes,
+        dailyMap: periodDailyMap,
+        calorieTarget: dietary.calorieTarget,
+        hasAllergies,
+      });
+
+      const periodBuckets = buildRangeBuckets(period);
+      const calorieInsights = buildCalorieInsights({
+        meals: periodContext.meals,
+        calorieTarget: dietary.calorieTarget,
+      });
+      const macroChartPoints =
+        period === 'today'
+          ? this.buildTodayMacroChartPoints(
+              periodContext.meals,
+              periodContext.scans,
+            )
+          : this.buildRangeMacroChartPoints(periodDailyMap, period);
+
+      const scanDayDates = new Set(
+        periodContext.scans.map((scan) => formatIsoDate(scan.scanTime)),
+      );
+      const macroInsights = buildMacroInsights({
+        scanDayCount: scanDayDates.size,
+        highFatScanDays: [...periodDailyMap.entries()].filter(
+          ([date, metrics]) => {
+            if (!scanDayDates.has(date) || metrics.dataSource === 'none') {
+              return false;
+            }
+            const percents = macroPercents(
+              metrics.proteinG,
+              metrics.carbG,
+              metrics.fatG,
+            );
+            return percents.fatPercent > DEFAULT_MACRO_GOAL.fatPercent + 10;
+          },
+        ).length,
+        period: period === 'today' ? 'today' : 'range',
+        hasLoggedData:
+          period === 'today'
+            ? getDailyMetrics(periodDailyMap, utcDayStart(new Date()))
+                .dataSource !== 'none'
+            : summarizeMacroRange(periodDailyMap, period).loggedDayCount > 0,
+        todayDistribution:
+          period === 'today'
+            ? this.buildTodayDistributionForInsights(periodDailyMap)
+            : undefined,
+        chartPoints: macroChartPoints,
+        rangeSummary:
+          period === 'month'
+            ? summarizeMacroRange(periodDailyMap, 'month')
+            : period === 'week'
+              ? summarizeMacroRange(periodDailyMap, 'week')
+              : undefined,
+      });
+
+      const todayKey = formatIsoDate(utcDayStart(new Date()));
+      const dailyBars = periodBuckets.map((bucket) => {
+        const metrics = getDailyMetrics(periodDailyMap, bucket.start);
+        return {
+          label: bucket.label,
+          date: bucket.date,
+          naiScore: metrics.naiScore,
+          isToday: formatIsoDate(bucket.start) === todayKey,
+        };
+      });
+
+      const macrosTip =
+        macroInsights.find((row) => row.text.startsWith('Tip:'))?.text ??
+        macroInsights[0]?.text ??
+        null;
+
+      return {
+        success: true,
+        message: 'NAI score dashboard retrieved successfully',
+        data: {
+          selectedPeriod: period,
+          summary: {
+            score: overallScore,
+            rating,
+            healthierThanPercent:
+              overallScore === null ? null : healthierThanPercent(overallScore),
+          },
+          feedback: buildNaiScoreFeedback(breakdown, overallScore),
+          breakdown,
+          naiTracking: {
+            selectedRange: trackingRange,
+            warning: aiTracking.warning,
+            scoreLabel:
+              overallScore === null
+                ? 'NAI Score unavailable'
+                : `NAI Score: ${overallScore} - ${rating ?? 'Unavailable'}`,
+            points: aiTracking.chartPoints,
+          },
+          caloriesPreview: {
+            chartLegend: CALORIES_SCORE_CHART_LEGEND,
+            dailyBars,
+            insights: calorieInsights.slice(0, 3).map((row) => row.text),
+          },
+          macrosPreview: {
+            chartPoints: macroChartPoints.map((point) => ({
+              label: point.label,
+              date: point.date,
+              deviationPercent: point.deviationPercent ?? 0,
+              status: point.status,
+            })),
+            tip:
+              macrosTip ??
+              'Tip: Swap fried items with grilled or steamed dishes to improve your macro balance.',
+          },
+        },
+      };
+    } catch (error) {
+      throw this.wrapError(error, 'Failed to get NAI score dashboard');
+    }
+  }
+
+  private resolvePeriodNaiScore(
+    period: 'today' | 'week' | 'month',
+    dailyMap: Map<string, DailyMetrics>,
+    todayMealStats: { mealCount: number; dailyNai: number | null },
+    latestScanScore: number | null,
+  ): number | null {
+    if (period === 'today') {
+      if (todayMealStats.mealCount > 0) {
+        return todayMealStats.dailyNai;
+      }
+      return latestScanScore;
+    }
+
+    const dailyScores = [...dailyMap.values()]
+      .filter(
+        (metrics) =>
+          metrics.dataSource !== 'none' && metrics.naiScore !== null,
+      )
+      .map((metrics) => metrics.naiScore as number);
+
+    if (dailyScores.length > 0) {
+      return Math.round(
+        dailyScores.reduce((sum, score) => sum + score, 0) / dailyScores.length,
+      );
+    }
+
+    return latestScanScore;
+  }
+
+  private buildTodayDistributionForInsights(
+    dailyMap: Map<string, DailyMetrics>,
+  ) {
+    const todayMetrics = getDailyMetrics(dailyMap, utcDayStart(new Date()));
+    const todayPercents = macroPercents(
+      todayMetrics.proteinG,
+      todayMetrics.carbG,
+      todayMetrics.fatG,
+    );
+    return {
+      carbs: {
+        percent: todayPercents.carbPercent,
+        status: macroStatus(
+          todayPercents.carbPercent,
+          DEFAULT_MACRO_GOAL.carbPercent,
+        ),
+      },
+      fat: {
+        percent: todayPercents.fatPercent,
+        status: macroStatus(
+          todayPercents.fatPercent,
+          DEFAULT_MACRO_GOAL.fatPercent,
+        ),
+      },
+      protein: {
+        percent: todayPercents.proteinPercent,
+        status: macroStatus(
+          todayPercents.proteinPercent,
+          DEFAULT_MACRO_GOAL.proteinPercent,
+        ),
+      },
+    };
+  }
+
   private async loadContext(userId: string, from: Date, to: Date) {
     const [mealRows, scans] = await Promise.all([
       this.meals.getMealsInRange(userId, from, to),
@@ -540,7 +770,41 @@ export class AnalyticsService {
     const dishes = await this.ingestion.getDishesBatch(userId, dishIds);
     const dishNamesById = new Map(dishes.map((dish) => [dish.id, dish.name]));
 
-    return { meals, scans, dishNamesById };
+    return { meals, scans, dishes, dishNamesById };
+  }
+
+  private async userHasAllergies(userId: string): Promise<boolean> {
+    const answers = await this.prisma.userOnboardingAnswer.findMany({
+      where: { userId },
+      select: { value: true },
+    });
+    return this.extractAllergies(answers).length > 0;
+  }
+
+  private extractAllergies(answers: Array<{ value: unknown }>): string[] {
+    const out = new Set<string>();
+    for (const row of answers) {
+      const value = row.value;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'string' && item.trim()) {
+            out.add(item.trim());
+          }
+        }
+        continue;
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const objectValue = value as Record<string, unknown>;
+        if (Array.isArray(objectValue.allergies)) {
+          for (const item of objectValue.allergies) {
+            if (typeof item === 'string' && item.trim()) {
+              out.add(item.trim());
+            }
+          }
+        }
+      }
+    }
+    return [...out];
   }
 
   private buildCaloriesScoreChartBars(

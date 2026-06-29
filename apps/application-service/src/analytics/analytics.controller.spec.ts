@@ -22,6 +22,7 @@ describe('AnalyticsController', () => {
             getMacrosOverTime: jest.fn(),
             getRestaurantHabits: jest.fn(),
             getMostConsumedCuisines: jest.fn(),
+            getNaiScoreDashboard: jest.fn(),
           },
         },
       ],

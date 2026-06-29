@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OnboardingFlowStatus, Prisma } from '../../generated/prisma/client';
+import type { OnboardingStep } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { CreateStepDto } from './dto/create-step.dto';
@@ -163,30 +164,31 @@ export class OnboardingFlowsService {
   }
 
   async addStep(flowId: string, dto: CreateStepDto) {
-    const steps = await this.createSteps(flowId, [dto]);
+    const steps = await this.upsertSteps(flowId, [dto]);
     return {
       success: true,
-      message: 'Step created successfully',
+      message: 'Step saved successfully',
       data: steps[0],
     };
   }
 
   async addSteps(flowId: string, dtos: CreateStepDto[]) {
-    const steps = await this.createSteps(flowId, dtos);
+    const steps = await this.upsertSteps(flowId, dtos);
     return {
       success: true,
-      message: `${steps.length} step(s) created successfully`,
+      message: `${steps.length} step(s) saved successfully`,
       data: steps,
     };
   }
 
-  private async createSteps(flowId: string, dtos: CreateStepDto[]) {
+  private async upsertSteps(flowId: string, dtos: CreateStepDto[]) {
     if (dtos.length === 0) {
       throw new BadRequestException('At least one step is required');
     }
     try {
       await this.ensureDraft(flowId);
       this.assertUniqueOrderIndexesInRequest(dtos);
+      this.assertUniqueIdsInRequest(dtos);
       for (const dto of dtos) {
         try {
           prepareOnboardingUiConfig(dto.uiConfig);
@@ -200,23 +202,80 @@ export class OnboardingFlowsService {
           throw error;
         }
       }
-      return await this.prisma.$transaction(
-        dtos.map((dto) => {
-          const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
-          return this.prisma.onboardingStep.create({
-            data: {
-              flowId,
-              orderIndex: dto.orderIndex,
-              title: dto.title,
-              subtitle: dto.subtitle,
-              uiConfig:
-                uiConfig === undefined ?
-                  undefined
-                : (uiConfig as Prisma.InputJsonValue),
-            },
+
+      return await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.onboardingStep.findMany({
+          where: { flowId },
+          orderBy: { orderIndex: 'asc' },
+        });
+        const existingById = new Map(existing.map((step) => [step.id, step]));
+        const existingByOrder = new Map(
+          existing.map((step) => [step.orderIndex, step]),
+        );
+
+        const tempBase = 1_000_000;
+        for (let i = 0; i < existing.length; i++) {
+          await tx.onboardingStep.update({
+            where: { id: existing[i].id },
+            data: { orderIndex: tempBase + i },
           });
-        }),
-      );
+        }
+
+        const results: OnboardingStep[] = [];
+        const consumedIds = new Set<string>();
+
+        for (const dto of dtos) {
+          const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
+          const data = {
+            orderIndex: dto.orderIndex,
+            title: dto.title,
+            subtitle: dto.subtitle,
+            uiConfig:
+              uiConfig === undefined
+                ? undefined
+                : (uiConfig as Prisma.InputJsonValue),
+          };
+
+          let target = dto.id ? existingById.get(dto.id) : undefined;
+          if (target && target.flowId !== flowId) {
+            throw new BadRequestException(
+              `Step ${dto.id} does not belong to this flow`,
+            );
+          }
+          if (!target) {
+            target = existingByOrder.get(dto.orderIndex);
+          }
+          if (target && consumedIds.has(target.id)) {
+            target = undefined;
+          }
+
+          if (target) {
+            consumedIds.add(target.id);
+            results.push(
+              await tx.onboardingStep.update({
+                where: { id: target.id },
+                data,
+              }),
+            );
+            continue;
+          }
+
+          if (dto.id) {
+            throw new NotFoundException(`Step not found: ${dto.id}`);
+          }
+
+          results.push(
+            await tx.onboardingStep.create({
+              data: {
+                flowId,
+                ...data,
+              },
+            }),
+          );
+        }
+
+        return results;
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -226,7 +285,20 @@ export class OnboardingFlowsService {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to add step(s)');
+      throw new InternalServerErrorException('Failed to save step(s)');
+    }
+  }
+
+  private assertUniqueIdsInRequest(dtos: CreateStepDto[]): void {
+    const seen = new Set<string>();
+    for (const dto of dtos) {
+      if (!dto.id) {
+        continue;
+      }
+      if (seen.has(dto.id)) {
+        throw new BadRequestException(`Duplicate step id ${dto.id} in request`);
+      }
+      seen.add(dto.id);
     }
   }
 
@@ -268,9 +340,32 @@ export class OnboardingFlowsService {
         const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
         data.uiConfig = uiConfig as Prisma.InputJsonValue;
       }
-      const updatedStep = await this.prisma.onboardingStep.update({
-        where: { id: stepId },
-        data,
+
+      const updatedStep = await this.prisma.$transaction(async (tx) => {
+        if (
+          dto.orderIndex !== undefined &&
+          dto.orderIndex !== step.orderIndex
+        ) {
+          const conflict = await tx.onboardingStep.findUnique({
+            where: {
+              flowId_orderIndex: {
+                flowId: step.flowId,
+                orderIndex: dto.orderIndex,
+              },
+            },
+          });
+          if (conflict && conflict.id !== stepId) {
+            await tx.onboardingStep.update({
+              where: { id: conflict.id },
+              data: { orderIndex: step.orderIndex },
+            });
+          }
+        }
+
+        return tx.onboardingStep.update({
+          where: { id: stepId },
+          data,
+        });
       });
       return {
         success: true,

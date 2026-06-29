@@ -11,6 +11,8 @@ import { AnalyticsService } from './analytics.service';
 import { AnalyticsRangeQueryDto } from './dto/analytics-range-query.dto';
 import { CaloriesScoreResponseDto } from './dto/calories-score-response.dto';
 import { MacrosOverTimeResponseDto } from './dto/macros-over-time-response.dto';
+import { NaiScoreDashboardResponseDto } from './dto/nai-score-dashboard-response.dto';
+import { NaiScoreDashboardQueryDto } from './dto/nai-score-dashboard-query.dto';
 
 @Controller('analytics')
 @ApiTags('Analytics')
@@ -73,6 +75,21 @@ export class AnalyticsController {
       this.requireUserId(userId),
       query,
     );
+  }
+
+  @Get('nai-score-dashboard')
+  @ApiOperation({
+    summary: 'My NAI Score dashboard (summary, breakdown, tracking, previews)',
+  })
+  @ApiOkResponse({
+    type: NaiScoreDashboardResponseDto,
+    description: 'NAI score dashboard returned.',
+  })
+  getNaiScoreDashboard(
+    @CurrentUserId() userId: string | undefined,
+    @Query() query: NaiScoreDashboardQueryDto,
+  ) {
+    return this.analytics.getNaiScoreDashboard(this.requireUserId(userId), query);
   }
 
   private requireUserId(userId: string | undefined): string {
