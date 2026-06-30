@@ -25,10 +25,10 @@ export class GatewayProxyService {
 
   private resolveUpstream(envKey: UpstreamTarget): string {
     const defaults: Record<UpstreamTarget, string> = {
-      AUTH_SERVICE_URL: 'http://127.0.0.1:5001',
-      APPLICATION_SERVICE_URL: 'http://127.0.0.1:5002',
-      ADMIN_SERVICE_URL: 'http://127.0.0.1:5003',
-      AI_INGESTION_SERVICE_URL: 'http://127.0.0.1:5004',
+      AUTH_SERVICE_URL: 'http://127.0.0.1:2646',
+      APPLICATION_SERVICE_URL: 'http://127.0.0.1:2647',
+      ADMIN_SERVICE_URL: 'http://127.0.0.1:2648',
+      AI_INGESTION_SERVICE_URL: 'http://127.0.0.1:2649',
     };
     return process.env[envKey] ?? defaults[envKey];
   }

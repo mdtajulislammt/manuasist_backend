@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${1:-http://localhost:5000/v1/app}"
+BASE_URL="${1:-http://localhost:2645/v1/app}"
 WEBHOOK_SECRET="${2:-dev-revenuecat-webhook-secret}"
 USER_ID="${3:-190969f3-6066-43dd-8ea0-700c616462a6}"
 PRODUCT_ID="${4:-menu_assist_premium_monthly}"

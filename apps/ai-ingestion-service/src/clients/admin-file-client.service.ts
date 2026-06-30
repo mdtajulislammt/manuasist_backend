@@ -21,7 +21,7 @@ export class AdminFileClientService {
   buildPublicImageUrl(storedName: string): string {
     const gateway = (
       this.config.get<string>('API_GATEWAY_PUBLIC_URL') ??
-      'http://localhost:5000'
+      'http://localhost:2645'
     ).replace(/\/$/, '');
     return `${gateway}/v1/admin/files/menu-scan/${storedName}`;
   }

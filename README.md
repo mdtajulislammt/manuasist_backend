@@ -86,11 +86,11 @@ pnpm run start:dev:ai
 
 From `.env.example`:
 
-- API Gateway: `5000`
-- Auth Service: `5001`
-- Application Service: `5002`
-- Admin Service: `5003`
-- AI Ingestion Service: `5004`
+- API Gateway: `2645`
+- Auth Service: `2646`
+- Application Service: `2647`
+- Admin Service: `2648`
+- AI Ingestion Service: `2649`
 
 ## Common Commands
 
@@ -210,7 +210,7 @@ Flutter purchases sync to `application-service` via:
 Full dashboard setup, ngrok local testing, and verification steps:
 [`docs/revenuecat-webhook-setup.md`](docs/revenuecat-webhook-setup.md)
 
-Quick local smoke test (gateway on port 5000):
+Quick local smoke test (gateway on port 2645):
 
 ```powershell
 .\scripts\test-revenuecat-webhook.ps1 -UserId "<auth-user-uuid>"

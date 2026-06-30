@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "http://localhost:5000/v1/app",
+  [string]$BaseUrl = "http://localhost:2645/v1/app",
   [string]$WebhookSecret = "dev-revenuecat-webhook-secret",
   [string]$UserId = "190969f3-6066-43dd-8ea0-700c616462a6",
   [string]$ProductId = "menu_assist_premium_monthly",

@@ -45,7 +45,7 @@ async function bootstrap() {
     );
   }
 
-  await app.listen(process.env.API_GATEWAY_PORT ?? 5000);
+  await app.listen(process.env.API_GATEWAY_PORT ?? 2645);
 }
 
 bootstrap();

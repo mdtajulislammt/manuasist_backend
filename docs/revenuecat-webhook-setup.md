@@ -10,7 +10,7 @@ real store purchases.
 |------|-------|
 | **Method** | `POST` |
 | **Production URL** | `https://menu-assist.anikstudio.com/v1/app/internal/revenuecat/webhook` |
-| **Local via gateway** | `http://localhost:5000/v1/app/internal/revenuecat/webhook` |
+| **Local via gateway** | `http://localhost:2645/v1/app/internal/revenuecat/webhook` |
 | **Local via ngrok** | `https://<subdomain>.ngrok-free.app/v1/app/internal/revenuecat/webhook` |
 | **Auth** | `Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>` |
 
@@ -63,11 +63,11 @@ Use the **same exact value** in the RevenueCat dashboard authorization header
 RevenueCat requires a **public HTTPS** URL.
 
 ```powershell
-# Terminal 1 — stack running (gateway on 5000)
+# Terminal 1 — stack running (gateway on 2645)
 npm run dev
 
 # Terminal 2 — expose gateway
-ngrok http 5000
+ngrok http 2645
 ```
 
 Use the ngrok HTTPS URL:
@@ -85,7 +85,7 @@ temporarily change the production webhook URL while testing.
 
 ```powershell
 .\scripts\test-revenuecat-webhook.ps1 `
-  -BaseUrl "http://localhost:5000/v1/app" `
+  -BaseUrl "http://localhost:2645/v1/app" `
   -WebhookSecret "dev-revenuecat-webhook-secret" `
   -UserId "190969f3-6066-43dd-8ea0-700c616462a6"
 ```
@@ -94,7 +94,7 @@ temporarily change the production webhook URL while testing.
 
 ```bash
 ./scripts/test-revenuecat-webhook.sh \
-  "http://localhost:5000/v1/app" \
+  "http://localhost:2645/v1/app" \
   "dev-revenuecat-webhook-secret" \
   "190969f3-6066-43dd-8ea0-700c616462a6"
 ```

@@ -8,7 +8,7 @@
       "_id": "wrk_menu_assist",
       "_type": "workspace",
       "name": "Menu Assist",
-      "description": "API Gateway (5000) and upstream services. Set gateway_url / auth_direct_url in the Base environment."
+      "description": "API Gateway (2645) and upstream services. Set gateway_url / auth_direct_url in the Base environment."
     },
     {
       "_id": "env_menu_assist_base",
@@ -16,10 +16,10 @@
       "parentId": "wrk_menu_assist",
       "name": "Base",
       "data": {
-        "gateway_url": "http://localhost:5000",
-        "auth_direct_url": "http://localhost:5001",
-        "admin_direct_url": "http://localhost:5003",
-        "ingestion_direct_url": "http://localhost:5004",
+        "gateway_url": "http://localhost:2645",
+        "auth_direct_url": "http://localhost:2646",
+        "admin_direct_url": "http://localhost:2648",
+        "ingestion_direct_url": "http://localhost:2649",
         "admin_internal_api_key": "dev-internal-onboarding-key",
         "ingestion_internal_api_key": "dev-internal-ingestion-key",
         "access_token": "",
@@ -1187,7 +1187,7 @@
       "parentId": "wrk_menu_assist",
       "_type": "request_group",
       "name": "Auth service (direct, no gateway)",
-      "description": "Same routes as v1/auth but on AUTH_SERVICE_PORT (default 5001). Use when calling the service directly.",
+      "description": "Same routes as v1/auth but on AUTH_SERVICE_PORT (default 2646). Use when calling the service directly.",
       "environment": {},
       "environmentPropertyOrder": null,
       "metaSortKey": -500

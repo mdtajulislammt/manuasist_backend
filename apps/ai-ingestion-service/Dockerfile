@@ -10,6 +10,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build:ai
 
-EXPOSE 5004
-ENV AI_INGESTION_SERVICE_PORT=5004
+EXPOSE 2649
+ENV AI_INGESTION_SERVICE_PORT=2649
 CMD ["node", "dist/apps/ai-ingestion-service/main.js"]
