@@ -13,4 +13,4 @@ RUN pnpm run build:auth
 
 EXPOSE 2646
 ENV AUTH_SERVICE_PORT=2646
-CMD ["node", "dist/apps/auth-service/main.js"]
+CMD ["node", "dist/apps/auth-service/apps/auth-service/src/main.js"]

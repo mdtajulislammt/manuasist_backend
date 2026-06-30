@@ -13,4 +13,4 @@ RUN pnpm run build:admin
 
 EXPOSE 2648
 ENV ADMIN_SERVICE_PORT=2648
-CMD ["node", "dist/apps/admin-service/main.js"]
+CMD ["node", "dist/apps/admin-service/apps/admin-service/src/main.js"]

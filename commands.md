@@ -109,7 +109,7 @@ pnpm run start:debug
 
 ```bash
 pnpm run build
-node dist/apps/api-gateway/main.js
+node dist/apps/api-gateway/apps/api-gateway/src/main.js
 ```
 
 (or `pnpm run start:prod` for the gateway entrypoint).
