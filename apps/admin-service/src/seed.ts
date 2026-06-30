@@ -1,7 +1,9 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { config as loadEnv } from 'dotenv';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from './prisma.service';
+import { loadDefaultOnboardingSteps } from './seed-onboarding-steps';
 
 function loadAdminEnv() {
   const cwd = process.cwd();
@@ -29,39 +31,7 @@ async function main() {
 
   const flowName = process.env.ADMIN_SEED_FLOW_NAME ?? 'default-onboarding-flow';
   const flowVersion = Number(process.env.ADMIN_SEED_FLOW_VERSION ?? '1');
-
-  const steps = [
-    {
-      orderIndex: 1,
-      title: 'Set your primary goal',
-      subtitle: 'Weight loss, maintenance, or muscle gain',
-      uiConfig: { kind: 'single_select', options: ['lose', 'maintain', 'gain'] },
-    },
-    {
-      orderIndex: 2,
-      title: 'Choose dietary preferences',
-      subtitle: 'We will tailor recommendations to your diet',
-      uiConfig: {
-        kind: 'multi_select',
-        options: ['vegetarian', 'vegan', 'halal', 'keto', 'none'],
-      },
-    },
-    {
-      orderIndex: 3,
-      title: 'Tell us your allergies',
-      subtitle: 'Select all that apply',
-      uiConfig: {
-        kind: 'multi_select',
-        options: ['nuts', 'dairy', 'eggs', 'gluten', 'shellfish', 'none'],
-      },
-    },
-    {
-      orderIndex: 4,
-      title: 'Review and continue',
-      subtitle: 'Confirm your onboarding selections',
-      uiConfig: { kind: 'summary' },
-    },
-  ] as const;
+  const steps = loadDefaultOnboardingSteps();
 
   try {
     const flow = await prisma.onboardingFlow.upsert({
@@ -99,7 +69,7 @@ async function main() {
             orderIndex: step.orderIndex,
             title: step.title,
             subtitle: step.subtitle,
-            uiConfig: step.uiConfig,
+            uiConfig: step.uiConfig as Prisma.InputJsonValue,
           },
         });
       }
