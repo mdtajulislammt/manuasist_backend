@@ -15,7 +15,14 @@ import * as nodemailer from 'nodemailer';
 // @ts-ignore
 import { decodeJwt } from 'jose';
 // @ts-ignore
-import { exportJWK, importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose';
+import {
+  createRemoteJWKSet,
+  exportJWK,
+  importPKCS8,
+  importSPKI,
+  jwtVerify,
+  SignJWT,
+} from 'jose';
 // @ts-ignore
 import type { JWK, KeyLike } from 'jose';
 import type { Configuration } from 'openid-client';
@@ -32,6 +39,10 @@ import {
 import { PrismaService } from './prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { Prisma } from '../generated/prisma/client';
+import {
+  extractSocialProfileHints,
+  type SocialProfileHints,
+} from './utils/social-profile.util';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -46,6 +57,15 @@ function prismaKnownRequestCode(e: unknown): string | undefined {
 }
 
 const BCRYPT_ROUNDS = 12;
+
+const GOOGLE_OIDC_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+const GOOGLE_JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/oauth2/v3/certs'),
+);
+const APPLE_OIDC_ISSUER = 'https://appleid.apple.com';
+const APPLE_JWKS = createRemoteJWKSet(
+  new URL('https://appleid.apple.com/auth/keys'),
+);
 
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -78,6 +98,15 @@ export type TokenPairResponse = {
   token_type: 'Bearer';
   expires_in: number;
   refresh_token: string;
+};
+
+export type SocialProfileSummary = {
+  fullName: string | null;
+  avatarUrl: string | null;
+};
+
+export type MobileOAuthResponse = TokenPairResponse & {
+  profile: SocialProfileSummary;
 };
 
 export type RegisterPendingVerificationResponse = {
@@ -1351,9 +1380,86 @@ export class AuthService implements OnModuleInit {
       const json = (await res.json()) as { success: boolean; data?: any };
       return json.data || null;
     } catch (e) {
-      this.logger.warn(`Failed to fetch user profile from application-service: ${e}`);
+      this.logger.warn(`Failed to update user profile from application-service: ${e}`);
       return null;
     }
+  }
+
+  private async getProfileSummaryForUser(
+    userId: string,
+  ): Promise<SocialProfileSummary> {
+    const profiles = await this.getProfilesFromApplicationService([userId]);
+    const profile = profiles[0];
+    return {
+      fullName: profile?.fullName ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+    };
+  }
+
+  private async syncSocialUserProfile(
+    userId: string,
+    hints: SocialProfileHints,
+  ): Promise<SocialProfileSummary | null> {
+    const payload: Record<string, string> = {};
+    if (hints.fullName) {
+      payload.fullName = hints.fullName;
+    }
+    if (hints.avatarUrl) {
+      payload.avatarUrl = hints.avatarUrl;
+    }
+    if (Object.keys(payload).length === 0) {
+      return null;
+    }
+
+    const updated = await this.updateProfileFromApplicationService(userId, payload);
+    if (!updated) {
+      return null;
+    }
+
+    return {
+      fullName: updated.fullName ?? null,
+      avatarUrl: updated.avatarUrl ?? null,
+    };
+  }
+
+  private async finalizeOauthSignIn(
+    userId: string,
+    claims: Record<string, unknown>,
+    profileOverrides?: SocialProfileHints,
+  ): Promise<MobileOAuthResponse> {
+    const email =
+      typeof claims.email === 'string'
+        ? claims.email
+        : typeof claims.preferred_username === 'string'
+          ? claims.preferred_username
+          : undefined;
+
+    if (email) {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: { emailVerifiedAt: true },
+      });
+      if (user && !user.emailVerifiedAt) {
+        await this.prisma.authUser.update({
+          where: { id: userId },
+          data: { emailVerifiedAt: new Date() },
+        });
+      }
+    }
+
+    const profileHints = extractSocialProfileHints(claims, profileOverrides);
+    const syncedProfile = await this.syncSocialUserProfile(userId, profileHints);
+    const profile =
+      syncedProfile ?? (await this.getProfileSummaryForUser(userId));
+    const tokenPair = await this.issuePairForUser(
+      userId,
+      'OAuth sign-in successful.',
+    );
+
+    return {
+      ...tokenPair,
+      profile,
+    };
   }
 
   private async searchProfilesInApplicationService(search: string): Promise<string[]> {
@@ -1467,6 +1573,50 @@ export class AuthService implements OnModuleInit {
       }
       throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  async getUsersByIds(userIds: string[]) {
+    const uniqueIds = [...new Set(userIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return {
+        success: true,
+        message: 'Users retrieved successfully.',
+        data: { users: [] },
+      };
+    }
+
+    const users = await this.prisma.authUser.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        status: true,
+      },
+    });
+    const profiles = await this.getProfilesFromApplicationService(
+      users.map((user) => user.id),
+    );
+    const profileMap = new Map(profiles.map((profile) => [profile.userId, profile]));
+
+    return {
+      success: true,
+      message: 'Users retrieved successfully.',
+      data: {
+        users: users.map((user) => {
+          const profile = profileMap.get(user.id);
+          return {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            fullName: profile?.fullName ?? null,
+            avatarUrl: profile?.avatarUrl ?? null,
+            status: user.status,
+          };
+        }),
+      },
+    };
   }
 
   async getUserById(userId: string) {
@@ -1846,6 +1996,103 @@ export class AuthService implements OnModuleInit {
           : undefined;
 
     const user = await this.upsertOidcUser(iss, sub, email);
-    return this.issuePairForUser(user.id, 'OAuth sign-in successful.');
+    return this.finalizeOauthSignIn(user.id, claims);
+  }
+
+  async handleMobileOAuth(input: {
+    provider: 'google' | 'apple';
+    idToken: string;
+    nonce?: string;
+    fullName?: string;
+    avatarUrl?: string;
+  }): Promise<MobileOAuthResponse> {
+    const claims = await this.verifyMobileIdToken(input);
+    const iss = typeof claims.iss === 'string' ? claims.iss : undefined;
+    const sub = typeof claims.sub === 'string' ? claims.sub : undefined;
+    if (!iss || !sub) {
+      throw new UnauthorizedException('ID token missing iss or sub');
+    }
+
+    const email =
+      typeof claims.email === 'string'
+        ? claims.email
+        : typeof claims.preferred_username === 'string'
+          ? claims.preferred_username
+          : undefined;
+
+    const user = await this.upsertOidcUser(iss, sub, email);
+
+    return this.finalizeOauthSignIn(user.id, claims, {
+      fullName: input.fullName,
+      avatarUrl: input.avatarUrl,
+    });
+  }
+
+  private parseAudienceList(raw: string | undefined): string[] {
+    if (!raw?.trim()) {
+      return [];
+    }
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  private async verifyMobileIdToken(input: {
+    provider: 'google' | 'apple';
+    idToken: string;
+    nonce?: string;
+  }): Promise<Record<string, unknown>> {
+    try {
+      if (input.provider === 'google') {
+        const audiences = this.parseAudienceList(
+          this.config.get<string>('GOOGLE_CLIENT_ID') ??
+            this.config.get<string>('OIDC_CLIENT_ID'),
+        );
+        if (audiences.length === 0) {
+          throw new BadRequestException('Google sign-in is not configured');
+        }
+
+        const { payload } = await jwtVerify(input.idToken, GOOGLE_JWKS, {
+          issuer: GOOGLE_OIDC_ISSUERS,
+          audience: audiences.length === 1 ? audiences[0] : audiences,
+        });
+        return payload as Record<string, unknown>;
+      }
+
+      if (input.provider === 'apple') {
+        const audiences = this.parseAudienceList(
+          this.config.get<string>('APPLE_CLIENT_ID'),
+        );
+        if (audiences.length === 0) {
+          throw new BadRequestException('Apple sign-in is not configured');
+        }
+
+        const { payload } = await jwtVerify(input.idToken, APPLE_JWKS, {
+          issuer: APPLE_OIDC_ISSUER,
+          audience: audiences.length === 1 ? audiences[0] : audiences,
+        });
+
+        if (input.nonce) {
+          const tokenNonce = payload.nonce;
+          const expectedNonce = sha256Hex(input.nonce);
+          if (tokenNonce !== expectedNonce) {
+            throw new UnauthorizedException('Invalid Apple sign-in nonce');
+          }
+        }
+
+        return payload as Record<string, unknown>;
+      }
+
+      throw new BadRequestException('Unsupported OAuth provider');
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid or expired ID token');
+    }
   }
 }

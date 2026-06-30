@@ -379,3 +379,64 @@ describe('AuthService User Retrieval and Search', () => {
     );
   });
 });
+
+describe('AuthService mobile OAuth', () => {
+  const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+
+  let service: AuthService;
+
+  beforeEach(async () => {
+    const prisma = {
+      role: {
+        upsert: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const config = {
+      getOrThrow: (k: string) => {
+        const map: Record<string, string | number> = {
+          JWT_PRIVATE_KEY: privateKey,
+          JWT_PUBLIC_KEY: publicKey,
+          JWT_ISSUER: 'http://test',
+          JWT_AUDIENCE: 'menu-assist-api',
+          JWT_KID: 'test-kid',
+          ACCESS_TOKEN_TTL_SECONDS: 60,
+        };
+        return map[k];
+      },
+      get: (k: string) => {
+        if (k === 'JWT_KID') return 'test-kid';
+        if (k === 'GOOGLE_CLIENT_ID') return undefined;
+        if (k === 'OIDC_CLIENT_ID') return undefined;
+        if (k === 'APPLE_CLIENT_ID') return undefined;
+        return undefined;
+      },
+    };
+    service = new AuthService(
+      prisma as unknown as PrismaService,
+      config as unknown as ConfigService,
+    );
+    await service.onModuleInit();
+  });
+
+  it('rejects Google mobile OAuth when GOOGLE_CLIENT_ID is unset', async () => {
+    await expect(
+      service.handleMobileOAuth({
+        provider: 'google',
+        idToken: 'invalid',
+      }),
+    ).rejects.toThrow('Google sign-in is not configured');
+  });
+
+  it('rejects Apple mobile OAuth when APPLE_CLIENT_ID is unset', async () => {
+    await expect(
+      service.handleMobileOAuth({
+        provider: 'apple',
+        idToken: 'invalid',
+      }),
+    ).rejects.toThrow('Apple sign-in is not configured');
+  });
+});

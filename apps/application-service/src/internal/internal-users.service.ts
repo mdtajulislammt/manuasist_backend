@@ -84,17 +84,28 @@ export class InternalUsersService {
   }
 
   async updateUserProfile(userId: string, body: any) {
+    const create: { userId: string; fullName?: string; avatarUrl?: string; address?: string } = {
+      userId,
+    };
+    const update: { fullName?: string; avatarUrl?: string; address?: string } = {};
+
+    if (typeof body?.fullName === 'string' && body.fullName.trim()) {
+      create.fullName = body.fullName.trim();
+      update.fullName = body.fullName.trim();
+    }
+    if (typeof body?.avatarUrl === 'string' && body.avatarUrl.trim()) {
+      create.avatarUrl = body.avatarUrl.trim();
+      update.avatarUrl = body.avatarUrl.trim();
+    }
+    if (typeof body?.address === 'string' && body.address.trim()) {
+      create.address = body.address.trim();
+      update.address = body.address.trim();
+    }
+
     const profile = await this.prisma.userProfile.upsert({
       where: { userId },
-      create: {
-        userId,
-        fullName: body?.fullName,
-        address: body?.address
-      },
-      update: {
-        fullName: body?.fullName,
-        address: body?.address
-      },
+      create,
+      update,
     });
     return {
       success: true,

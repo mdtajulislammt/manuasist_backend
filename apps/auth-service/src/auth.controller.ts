@@ -42,6 +42,7 @@ import { OtpVerifyDto } from './dto/otp-verify.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 // @ts-ignore
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MobileOAuthDto } from './dto/mobile-oauth.dto';
 import { InternalApiKeyGuard } from './internal-api-key.guard';
 
 function bearerTokenFromAuthorization(header: string | undefined): string {
@@ -238,6 +239,25 @@ export class OAuthController {
     const body = await this.auth.handleCallback(url);
     return res.status(200).json(body);
   }
+
+  @Post('mobile')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Exchange native Google/Apple ID token for app access tokens',
+  })
+  @ApiBody({ type: MobileOAuthDto })
+  @ApiOkResponse({ description: 'Returns the same token pair as password login.' })
+  @ApiBadRequestResponse({ description: 'Invalid provider payload or IdP not configured.' })
+  @ApiUnauthorizedResponse({ description: 'ID token invalid, expired, or nonce mismatch.' })
+  mobile(@Body() body: MobileOAuthDto) {
+    return this.auth.handleMobileOAuth({
+      provider: body.provider,
+      idToken: body.idToken,
+      nonce: body.nonce,
+      fullName: body.fullName,
+      avatarUrl: body.avatarUrl,
+    });
+  }
 }
 
 @Controller('.well-known')
@@ -283,6 +303,13 @@ export class InternalAuthController {
       sort || 'createdAt',
       order || 'desc',
     );
+  }
+
+  @Post('users/batch')
+  @ApiOperation({ summary: 'Get users by ids (internal)' })
+  @ApiOkResponse({ description: 'Users payload returned.' })
+  getUsersByIds(@Body('userIds') userIds: string[]) {
+    return this.auth.getUsersByIds(userIds ?? []);
   }
 
   @Get('users/:userId')
