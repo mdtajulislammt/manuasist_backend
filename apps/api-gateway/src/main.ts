@@ -27,7 +27,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Enable cors
-  const corsOrigin = process.env.CORS_ORIGIN?.split(",") || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'http://10.10.9.82:3001', 'http://10.10.9.82:3002', 'http://10.10.9.82:3000', 'https://menuassistanikstudio-phi.vercel.app/'];
+  const corsOrigin = process.env.CORS_ORIGIN?.split(",") || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'http://10.10.9.82:3001', 'http://10.10.9.82:3002', 'http://10.10.9.82:3000', 'https://menuassistanikstudio-phi.vercel.app'];
   app.enableCors({ origin: corsOrigin, credentials: true });
 
   const proxy = app.get(GatewayProxyService);
