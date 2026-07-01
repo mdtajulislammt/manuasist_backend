@@ -12,6 +12,10 @@ import {
   type FileStoragePort,
 } from '@menu-assist/file-storage';
 import { randomUUID } from 'node:crypto';
+import {
+  isHeicImage,
+  resolveAvatarContentType,
+} from './profile-avatar-content.util';
 
 export type ProfileAvatarUpload = {
   buffer: Buffer;
@@ -31,12 +35,6 @@ const AVATAR_URL_NAMESPACE = 'user-avatar';
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const UUID_STORED_NAME_RE =
   /^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(\.[a-z0-9]+)$/i;
-
-const ALLOWED_AVATAR_MIME = new Map([
-  ['image/png', '.png'],
-  ['image/jpeg', '.jpg'],
-  ['image/webp', '.webp'],
-]);
 
 @Injectable()
 export class ProfileAvatarStorageService {
@@ -108,12 +106,23 @@ export class ProfileAvatarStorageService {
         `Avatar file too large (max ${MAX_AVATAR_BYTES} bytes)`,
       );
     }
-    const mime = (file.mimetype || '').toLowerCase();
-    const ext = ALLOWED_AVATAR_MIME.get(mime);
-    if (!ext) {
-      throw new BadRequestException('Unsupported avatar content type');
+    if (isHeicImage(file.buffer)) {
+      throw new BadRequestException(
+        'HEIC images are not supported. Use JPEG, PNG, or WebP.',
+      );
     }
-    return { mime, ext };
+
+    const resolved = resolveAvatarContentType({
+      mimetype: file.mimetype,
+      originalname: file.originalname,
+      buffer: file.buffer,
+    });
+    if (!resolved) {
+      throw new BadRequestException(
+        'Unsupported avatar content type. Use JPEG, PNG, or WebP.',
+      );
+    }
+    return resolved;
   }
 
   private assertValidStoredName(storedName: string) {
