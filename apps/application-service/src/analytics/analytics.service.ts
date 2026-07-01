@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { MealSlot } from '../../generated/prisma/enums';
 import { MealsService } from '../meals/meals.service';
-import { MembershipService } from '../membership/membership.service';
 import { DietaryPreferencesResolver } from '../users-me/dietary-preferences.resolver';
 import { PrismaService } from '../prisma.service';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
@@ -79,7 +78,6 @@ const MACRO_CHART_LEGEND = [
 @Injectable()
 export class AnalyticsService {
   constructor(
-    private readonly membership: MembershipService,
     private readonly meals: MealsService,
     private readonly dietary: DietaryPreferencesResolver,
     private readonly ingestion: AiIngestionAnalyticsClientService,
@@ -88,7 +86,6 @@ export class AnalyticsService {
   ) {}
 
   async getGoodWeeksVsOffWeeks(userId: string) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const weeks = lastNWeeks(6);
       const from = weeks[0].weekStart;
@@ -184,7 +181,6 @@ export class AnalyticsService {
   }
 
   async getCaloriesScore(userId: string, query: AnalyticsRangeQueryDto) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const range = query.range ?? 'week';
       const { from, to } = resolveRangeWindow(range);
@@ -250,7 +246,6 @@ export class AnalyticsService {
   }
 
   async getMacrosOverTime(userId: string, query: AnalyticsRangeQueryDto) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const range = query.range ?? 'week';
       const { from, to } = resolveRangeWindow(range);
@@ -406,7 +401,6 @@ export class AnalyticsService {
   }
 
   async getRestaurantHabits(userId: string, query: AnalyticsRangeQueryDto) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const range = query.range ?? 'week';
       const { from, to } = resolveRangeWindow(range);
@@ -458,7 +452,6 @@ export class AnalyticsService {
   }
 
   async getMostConsumedCuisines(userId: string, query: AnalyticsRangeQueryDto) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const range = query.range ?? 'week';
       const { from, to } = resolveRangeWindow(range);
@@ -533,7 +526,6 @@ export class AnalyticsService {
     userId: string,
     query: NaiScoreDashboardQueryDto,
   ) {
-    await this.membership.assertPremiumAccess(userId);
     try {
       const trackingRange = query.trackingRange ?? 'weekly';
       const period = query.period ?? 'today';

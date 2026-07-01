@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { MealLogEntry } from '../../generated/prisma/client';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
-import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
 import {
   AiIngestionDishesClientService,
@@ -33,13 +32,11 @@ type UserMealContext = {
 export class MealsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly membership: MembershipService,
     private readonly aiDishes: AiIngestionDishesClientService,
     private readonly aiHome: AiIngestionHomeClientService,
   ) { }
 
   async getPrefill(userId: string, dishId: string) {
-    await this.membership.assertPremiumAccess(userId);
     const now = new Date();
     const defaultMealSlot = this.defaultMealSlot(now);
     const defaultPortionFactor = 1.0;
@@ -102,7 +99,6 @@ export class MealsService {
   }
 
   async preview(userId: string, dto: MealPreviewDto) {
-    await this.membership.assertPremiumAccess(userId);
     const computed = await this.computeMealState(userId, dto);
 
     return {
@@ -117,7 +113,6 @@ export class MealsService {
   }
 
   async logToday(userId: string, dto: MealLogDto) {
-    await this.membership.assertPremiumAccess(userId);
     const computed = await this.computeMealState(userId, dto);
     const loggedAt = dto.loggedAt ? new Date(dto.loggedAt) : new Date();
     const mealDate = this.toMealDate(loggedAt);
@@ -158,7 +153,6 @@ export class MealsService {
   }
 
   async getToday(userId: string) {
-    await this.membership.assertPremiumAccess(userId);
     const mealDate = this.toMealDate(new Date());
     const meals = await this.getTodayMeals(userId, mealDate);
     const slots = Object.values(MealSlot);

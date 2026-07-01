@@ -2,10 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AiIngestionAnalyticsClientService } from './ai-ingestion-analytics-client.service';
 import { AnalyticsService } from './analytics.service';
 
-jest.mock('../membership/membership.service', () => ({
-  MembershipService: class MembershipService {},
-}));
-
 jest.mock('../meals/meals.service', () => ({
   MealsService: class MealsService {},
 }));
@@ -22,7 +18,6 @@ jest.mock('../prisma.service', () => ({
   PrismaService: class PrismaService {},
 }));
 
-import { MembershipService } from '../membership/membership.service';
 import { MealsService } from '../meals/meals.service';
 import { DietaryPreferencesResolver } from '../users-me/dietary-preferences.resolver';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
@@ -30,7 +25,6 @@ import { PrismaService } from '../prisma.service';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
-  let membership: { assertPremiumAccess: jest.Mock };
   let meals: { getMealsInRange: jest.Mock; getTodayMealStats: jest.Mock };
   let dietary: { resolve: jest.Mock };
   let ingestion: {
@@ -41,7 +35,6 @@ describe('AnalyticsService', () => {
   let prisma: { userOnboardingAnswer: { findMany: jest.Mock } };
 
   beforeEach(async () => {
-    membership = { assertPremiumAccess: jest.fn().mockResolvedValue(undefined) };
     meals = {
       getMealsInRange: jest.fn().mockResolvedValue([]),
       getTodayMealStats: jest.fn().mockResolvedValue({
@@ -94,7 +87,6 @@ describe('AnalyticsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AnalyticsService,
-        { provide: MembershipService, useValue: membership },
         { provide: MealsService, useValue: meals },
         { provide: DietaryPreferencesResolver, useValue: dietary },
         { provide: AiIngestionAnalyticsClientService, useValue: ingestion },
@@ -140,7 +132,6 @@ describe('AnalyticsService', () => {
     expect(result.data.chartLegend).toHaveLength(4);
     expect(result.data.chartBars).toEqual([]);
     expect(result.data.mealSuggestions).toHaveLength(4);
-    expect(membership.assertPremiumAccess).toHaveBeenCalledWith('user-1');
   });
 
   it('returns per-slot chart bars for logged meals', async () => {

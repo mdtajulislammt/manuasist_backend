@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiIngestionDishesClientService } from './ai-ingestion-dishes-client.service';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
-import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
 import { MealsService } from './meals.service';
 
@@ -33,10 +32,6 @@ describe('MealsService', () => {
         {
           provide: PrismaService,
           useValue: prisma,
-        },
-        {
-          provide: MembershipService,
-          useValue: { assertPremiumAccess: jest.fn() },
         },
         {
           provide: AiIngestionDishesClientService,
