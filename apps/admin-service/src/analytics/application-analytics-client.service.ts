@@ -28,6 +28,16 @@ export type ApplicationSubscriptionListPayload = {
   };
 };
 
+export type ApplicationSubscriptionStatsPayload = {
+  totalActiveSubscriptions: number;
+  totalTrialPlans: number;
+  totalEarnMinor: number;
+  totalEarn: number;
+  lifetimeEarnMinor: number;
+  lifetimeEarn: number;
+  currency: string;
+};
+
 export type ApplicationDashboardPayload = {
   revenue: {
     selectedPeriod: string;
@@ -106,6 +116,18 @@ export class ApplicationAnalyticsClientService {
     if (!body.data) {
       throw new BadGatewayException(
         'application-service subscription list response missing data',
+      );
+    }
+    return body.data;
+  }
+
+  async getSubscriptionStats(): Promise<ApplicationSubscriptionStatsPayload> {
+    const body = await this.fetchApplication<{
+      data?: ApplicationSubscriptionStatsPayload;
+    }>('/internal/analytics/subscriptions/stats');
+    if (!body.data) {
+      throw new BadGatewayException(
+        'application-service subscription stats response missing data',
       );
     }
     return body.data;

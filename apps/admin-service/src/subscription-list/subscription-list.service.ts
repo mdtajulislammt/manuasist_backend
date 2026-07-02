@@ -16,7 +16,31 @@ export class SubscriptionListService {
     private readonly auth: AuthAnalyticsClientService,
     private readonly users: UsersService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
+
+  async getStats() {
+    try {
+      const stats = await this.application.getSubscriptionStats();
+      return {
+        success: true,
+        message: 'Subscription stats retrieved successfully',
+        data: {
+          totalActiveSubscriptions: stats.totalActiveSubscriptions,
+          totalTrialPlans: stats.totalTrialPlans,
+          totalEarn: stats.totalEarn,
+          totalEarnMinor: stats.totalEarnMinor,
+          lifetimeEarn: stats.lifetimeEarn,
+          lifetimeEarnMinor: stats.lifetimeEarnMinor,
+          currency: stats.currency,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get subscription stats');
+    }
+  }
 
   async list(query: SubscriptionListQueryDto = {}) {
     try {

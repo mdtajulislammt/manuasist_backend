@@ -15,6 +15,15 @@ describe('SubscriptionListService', () => {
         {
           provide: ApplicationAnalyticsClientService,
           useValue: {
+            getSubscriptionStats: jest.fn().mockResolvedValue({
+              totalActiveSubscriptions: 12,
+              totalTrialPlans: 3,
+              totalEarnMinor: 3599,
+              totalEarn: 35.99,
+              lifetimeEarnMinor: 12500,
+              lifetimeEarn: 125,
+              currency: 'USD',
+            }),
             listSubscriptions: jest.fn().mockResolvedValue({
               items: [
                 {
@@ -73,6 +82,20 @@ describe('SubscriptionListService', () => {
     }).compile();
 
     service = module.get<SubscriptionListService>(SubscriptionListService);
+  });
+
+  it('returns subscription stats', async () => {
+    const result = await service.getStats();
+
+    expect(result.data).toEqual({
+      totalActiveSubscriptions: 12,
+      totalTrialPlans: 3,
+      totalEarn: 35.99,
+      totalEarnMinor: 3599,
+      lifetimeEarn: 125,
+      lifetimeEarnMinor: 12500,
+      currency: 'USD',
+    });
   });
 
   it('returns subscribers with user and plan details', async () => {

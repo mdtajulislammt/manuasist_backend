@@ -61,6 +61,18 @@ export class InternalAnalyticsController {
     };
   }
 
+  @Get('subscriptions/stats')
+  @ApiOperation({ summary: 'Subscription KPIs for admin subscribers page' })
+  @ApiOkResponse({ description: 'Subscription stats returned.' })
+  async getSubscriptionStats() {
+    const data = await this.analytics.getSubscriptionStats();
+    return {
+      success: true,
+      message: 'Subscription stats retrieved',
+      data,
+    };
+  }
+
   @Get('subscriptions')
   @ApiOperation({ summary: 'Paginated subscriber entitlements for admin list' })
   @ApiQuery({ name: 'page', required: false, example: 1 })

@@ -72,6 +72,44 @@ export class InternalAnalyticsService {
     };
   }
 
+  async getSubscriptionStats() {
+    const activeStatuses = [EntitlementStatus.ACTIVE, EntitlementStatus.TRIALING];
+
+    const [totalActiveSubscriptions, totalTrialPlans, activeRevenue, totalRevenue] =
+      await Promise.all([
+        this.prisma.userEntitlement.count({
+          where: { status: { in: activeStatuses } },
+        }),
+        this.prisma.userEntitlement.count({
+          where: { status: EntitlementStatus.TRIALING },
+        }),
+        this.prisma.userEntitlement.aggregate({
+          where: {
+            status: { in: activeStatuses },
+            amountMinor: { not: null },
+          },
+          _sum: { amountMinor: true },
+        }),
+        this.prisma.userEntitlement.aggregate({
+          where: { amountMinor: { not: null } },
+          _sum: { amountMinor: true },
+        }),
+      ]);
+
+    const totalEarnMinor = activeRevenue._sum.amountMinor ?? 0;
+    const lifetimeEarnMinor = totalRevenue._sum.amountMinor ?? 0;
+
+    return {
+      totalActiveSubscriptions,
+      totalTrialPlans,
+      totalEarnMinor,
+      totalEarn: totalEarnMinor / 100,
+      lifetimeEarnMinor,
+      lifetimeEarn: lifetimeEarnMinor / 100,
+      currency: 'USD',
+    };
+  }
+
   async getDashboardStats(input: {
     revenuePeriod?: AdminRevenuePeriod;
     subscriptionPage?: number;
