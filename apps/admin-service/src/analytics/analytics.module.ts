@@ -13,5 +13,10 @@ import { IngestionAnalyticsClientService } from './ingestion-analytics-client.se
     IngestionAnalyticsClientService,
     ApplicationAnalyticsClientService,
   ],
+  exports: [
+    AnalyticsService,
+    AuthAnalyticsClientService,
+    ApplicationAnalyticsClientService,
+  ],
 })
 export class AnalyticsModule {}

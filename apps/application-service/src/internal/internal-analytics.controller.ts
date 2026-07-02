@@ -12,6 +12,7 @@ import { InternalApiKeyGuard } from '../internal-api-key.guard';
 import {
   InternalAnalyticsService,
   type AdminRevenuePeriod,
+  type SubscriptionListStatusFilter,
 } from './internal-analytics.service';
 
 @Controller('internal/analytics')
@@ -56,6 +57,50 @@ export class InternalAnalyticsController {
     return {
       success: true,
       message: 'Application dashboard analytics retrieved',
+      data,
+    };
+  }
+
+  @Get('subscriptions')
+  @ApiOperation({ summary: 'Paginated subscriber entitlements for admin list' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['all', 'active', 'cancel', 'expired'],
+  })
+  @ApiQuery({
+    name: 'userIds',
+    required: false,
+    description: 'Comma-separated auth user UUIDs to filter',
+  })
+  @ApiOkResponse({ description: 'Subscription list returned.' })
+  async listSubscriptions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: SubscriptionListStatusFilter,
+    @Query('userIds') userIds?: string,
+  ) {
+    const parsedPage = page ? Number.parseInt(page, 10) : undefined;
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
+    const parsedUserIds = userIds
+      ? userIds
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : undefined;
+
+    const data = await this.analytics.listSubscriptions({
+      page: parsedPage && !Number.isNaN(parsedPage) ? parsedPage : 1,
+      limit: parsedLimit && !Number.isNaN(parsedLimit) ? parsedLimit : 20,
+      status: status ?? 'all',
+      userIds: parsedUserIds,
+    });
+
+    return {
+      success: true,
+      message: 'Subscription list retrieved',
       data,
     };
   }

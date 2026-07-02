@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { EntitlementStatus } from '../../generated/prisma/client';
+import { EntitlementStatus, Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 
 export type AdminRevenuePeriod = 'this_month' | 'last_month' | 'year';
+export type SubscriptionListStatusFilter = 'all' | 'active' | 'cancel' | 'expired';
 
 const MONTH_LABELS = [
   'Jan',
@@ -19,9 +20,57 @@ const MONTH_LABELS = [
   'Dec',
 ] as const;
 
+const MAX_SUBSCRIPTION_PAGE_SIZE = 100;
+
 @Injectable()
 export class InternalAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listSubscriptions(input: {
+    page?: number;
+    limit?: number;
+    status?: SubscriptionListStatusFilter;
+    userIds?: string[];
+  }) {
+    const page = Math.max(input.page ?? 1, 1);
+    const limit = Math.min(Math.max(input.limit ?? 20, 1), MAX_SUBSCRIPTION_PAGE_SIZE);
+    const skip = (page - 1) * limit;
+    const where = this.buildSubscriptionWhere(input.status, input.userIds);
+
+    const [rows, total] = await Promise.all([
+      this.prisma.userEntitlement.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { latestEventAt: 'desc' },
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          planKey: true,
+          priceLabel: true,
+          billingPeriodLabel: true,
+          amountMinor: true,
+          currency: true,
+          createdAt: true,
+          expiresAt: true,
+          latestEventAt: true,
+          willRenew: true,
+        },
+      }),
+      this.prisma.userEntitlement.count({ where }),
+    ]);
+
+    return {
+      items: rows.map((row) => this.mapSubscriptionRow(row)),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.max(Math.ceil(total / limit), 1),
+      },
+    };
+  }
 
   async getDashboardStats(input: {
     revenuePeriod?: AdminRevenuePeriod;
@@ -31,7 +80,6 @@ export class InternalAnalyticsService {
     const revenuePeriod = input.revenuePeriod ?? 'year';
     const page = input.subscriptionPage ?? 1;
     const limit = input.subscriptionLimit ?? 10;
-    const skip = (page - 1) * limit;
 
     const now = new Date();
     const year = now.getUTCFullYear();
@@ -97,28 +145,10 @@ export class InternalAnalyticsService {
       _sum: { amountMinor: true },
     });
 
-    const [subscriptions, subscriptionTotal] = await Promise.all([
-      this.prisma.userEntitlement.findMany({
-        skip,
-        take: limit,
-        orderBy: { latestEventAt: 'desc' },
-        select: {
-          id: true,
-          userId: true,
-          status: true,
-          planKey: true,
-          priceLabel: true,
-          billingPeriodLabel: true,
-          amountMinor: true,
-          currency: true,
-          createdAt: true,
-          expiresAt: true,
-          latestEventAt: true,
-          willRenew: true,
-        },
-      }),
-      this.prisma.userEntitlement.count(),
-    ]);
+    const subscriptionList = await this.listSubscriptions({
+      page,
+      limit,
+    });
 
     return {
       revenue: {
@@ -140,31 +170,64 @@ export class InternalAnalyticsService {
               ? lastMonthRevenue
               : totalRevenueMinor,
       },
-      subscriptions: {
-        items: subscriptions.map((row) => ({
-          id: row.id,
-          userId: row.userId,
-          subscriptionLabel:
-            row.billingPeriodLabel ??
-            row.priceLabel ??
-            row.planKey ??
-            'Subscription',
-          amountMinor: row.amountMinor,
-          amount: row.amountMinor === null ? null : row.amountMinor / 100,
-          currency: row.currency ?? 'USD',
-          subscribedAt: row.createdAt.toISOString(),
-          renewDate: row.expiresAt?.toISOString() ?? null,
-          status: mapSubscriptionStatus(row.status),
-          rawStatus: row.status,
-          willRenew: row.willRenew,
-        })),
-        pagination: {
-          total: subscriptionTotal,
-          page,
-          limit,
-          totalPages: Math.ceil(subscriptionTotal / limit),
-        },
-      },
+      subscriptions: subscriptionList,
+    };
+  }
+
+  private buildSubscriptionWhere(
+    status: SubscriptionListStatusFilter | undefined,
+    userIds: string[] | undefined,
+  ): Prisma.UserEntitlementWhereInput {
+    const where: Prisma.UserEntitlementWhereInput = {};
+    const filter = status ?? 'all';
+
+    if (filter === 'active') {
+      where.status = { in: [EntitlementStatus.ACTIVE, EntitlementStatus.TRIALING] };
+    } else if (filter === 'cancel') {
+      where.status = EntitlementStatus.CANCELED;
+    } else if (filter === 'expired') {
+      where.status = EntitlementStatus.EXPIRED;
+    }
+
+    if (userIds?.length) {
+      where.userId = { in: userIds };
+    }
+
+    return where;
+  }
+
+  private mapSubscriptionRow(row: {
+    id: string;
+    userId: string;
+    status: EntitlementStatus;
+    planKey: string | null;
+    priceLabel: string | null;
+    billingPeriodLabel: string | null;
+    amountMinor: number | null;
+    currency: string | null;
+    createdAt: Date;
+    expiresAt: Date | null;
+    willRenew: boolean;
+  }) {
+    return {
+      id: row.id,
+      userId: row.userId,
+      subscriptionLabel:
+        row.billingPeriodLabel ??
+        row.priceLabel ??
+        row.planKey ??
+        'Subscription',
+      planKey: row.planKey,
+      priceLabel: row.priceLabel,
+      billingPeriodLabel: row.billingPeriodLabel,
+      amountMinor: row.amountMinor,
+      amount: row.amountMinor === null ? null : row.amountMinor / 100,
+      currency: row.currency ?? 'USD',
+      subscribedAt: row.createdAt.toISOString(),
+      renewDate: row.expiresAt?.toISOString() ?? null,
+      status: mapSubscriptionStatus(row.status),
+      rawStatus: row.status,
+      willRenew: row.willRenew,
     };
   }
 }

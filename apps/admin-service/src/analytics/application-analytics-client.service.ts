@@ -73,6 +73,37 @@ export class ApplicationAnalyticsClientService {
     return body.data;
   }
 
+  async listSubscriptions(query: {
+    page?: number;
+    limit?: number;
+    status?: 'all' | 'active' | 'cancel' | 'expired';
+    userIds?: string[];
+  }) {
+    const params = new URLSearchParams();
+    if (query.page !== undefined) {
+      params.set('page', String(query.page));
+    }
+    if (query.limit !== undefined) {
+      params.set('limit', String(query.limit));
+    }
+    if (query.status) {
+      params.set('status', query.status);
+    }
+    if (query.userIds?.length) {
+      params.set('userIds', query.userIds.join(','));
+    }
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const body = await this.fetchApplication<{
+      data?: ApplicationDashboardPayload['subscriptions'];
+    }>(`/internal/analytics/subscriptions${suffix}`);
+    if (!body.data) {
+      throw new BadGatewayException(
+        'application-service subscription list response missing data',
+      );
+    }
+    return body.data;
+  }
+
   private async fetchApplication<T>(path: string): Promise<T> {
     const base = this.config
       .getOrThrow<string>('APPLICATION_SERVICE_URL')
