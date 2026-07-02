@@ -1699,10 +1699,28 @@ export class AuthService implements OnModuleInit {
         },
       });
 
-      if (data.fullName) {
-        const profile = await this.updateProfileFromApplicationService(userId, data);
+      if (data.fullName || data.avatarUrl || data.address) {
+        const profilePayload: Record<string, string> = {};
+        if (typeof data.fullName === 'string' && data.fullName.trim()) {
+          profilePayload.fullName = data.fullName.trim();
+        }
+        if (typeof data.avatarUrl === 'string' && data.avatarUrl.trim()) {
+          profilePayload.avatarUrl = data.avatarUrl.trim();
+        }
+        if (typeof data.address === 'string' && data.address.trim()) {
+          profilePayload.address = data.address.trim();
+        }
+        const profile = await this.updateProfileFromApplicationService(
+          userId,
+          profilePayload,
+        );
         if (profile) {
-          updatedUser = { ...updatedUser, fullName: profile.fullName, avatarUrl: profile.avatarUrl, address: profile?.address };
+          updatedUser = {
+            ...updatedUser,
+            fullName: profile.fullName ?? updatedUser.fullName,
+            avatarUrl: profile.avatarUrl ?? updatedUser.avatarUrl,
+            address: profile.address ?? updatedUser.address,
+          };
         }
       }
 
