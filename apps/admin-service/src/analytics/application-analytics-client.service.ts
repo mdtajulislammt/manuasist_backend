@@ -1,6 +1,33 @@
 import { BadGatewayException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+export type ApplicationSubscriptionItem = {
+  id: string;
+  userId: string;
+  subscriptionLabel: string;
+  planKey: string | null;
+  priceLabel: string | null;
+  billingPeriodLabel: string | null;
+  amountMinor: number | null;
+  amount: number | null;
+  currency: string;
+  subscribedAt: string;
+  renewDate: string | null;
+  status: string;
+  rawStatus: string;
+  willRenew: boolean;
+};
+
+export type ApplicationSubscriptionListPayload = {
+  items: ApplicationSubscriptionItem[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
 export type ApplicationDashboardPayload = {
   revenue: {
     selectedPeriod: string;
@@ -19,27 +46,7 @@ export type ApplicationDashboardPayload = {
     }>;
     periodTotalMinor: number;
   };
-  subscriptions: {
-    items: Array<{
-      id: string;
-      userId: string;
-      subscriptionLabel: string;
-      amountMinor: number | null;
-      amount: number | null;
-      currency: string;
-      subscribedAt: string;
-      renewDate: string | null;
-      status: string;
-      rawStatus: string;
-      willRenew: boolean;
-    }>;
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-  };
+  subscriptions: ApplicationSubscriptionListPayload;
 };
 
 @Injectable()
@@ -78,7 +85,7 @@ export class ApplicationAnalyticsClientService {
     limit?: number;
     status?: 'all' | 'active' | 'cancel' | 'expired';
     userIds?: string[];
-  }) {
+  }): Promise<ApplicationSubscriptionListPayload> {
     const params = new URLSearchParams();
     if (query.page !== undefined) {
       params.set('page', String(query.page));
@@ -94,7 +101,7 @@ export class ApplicationAnalyticsClientService {
     }
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const body = await this.fetchApplication<{
-      data?: ApplicationDashboardPayload['subscriptions'];
+      data?: ApplicationSubscriptionListPayload;
     }>(`/internal/analytics/subscriptions${suffix}`);
     if (!body.data) {
       throw new BadGatewayException(
