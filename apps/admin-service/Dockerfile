@@ -11,6 +11,6 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm run prisma:generate:admin
 RUN pnpm run build:admin
 
-EXPOSE 2648
-ENV ADMIN_SERVICE_PORT=2648
+EXPOSE 5003
+ENV ADMIN_SERVICE_PORT=5003
 CMD ["node", "dist/apps/admin-service/apps/admin-service/src/main.js"]

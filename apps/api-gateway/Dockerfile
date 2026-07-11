@@ -10,6 +10,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build:api-auth && pnpm run build:gateway
 
-EXPOSE 2645
-ENV API_GATEWAY_PORT=2645
+EXPOSE 5000
+ENV API_GATEWAY_PORT=5000
 CMD ["node", "dist/apps/api-gateway/apps/api-gateway/src/main.js"]

@@ -225,8 +225,12 @@ export class AuthService implements OnModuleInit {
   // --- JWKS / access JWT (from AccessJwtService) ---
 
   private async initJwtKeys() {
-    const privatePem = this.config.getOrThrow<string>('JWT_PRIVATE_KEY');
-    const publicPem = this.config.getOrThrow<string>('JWT_PUBLIC_KEY');
+    const privatePem = this.normalizePem(
+      this.config.getOrThrow<string>('JWT_PRIVATE_KEY'),
+    );
+    const publicPem = this.normalizePem(
+      this.config.getOrThrow<string>('JWT_PUBLIC_KEY'),
+    );
     this.privateKey = await importPKCS8(privatePem, 'RS256');
     const pub = await importSPKI(publicPem, 'RS256');
     this.publicKey = pub;
@@ -240,6 +244,11 @@ export class AuthService implements OnModuleInit {
 
   getJwks() {
     return this.jwksBody;
+  }
+
+  /** Accept PEM with literal \n (common in .env / Docker Compose). */
+  private normalizePem(pem: string): string {
+    return pem.replace(/\\n/g, '\n').trim();
   }
 
   async signAccessToken(userId: string, roles: string[]) {
