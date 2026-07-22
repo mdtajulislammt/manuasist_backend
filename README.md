@@ -70,7 +70,21 @@ pnpm run prisma:migrate:application
 pnpm run prisma:migrate:ai
 ```
 
-### 5) Run services in watch mode
+### 5) Seed local accounts (optional)
+
+```bash
+pnpm run seed:all
+```
+
+| Account | Email | Password | Notes |
+|---------|-------|----------|-------|
+| Admin | `admin@menuassist.local` | `Admin@123456` | roles: user + admin |
+| User | `user@menuassist.local` | `User@123456` | free tier |
+| Premium | `premium@menuassist.local` | `Premium@123456` | ACTIVE 1-month `premium` entitlement |
+
+Override with `AUTH_SEED_*` env vars in `apps/auth-service/.env`. Entitlement only: `pnpm run seed:application` (requires auth seed first).
+
+### 6) Run services in watch mode
 
 Start each service in its own terminal:
 

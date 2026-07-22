@@ -54,10 +54,20 @@ async function main() {
       .toLowerCase();
     const userPassword = process.env.AUTH_SEED_USER_PASSWORD ?? 'User@123456';
 
-    const [adminPasswordHash, userPasswordHash] = await Promise.all([
-      hash(adminPassword, 12),
-      hash(userPassword, 12),
-    ]);
+    const premiumEmail = (
+      process.env.AUTH_SEED_PREMIUM_EMAIL ?? 'premium@menuassist.local'
+    )
+      .trim()
+      .toLowerCase();
+    const premiumPassword =
+      process.env.AUTH_SEED_PREMIUM_PASSWORD ?? 'Premium@123456';
+
+    const [adminPasswordHash, userPasswordHash, premiumPasswordHash] =
+      await Promise.all([
+        hash(adminPassword, 12),
+        hash(userPassword, 12),
+        hash(premiumPassword, 12),
+      ]);
 
     const adminUser = await prisma.authUser.upsert({
       where: { email: adminEmail },
@@ -85,6 +95,19 @@ async function main() {
       },
     });
 
+    const premiumUser = await prisma.authUser.upsert({
+      where: { email: premiumEmail },
+      create: {
+        email: premiumEmail,
+        passwordHash: premiumPasswordHash,
+        emailVerifiedAt: new Date(),
+      },
+      update: {
+        passwordHash: premiumPasswordHash,
+        emailVerifiedAt: new Date(),
+      },
+    });
+
     await prisma.userRole.upsert({
       where: {
         userId_roleId: { userId: adminUser.id, roleId: userRole.id },
@@ -106,10 +129,18 @@ async function main() {
       create: { userId: standardUser.id, roleId: userRole.id },
       update: {},
     });
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: { userId: premiumUser.id, roleId: userRole.id },
+      },
+      create: { userId: premiumUser.id, roleId: userRole.id },
+      update: {},
+    });
 
     console.log('Auth seed complete');
-    console.log(`Admin: ${adminEmail}`);
-    console.log(`User: ${userEmail}`);
+    console.log(`Admin: ${adminEmail} (${adminUser.id})`);
+    console.log(`User: ${userEmail} (${standardUser.id})`);
+    console.log(`Premium: ${premiumEmail} (${premiumUser.id})`);
   } finally {
     await prisma.onModuleDestroy();
   }
