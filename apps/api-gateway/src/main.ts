@@ -1,4 +1,5 @@
 import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
+import { HttpException, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   ExpressAdapter,
@@ -9,11 +10,43 @@ import { AppModule } from './app.module';
 import { GatewayProxyService } from './gateway-proxy.service';
 import { createRequestTraceMiddleware } from './request-trace.middleware';
 
+const logger = new Logger('ApiGateway');
+
+function resolveExceptionMessage(error: unknown): string {
+  if (error instanceof HttpException) {
+    const res = error.getResponse();
+    if (typeof res === 'string') {
+      return res;
+    }
+    if (typeof res === 'object' && res !== null) {
+      const maybeMessage = (res as { message?: unknown }).message;
+      if (typeof maybeMessage === 'string') {
+        return maybeMessage;
+      }
+      if (Array.isArray(maybeMessage)) {
+        return maybeMessage.map(String).join(', ');
+      }
+    }
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 /**
  * API Gateway for the Menu Assist application.
  * It proxies requests to the upstream services (auth, application, admin, ai-ingestion).
  */
 async function bootstrap() {
+  process.on('unhandledRejection', (reason) => {
+    logger.error(
+      'Unhandled rejection (gateway kept alive)',
+      reason instanceof Error ? reason.stack : String(reason),
+    );
+  });
+
   const expressApp = express();
   expressApp.set('trust proxy', true);
   expressApp.use(createRequestTraceMiddleware());
@@ -27,7 +60,15 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Enable cors
-  const corsOrigin = process.env.CORS_ORIGIN?.split(",") || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'http://10.10.9.82:3001', 'http://10.10.9.82:3002', 'http://10.10.9.82:3000', 'https://menuassistanikstudio-phi.vercel.app'];
+  const corsOrigin = process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:3001',
+    'http://localhost:3000',
+    'http://localhost:3002',
+    'http://10.10.9.82:3001',
+    'http://10.10.9.82:3002',
+    'http://10.10.9.82:3000',
+    'https://menuassistanikstudio-phi.vercel.app',
+  ];
   app.enableCors({ origin: corsOrigin, credentials: true });
 
   const proxy = app.get(GatewayProxyService);
@@ -40,9 +81,25 @@ async function bootstrap() {
   ] as const;
 
   for (const [mountPath, routePrefix, envKey] of mounts) {
-    app.use(mountPath, (req: any, res: any) =>
-      proxy.proxyTo(req, res, routePrefix, envKey),
-    );
+    app.use(mountPath, async (req: any, res: any, next: any) => {
+      try {
+        await proxy.proxyTo(req, res, routePrefix, envKey);
+      } catch (error) {
+        if (res.headersSent) {
+          next(error);
+          return;
+        }
+        const status =
+          error instanceof HttpException ? error.getStatus() : 502;
+        const message = resolveExceptionMessage(error);
+        logger.error(`${req.method} ${req.originalUrl} -> ${status}: ${message}`);
+        res.status(status).json({
+          success: false,
+          message,
+          status,
+        });
+      }
+    });
   }
 
   await app.listen(process.env.API_GATEWAY_PORT ?? 2645);

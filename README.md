@@ -140,6 +140,15 @@ pnpm run start:ai
 pnpm run start:prod
 ```
 
+If an upstream (auth/app/admin/ai) is down, the gateway returns **HTTP 502** JSON (`{ success: false, message, status: 502 }`) and **keeps running**. It should not exit the process.
+
+Quick check (gateway up, auth stopped):
+
+```bash
+curl -i http://localhost:5000/v1/auth/health
+# expect 502; gateway process still alive
+```
+
 ### Lint and test
 
 ```bash
