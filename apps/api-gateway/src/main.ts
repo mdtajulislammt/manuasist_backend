@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { GlobalExceptionFilter } from '@api-auth/global-exception.filter';
 import { HttpException, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -5,12 +7,24 @@ import {
   ExpressAdapter,
   NestExpressApplication,
 } from '@nestjs/platform-express';
+import { config as loadEnv } from 'dotenv';
 import express, { json } from 'express';
 import { AppModule } from './app.module';
 import { GatewayProxyService } from './gateway-proxy.service';
 import { createRequestTraceMiddleware } from './request-trace.middleware';
 
 const logger = new Logger('ApiGateway');
+
+function loadGatewayEnv() {
+  const root = resolve(process.cwd(), '.env');
+  const local = resolve(process.cwd(), 'apps/api-gateway/.env');
+  if (existsSync(root)) {
+    loadEnv({ path: root });
+  }
+  if (existsSync(local)) {
+    loadEnv({ path: local, override: true });
+  }
+}
 
 function resolveExceptionMessage(error: unknown): string {
   if (error instanceof HttpException) {
@@ -40,6 +54,8 @@ function resolveExceptionMessage(error: unknown): string {
  * It proxies requests to the upstream services (auth, application, admin, ai-ingestion).
  */
 async function bootstrap() {
+  loadGatewayEnv();
+
   process.on('unhandledRejection', (reason) => {
     logger.error(
       'Unhandled rejection (gateway kept alive)',

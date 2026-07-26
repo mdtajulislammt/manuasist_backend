@@ -10,7 +10,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build:application
 
-EXPOSE 5002
-ENV APPLICATION_SERVICE_PORT=5002
+EXPOSE 2647
+ENV APPLICATION_SERVICE_PORT=2647
 ENV APPLICATION_DATABASE_URL=postgresql://postgres:root@postgres:5432/menu_assist_application_service
 CMD ["node", "dist/apps/application-service/apps/application-service/src/main.js"]

@@ -145,7 +145,7 @@ If an upstream (auth/app/admin/ai) is down, the gateway returns **HTTP 502** JSO
 Quick check (gateway up, auth stopped):
 
 ```bash
-curl -i http://localhost:5000/v1/auth/health
+curl -i http://localhost:2645/v1/auth/health
 # expect 502; gateway process still alive
 ```
 

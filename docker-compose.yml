@@ -53,14 +53,14 @@ services:
       dockerfile: apps/api-gateway/Dockerfile
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      API_GATEWAY_PORT: ${API_GATEWAY_PORT:-5000}
-      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-5001}
-      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-5002}
-      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-5003}
-      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-5004}
+      API_GATEWAY_PORT: ${API_GATEWAY_PORT:-2645}
+      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-2646}
+      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-2647}
+      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-2648}
+      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-2649}
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     ports:
-      - '${API_GATEWAY_PORT:-5000}:${API_GATEWAY_PORT:-5000}'
+      - '${API_GATEWAY_PORT:-2645}:${API_GATEWAY_PORT:-2645}'
     depends_on:
       - auth-service
       - application-service
@@ -74,17 +74,17 @@ services:
       dockerfile: apps/ai-ingestion-service/Dockerfile
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      AI_INGESTION_SERVICE_PORT: ${AI_INGESTION_SERVICE_PORT:-5004}
+      AI_INGESTION_SERVICE_PORT: ${AI_INGESTION_SERVICE_PORT:-2649}
       AI_INGESTION_DATABASE_URL: postgresql://postgres:root@postgres:5432/menu_assist_ai_ingestion_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-5001}/.well-known/jwks.json
-      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-2646}/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       AUTH_JWT_AUDIENCE: menu-assist-api
-      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-5002}
+      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-2647}
       APPLICATION_INTERNAL_API_KEY: ${APPLICATION_INTERNAL_API_KEY:-dev-internal-application-key}
-      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-5003}
+      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-2648}
       ADMIN_INTERNAL_API_KEY: ${ADMIN_INTERNAL_API_KEY:-dev-internal-onboarding-key}
-      API_GATEWAY_PUBLIC_URL: http://localhost:${API_GATEWAY_PORT:-5000}
+      API_GATEWAY_PUBLIC_URL: http://localhost:${API_GATEWAY_PORT:-2645}
       INGESTION_INTERNAL_API_KEY: ${INGESTION_INTERNAL_API_KEY:-dev-internal-ingestion-key}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
@@ -94,7 +94,7 @@ services:
       APPLICATION_PUBLIC_URL: ${APPLICATION_PUBLIC_URL:-}
       FILE_STORAGE_PUBLIC_URL: ${FILE_STORAGE_PUBLIC_URL:-}
     ports:
-      - '${AI_INGESTION_SERVICE_PORT:-5004}:${AI_INGESTION_SERVICE_PORT:-5004}'
+      - '${AI_INGESTION_SERVICE_PORT:-2649}:${AI_INGESTION_SERVICE_PORT:-2649}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -113,20 +113,20 @@ services:
       - apps/auth-service/.env
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-5001}
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-2646}
       AUTH_DATABASE_URL: postgresql://postgres:root@postgres:5432/menu_assist_auth_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       JWT_AUDIENCE: menu-assist-api
       JWT_KID: menu-assist-rs256
       ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
       REFRESH_TOKEN_TTL_SECONDS: ${REFRESH_TOKEN_TTL_SECONDS:-604800}
       AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-dev-internal-auth-key}
-      OIDC_REDIRECT_URI: http://localhost:${API_GATEWAY_PORT:-5000}/v1/auth/oauth/callback
-      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-5002}
+      OIDC_REDIRECT_URI: http://localhost:${API_GATEWAY_PORT:-2645}/v1/auth/oauth/callback
+      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-2647}
       APPLICATION_INTERNAL_API_KEY: ${APPLICATION_INTERNAL_API_KEY:-dev-internal-application-key}
     ports:
-      - '${AUTH_SERVICE_PORT:-5001}:${AUTH_SERVICE_PORT:-5001}'
+      - '${AUTH_SERVICE_PORT:-2646}:${AUTH_SERVICE_PORT:-2646}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,20 +139,20 @@ services:
       dockerfile: apps/application-service/Dockerfile
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      APPLICATION_SERVICE_PORT: ${APPLICATION_SERVICE_PORT:-5002}
+      APPLICATION_SERVICE_PORT: ${APPLICATION_SERVICE_PORT:-2647}
       APPLICATION_DATABASE_URL: postgresql://postgres:root@postgres:5432/menu_assist_application_service
-      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-5003}
+      ADMIN_SERVICE_URL: http://admin-service:${ADMIN_SERVICE_PORT:-2648}
       ADMIN_INTERNAL_API_KEY: ${ADMIN_INTERNAL_API_KEY:-dev-internal-onboarding-key}
       APPLICATION_INTERNAL_API_KEY: ${APPLICATION_INTERNAL_API_KEY:-dev-internal-application-key}
-      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-5004}
+      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-2649}
       INGESTION_INTERNAL_API_KEY: ${INGESTION_INTERNAL_API_KEY:-dev-internal-ingestion-key}
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_URL: redis://redis:6379
       CONTACT_CHANGE_OTP_RESEND_COOLDOWN_SECONDS: ${CONTACT_CHANGE_OTP_RESEND_COOLDOWN_SECONDS:-60}
-      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-dev-internal-auth-key}
-      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-5001}/.well-known/jwks.json
-      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-2646}/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       AUTH_JWT_AUDIENCE: menu-assist-api
       REVENUECAT_WEBHOOK_SECRET: ${REVENUECAT_WEBHOOK_SECRET:-}
       REVENUECAT_ENTITLEMENT_ID: ${REVENUECAT_ENTITLEMENT_ID:-premium}
@@ -162,7 +162,7 @@ services:
       REFERRAL_SHARE_BASE_URL: ${REFERRAL_SHARE_BASE_URL:-https://menu-assist.anikstudio.com}
       APPLICATION_PUBLIC_URL: ${APPLICATION_PUBLIC_URL:-}
     ports:
-      - '${APPLICATION_SERVICE_PORT:-5002}:${APPLICATION_SERVICE_PORT:-5002}'
+      - '${APPLICATION_SERVICE_PORT:-2647}:${APPLICATION_SERVICE_PORT:-2647}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -179,18 +179,18 @@ services:
       dockerfile: apps/admin-service/Dockerfile
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      ADMIN_SERVICE_PORT: ${ADMIN_SERVICE_PORT:-5003}
+      ADMIN_SERVICE_PORT: ${ADMIN_SERVICE_PORT:-2648}
       ADMIN_DATABASE_URL: postgresql://postgres:root@postgres:5432/menu_assist_admin_service
       ADMIN_INTERNAL_API_KEY: ${ADMIN_INTERNAL_API_KEY:-dev-internal-onboarding-key}
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-5001}/.well-known/jwks.json
-      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      AUTH_JWKS_URI: http://auth-service:${AUTH_SERVICE_PORT:-2646}/.well-known/jwks.json
+      AUTH_JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       AUTH_JWT_AUDIENCE: menu-assist-api
-      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-5001}
+      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-dev-internal-auth-key}
-      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-5002}
+      APPLICATION_SERVICE_URL: http://application-service:${APPLICATION_SERVICE_PORT:-2647}
       APPLICATION_INTERNAL_API_KEY: ${APPLICATION_INTERNAL_API_KEY:-dev-internal-application-key}
-      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-5004}
+      AI_INGESTION_SERVICE_URL: http://ai-ingestion-service:${AI_INGESTION_SERVICE_PORT:-2649}
       INGESTION_INTERNAL_API_KEY: ${INGESTION_INTERNAL_API_KEY:-dev-internal-ingestion-key}
       REVENUECAT_API_KEY: ${REVENUECAT_API_KEY:-}
       REVENUECAT_PROJECT_ID: ${REVENUECAT_PROJECT_ID:-}
@@ -203,7 +203,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
     ports:
-      - '${ADMIN_SERVICE_PORT:-5003}:${ADMIN_SERVICE_PORT:-5003}'
+      - '${ADMIN_SERVICE_PORT:-2648}:${ADMIN_SERVICE_PORT:-2648}'
     depends_on:
       postgres:
         condition: service_healthy
