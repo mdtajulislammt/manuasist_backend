@@ -17,6 +17,7 @@ export type AiHomeSummaryPayload = {
   previousScore: number | null;
   scoreChangePercent: number | null;
   todayCalories: number;
+  todayScore: number | null;
   latestCalories: number;
   latestScannedAt: string | null;
   chartPoints: AiHomeChartPoint[];

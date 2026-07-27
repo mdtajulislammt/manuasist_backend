@@ -9,7 +9,6 @@ const calorieTargetSourceEnum = [
 const calorieDataSourceEnum = [
   'meals',
   'scan_today',
-  'scan_latest',
   'none',
 ] as const;
 

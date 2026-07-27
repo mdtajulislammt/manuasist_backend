@@ -356,8 +356,8 @@ export class ScansService {
         trackingRange,
         chartScans,
       );
-      const referenceScan = todayCompleted ?? latestCompleted;
-      const latestScore = referenceScan?.naiScore ?? null;
+      const latestScore = latestCompleted?.naiScore ?? null;
+      const todayScore = todayCompleted?.naiScore ?? null;
       const previousScore = previousCompleted[0]?.naiScore ?? null;
 
       return {
@@ -366,17 +366,20 @@ export class ScansService {
         data: {
           trackingRange,
           hasCompletedScan: latestCompleted !== null,
-          latestScanId: referenceScan?.id ?? null,
+          latestScanId: latestCompleted?.id ?? null,
           latestScore,
+          todayScore,
           previousScore,
-          scoreChangePercent: this.scoreChangePercent(latestScore, previousScore),
+          scoreChangePercent: todayCompleted
+            ? this.scoreChangePercent(todayScore, previousScore)
+            : null,
           todayCalories: todayCompleted
             ? this.totalCalories(todayCompleted.dishes)
             : 0,
-          latestCalories: referenceScan
-            ? this.totalCalories(referenceScan.dishes)
+          latestCalories: latestCompleted
+            ? this.totalCalories(latestCompleted.dishes)
             : 0,
-          latestScannedAt: referenceScan?.scanTime ?? null,
+          latestScannedAt: latestCompleted?.scanTime ?? null,
           chartPoints,
           warning: this.homeWarning(chartScans),
         },

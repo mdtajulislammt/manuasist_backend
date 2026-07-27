@@ -18,6 +18,7 @@ const baseAiSummary = {
   hasCompletedScan: true,
   latestScanId: 'scan-1',
   latestScore: 70,
+  todayScore: 70,
   previousScore: 65,
   scoreChangePercent: 8,
   todayCalories: 900,
@@ -115,6 +116,7 @@ describe('HomeService', () => {
     });
     aiHome.getHomeSummary.mockResolvedValue({
       ...baseAiSummary,
+      todayScore: 70,
       todayCalories: 600,
       latestCalories: 600,
     });
@@ -178,27 +180,39 @@ describe('HomeService', () => {
   it('uses scan_today calories when no meals but scan exists today', async () => {
     aiHome.getHomeSummary.mockResolvedValue({
       ...baseAiSummary,
+      todayScore: 72,
       todayCalories: 850,
       latestCalories: 1100,
     });
 
     const result = await service.getHome('user-1');
 
+    expect(result.data.todayNai.score).toBe(72);
     expect(result.data.nutritionProgress.totalCaloriesConsumed).toBe(850);
     expect(result.data.dataSource.calories).toBe('scan_today');
+    expect(result.data.dataSource.naiScore).toBe('scan');
+    expect(result.data.todayNai.subtitle).toBe("Based on today's menu scan");
     expect(result.data.todayNai.changeText).toBe('+8% from last scan');
+    expect(result.data.emptyTodayNai).toBeNull();
   });
 
-  it('falls back to latest scan calories when no meals or today scan', async () => {
+  it('does not use yesterday scan for today when no meals logged today', async () => {
     aiHome.getHomeSummary.mockResolvedValue({
       ...baseAiSummary,
+      todayScore: null,
       todayCalories: 0,
+      latestScore: 70,
       latestCalories: 1100,
+      scoreChangePercent: null,
     });
 
     const result = await service.getHome('user-1');
 
-    expect(result.data.nutritionProgress.totalCaloriesConsumed).toBe(1100);
-    expect(result.data.dataSource.calories).toBe('scan_latest');
+    expect(result.data.todayNai.score).toBeNull();
+    expect(result.data.nutritionProgress.totalCaloriesConsumed).toBe(0);
+    expect(result.data.dataSource.calories).toBe('none');
+    expect(result.data.dataSource.naiScore).toBe('none');
+    expect(result.data.naiTracking.scoreLabel).toBe('NAI Score unavailable');
+    expect(result.data.emptyTodayNai).not.toBeNull();
   });
 });
