@@ -114,11 +114,11 @@ describe('HomeService', () => {
       weightGoal: null,
       dietType: null,
     });
-    aiHome.getHomeSummary.mockResolvedValue({
-      ...baseAiSummary,
-      todayScore: 70,
-      todayCalories: 600,
-      latestCalories: 600,
+    meals.getTodayMealStats.mockResolvedValue({
+      meals: [{ calories: 600, naiScore: 70 }],
+      calories: 600,
+      dailyNai: 70,
+      mealCount: 1,
     });
 
     const result = await service.getHome('user-1');
@@ -177,7 +177,13 @@ describe('HomeService', () => {
     expect(result.data.emptyTodayNai).toBeNull();
   });
 
-  it('uses scan_today calories when no meals but scan exists today', async () => {
+  it('uses today scan for NAI only; calories stay 0 until meals are logged', async () => {
+    dietary.resolve.mockResolvedValue({
+      calorieTarget: 2200,
+      calorieTargetSource: 'preferences',
+      weightGoal: null,
+      dietType: null,
+    });
     aiHome.getHomeSummary.mockResolvedValue({
       ...baseAiSummary,
       todayScore: 72,
@@ -188,8 +194,11 @@ describe('HomeService', () => {
     const result = await service.getHome('user-1');
 
     expect(result.data.todayNai.score).toBe(72);
-    expect(result.data.nutritionProgress.totalCaloriesConsumed).toBe(850);
-    expect(result.data.dataSource.calories).toBe('scan_today');
+    expect(result.data.todayNai.dailyIntake.value).toBe(0);
+    expect(result.data.todayNai.dailyIntake.progressPercent).toBe(0);
+    expect(result.data.nutritionProgress.totalCaloriesConsumed).toBe(0);
+    expect(result.data.nutritionProgress.progressPercent).toBe(0);
+    expect(result.data.dataSource.calories).toBe('none');
     expect(result.data.dataSource.naiScore).toBe('scan');
     expect(result.data.todayNai.subtitle).toBe("Based on today's menu scan");
     expect(result.data.todayNai.changeText).toBe('+8% from last scan');

@@ -2,12 +2,11 @@ import { HttpException, Injectable, InternalServerErrorException } from '@nestjs
 import { MealsService } from '../meals/meals.service';
 import { DietaryPreferencesResolver } from '../users-me/dietary-preferences.resolver';
 import {
-  AiHomeSummaryPayload,
   AiIngestionHomeClientService,
 } from './ai-ingestion-home-client.service';
 import { GetHomeQueryDto } from './dto/get-home-query.dto';
 
-type CalorieDataSource = 'meals' | 'scan_today' | 'none';
+type CalorieDataSource = 'meals' | 'none';
 type NaiScoreDataSource = 'meals' | 'scan' | 'none';
 
 @Injectable()
@@ -32,15 +31,11 @@ export class HomeService {
       const calorieTarget = dietary.calorieTarget;
       const usesMealLogs = mealStats.mealCount > 0;
       const hasTodayScan = aiSummary.todayScore !== null;
-      const dailyCalories = usesMealLogs
-        ? mealStats.calories
-        : hasTodayScan
-          ? aiSummary.todayCalories
-          : 0;
-      const calorieDataSource = this.resolveCalorieDataSource(
-        usesMealLogs,
-        hasTodayScan,
-      );
+      // Intake only counts logged meals — a menu scan is analysis, not consumption.
+      const dailyCalories = usesMealLogs ? mealStats.calories : 0;
+      const calorieDataSource: CalorieDataSource = usesMealLogs
+        ? 'meals'
+        : 'none';
       const todayNaiScore = usesMealLogs
         ? mealStats.dailyNai
         : hasTodayScan
@@ -134,18 +129,6 @@ export class HomeService {
     };
   }
 
-  private resolveCalorieDataSource(
-    usesMealLogs: boolean,
-    hasTodayScan: boolean,
-  ): CalorieDataSource {
-    if (usesMealLogs) {
-      return 'meals';
-    }
-    if (hasTodayScan) {
-      return 'scan_today';
-    }
-    return 'none';
-  }
 
   private resolveNaiScoreDataSource(
     usesMealLogs: boolean,

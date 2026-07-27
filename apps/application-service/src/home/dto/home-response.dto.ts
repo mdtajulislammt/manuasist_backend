@@ -6,11 +6,7 @@ const calorieTargetSourceEnum = [
   'computed',
 ] as const;
 
-const calorieDataSourceEnum = [
-  'meals',
-  'scan_today',
-  'none',
-] as const;
+const calorieDataSourceEnum = ['meals', 'none'] as const;
 
 const naiScoreDataSourceEnum = ['meals', 'scan', 'none'] as const;
 
