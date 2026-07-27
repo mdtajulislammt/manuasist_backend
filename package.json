@@ -37,6 +37,8 @@
     "zod": "^3.25.76"
   },
   "scripts": {
+    "clean": "node scripts/clean-build.mjs",
+    "rebuild": "pnpm run clean && pnpm run build",
     "build": "pnpm run build:gateway && pnpm run build:application && pnpm run build:auth && pnpm run build:admin && pnpm run build:ai",
     "build:api-auth": "tsc -p libs/api-auth/tsconfig.build.json",
     "build:file-storage": "tsc -p libs/file-storage/tsconfig.build.json",
