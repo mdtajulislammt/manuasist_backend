@@ -16,6 +16,7 @@ import {
   computeScanNai,
   createOcrProvider,
   EmbeddingClient,
+  type ExtractedDishLine,
   extractMenuDishes,
   LlmClient,
   OpenFoodFactsProvider,
@@ -32,9 +33,18 @@ import { AdminFileClientService } from '../clients/admin-file-client.service';
 import { PatternsService } from '../patterns/patterns.service';
 import { PrismaService } from '../prisma.service';
 import { NutritionCacheService } from './nutrition-cache.service';
+import { mapWithConcurrency } from './map-with-concurrency';
 
 const NUTRITION_CACHE_TTL_SEC = 7 * 24 * 60 * 60;
 const NUTRITION_PROVIDER_KEY = 'nutrition_v1';
+const DEFAULT_DISH_CONCURRENCY = 4;
+
+type ProcessedDish = {
+  row: Prisma.DishCreateManyInput;
+  naiScore: number;
+  dishName: string;
+  allergenFlags: Record<string, boolean> | undefined;
+};
 
 @Injectable()
 export class ScanProcessorService {
@@ -44,6 +54,7 @@ export class ScanProcessorService {
   private readonly nutrition: CompositeNutritionProvider;
   private readonly ocr: OcrProviderPort;
   private readonly spoonacular: SpoonacularClient;
+  private readonly dishConcurrency: number;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -79,6 +90,11 @@ export class ScanProcessorService {
     this.spoonacular = new SpoonacularClient(
       this.config.get<string>('SPOONACULAR_API_KEY'),
     );
+    const configured = Number(this.config.get<string>('SCAN_DISH_CONCURRENCY'));
+    this.dishConcurrency =
+      Number.isFinite(configured) && configured > 0
+        ? Math.floor(configured)
+        : DEFAULT_DISH_CONCURRENCY;
   }
 
   async handleScanSubmitted(payload: ScanSubmittedV1Payload) {
@@ -102,59 +118,22 @@ export class ScanProcessorService {
       const { ocrText, parseMetadata } = await this.resolveMenuText(payload);
 
       const extraction = await extractMenuDishes(ocrText, this.llm);
-      const dishRows: Prisma.DishCreateManyInput[] = [];
-      const naiScores: number[] = [];
-      const dishNames: string[] = [];
-      const allergenFlagsList: Array<Record<string, boolean> | undefined> = [];
 
-      for (const line of extraction.dishes) {
-        const classification = await classifyDish(line, prefs, this.llm);
-        const nf = await this.lookupNutritionCached(line.name);
-        const dishImageUrl = await this.spoonacular.getDishImage(line.name);
-        const nai = computeDishNai({
-          dietScore: classification.dietScore,
-          nutritionConfidence: nf.confidence,
-          calories: nf.calories,
-          calorieTarget: prefs.calorieTarget,
-          weightGoal: prefs.weightGoal,
-          category: classification.category,
-          allergenFlags: classification.allergenFlags,
-          allergies: prefs.allergies,
-        });
-        naiScores.push(nai.naiScore);
-        dishNames.push(line.name);
-        allergenFlagsList.push(classification.allergenFlags);
+      const dishPhaseStarted = Date.now();
+      const processed = await mapWithConcurrency(
+        extraction.dishes,
+        this.dishConcurrency,
+        (line) => this.processDishLine(scanId, line, prefs),
+      );
+      const dishPhaseMs = Date.now() - dishPhaseStarted;
+      this.logger.log(
+        `Scan ${scanId} dish phase: ${processed.length} dishes in ${dishPhaseMs}ms (concurrency=${this.dishConcurrency})`,
+      );
 
-        const embedding = await this.embeddings.embedText(line.name);
-        dishRows.push({
-          id: randomUUID(),
-          scanId,
-          name: line.name.slice(0, 500),
-          imageUrl: dishImageUrl,
-          calories: nf.calories,
-          dietScore: classification.dietScore,
-          naiScore: nai.naiScore,
-          naiFactors: nai.factors as Prisma.InputJsonValue,
-          category: classification.category,
-          allergenFlags: classification.allergenFlags
-            ? (classification.allergenFlags as Prisma.InputJsonValue)
-            : undefined,
-          explanation: {
-            reasons: classification.reasons ?? [],
-            summary: classification.summary,
-          } as Prisma.InputJsonValue,
-          macros: {
-            proteinG: nf.proteinG,
-            carbG: nf.carbG,
-            fatG: nf.fatG,
-          } as Prisma.InputJsonValue,
-          nutritionSource: nf.source,
-          nutritionConfidence: nf.confidence,
-          embedding: embedding
-            ? (embedding as Prisma.InputJsonValue)
-            : undefined,
-        });
-      }
+      const dishRows = processed.map((p) => p.row);
+      const naiScores = processed.map((p) => p.naiScore);
+      const dishNames = processed.map((p) => p.dishName);
+      const allergenFlagsList = processed.map((p) => p.allergenFlags);
 
       const scanNai = computeScanNai(naiScores);
       const summary = this.buildScanSummary(scanNai.naiScore, dishRows, prefs);
@@ -176,6 +155,8 @@ export class ScanProcessorService {
               ...parseMetadata,
               dishCount: dishRows.length,
               llmConfigured: this.llm.isConfigured(),
+              dishConcurrency: this.dishConcurrency,
+              dishPhaseMs,
             } as Prisma.InputJsonValue,
           },
         });
@@ -223,6 +204,64 @@ export class ScanProcessorService {
         msg.slice(0, 2000),
       );
     }
+  }
+
+  private async processDishLine(
+    scanId: string,
+    line: ExtractedDishLine,
+    prefs: UserPreferenceHints,
+  ): Promise<ProcessedDish> {
+    const [classification, nf, dishImageUrl, embedding] = await Promise.all([
+      classifyDish(line, prefs, this.llm),
+      this.lookupNutritionCached(line.name),
+      this.spoonacular.getDishImage(line.name),
+      this.embeddings.embedText(line.name),
+    ]);
+
+    const nai = computeDishNai({
+      dietScore: classification.dietScore,
+      nutritionConfidence: nf.confidence,
+      calories: nf.calories,
+      calorieTarget: prefs.calorieTarget,
+      weightGoal: prefs.weightGoal,
+      category: classification.category,
+      allergenFlags: classification.allergenFlags,
+      allergies: prefs.allergies,
+    });
+
+    return {
+      naiScore: nai.naiScore,
+      dishName: line.name,
+      allergenFlags: classification.allergenFlags,
+      row: {
+        id: randomUUID(),
+        scanId,
+        name: line.name.slice(0, 500),
+        imageUrl: dishImageUrl,
+        calories: nf.calories,
+        dietScore: classification.dietScore,
+        naiScore: nai.naiScore,
+        naiFactors: nai.factors as Prisma.InputJsonValue,
+        category: classification.category,
+        allergenFlags: classification.allergenFlags
+          ? (classification.allergenFlags as Prisma.InputJsonValue)
+          : undefined,
+        explanation: {
+          reasons: classification.reasons ?? [],
+          summary: classification.summary,
+        } as Prisma.InputJsonValue,
+        macros: {
+          proteinG: nf.proteinG,
+          carbG: nf.carbG,
+          fatG: nf.fatG,
+        } as Prisma.InputJsonValue,
+        nutritionSource: nf.source,
+        nutritionConfidence: nf.confidence,
+        embedding: embedding
+          ? (embedding as Prisma.InputJsonValue)
+          : undefined,
+      },
+    };
   }
 
   private async emitScanFailedBestEffort(
