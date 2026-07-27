@@ -11,7 +11,7 @@ import {
   type MenuAssistJwtPayload,
 } from '@menu-assist/api-auth';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { Server, Socket } from 'socket.io';
+import { Namespace, Socket } from 'socket.io';
 
 type NotificationSocketPayload = {
   id: string;
@@ -30,8 +30,9 @@ type NotificationSocketPayload = {
 })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect {
+  /** Namespaced gateway — Nest injects a Namespace, not the root Server. */
   @WebSocketServer()
-  private server?: Server;
+  private server?: Namespace;
 
   private readonly logger = new Logger(NotificationsGateway.name);
   private jwks?: ReturnType<typeof createRemoteJWKSet>;
@@ -96,7 +97,7 @@ export class NotificationsGateway
     if (!this.server) {
       return false;
     }
-    const room = this.server.sockets.adapter.rooms.get(this.userRoom(userId));
+    const room = this.server.adapter.rooms.get(this.userRoom(userId));
     return Boolean(room?.size);
   }
 
