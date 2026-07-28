@@ -65,6 +65,11 @@ describe('AuthService JWT', () => {
     service = new AuthService(
       prisma as unknown as PrismaService,
       config as unknown as ConfigService,
+      { add: jest.fn().mockResolvedValue({}) } as never,
+      {
+        ttl: jest.fn().mockResolvedValue(-2),
+        set: jest.fn().mockResolvedValue('OK'),
+      } as never,
     );
     await service.onModuleInit();
   });
@@ -152,6 +157,11 @@ describe('AuthService refresh', () => {
     service = new AuthService(
       prisma as unknown as PrismaService,
       config as unknown as ConfigService,
+      { add: jest.fn().mockResolvedValue({}) } as never,
+      {
+        ttl: jest.fn().mockResolvedValue(-2),
+        set: jest.fn().mockResolvedValue('OK'),
+      } as never,
     );
     await service.onModuleInit();
   });
@@ -264,6 +274,11 @@ describe('AuthService User Retrieval and Search', () => {
     service = new AuthService(
       prisma as unknown as PrismaService,
       config as unknown as ConfigService,
+      { add: jest.fn().mockResolvedValue({}) } as never,
+      {
+        ttl: jest.fn().mockResolvedValue(-2),
+        set: jest.fn().mockResolvedValue('OK'),
+      } as never,
     );
     await service.onModuleInit();
   });
@@ -418,6 +433,11 @@ describe('AuthService mobile OAuth', () => {
     service = new AuthService(
       prisma as unknown as PrismaService,
       config as unknown as ConfigService,
+      { add: jest.fn().mockResolvedValue({}) } as never,
+      {
+        ttl: jest.fn().mockResolvedValue(-2),
+        set: jest.fn().mockResolvedValue('OK'),
+      } as never,
     );
     await service.onModuleInit();
   });

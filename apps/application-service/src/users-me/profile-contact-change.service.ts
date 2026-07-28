@@ -96,10 +96,12 @@ export class ProfileContactChangeService implements OnModuleInit, OnModuleDestro
     );
 
     try {
+      // Auth-service queues SMTP asynchronously, so this wait is DB/queue only
+      // (not Gmail latency). Keeps exact expires_in / error semantics for clients.
       await this.queueEvents.waitUntilReady();
       const result = await job.waitUntilFinished(
         this.queueEvents,
-        30_000,
+        15_000,
       );
       return result as ProfileContactChangePending;
     } catch (error) {

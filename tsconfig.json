@@ -13,11 +13,10 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "paths": {
-      "@contracts/*": ["libs/contracts/src/*"],
-      "@messaging/*": ["libs/messaging/src/*"],
-      "@api-auth/*": ["libs/api-auth/src/*"]
+      "@contracts/*": ["./libs/contracts/src/*"],
+      "@messaging/*": ["./libs/messaging/src/*"],
+      "@api-auth/*": ["./libs/api-auth/src/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

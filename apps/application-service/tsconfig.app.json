@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../../dist/apps/application-service",
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolvePackageJsonExports": false
   },
   "include": [

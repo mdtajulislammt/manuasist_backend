@@ -117,6 +117,9 @@ services:
       AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-2646}
       AUTH_DATABASE_URL: postgresql://postgres:root@postgres:5432/menu_assist_auth_service
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      SIGNUP_OTP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_OTP_RESEND_COOLDOWN_SECONDS:-60}
+      PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS: ${PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS:-60}
       JWT_ISSUER: http://auth-service:${AUTH_SERVICE_PORT:-2646}
       JWT_AUDIENCE: menu-assist-api
       JWT_KID: menu-assist-rs256
@@ -130,6 +133,8 @@ services:
       - '${AUTH_SERVICE_PORT:-2646}:${AUTH_SERVICE_PORT:-2646}'
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_started

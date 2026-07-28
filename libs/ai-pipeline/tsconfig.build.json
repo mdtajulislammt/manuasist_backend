@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolvePackageJsonExports": false,
     "declaration": true,
     "noEmit": false,

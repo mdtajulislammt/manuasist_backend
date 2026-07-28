@@ -2,13 +2,14 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/auth-service",
+    "rootDir": "../..",
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolvePackageJsonExports": false,
-    "baseUrl": "../../",
     "paths": {
-      "jose": ["node_modules/jose/dist/types/index.d.ts"]
+      "jose": ["../../node_modules/jose/dist/types/index.d.ts"]
     }
   },
-  "include": ["src/**/*.ts", "generated/**/*.ts", "../../libs/contracts/src/**/*.ts"]
+  "include": ["src/**/*.ts", "generated/**/*.ts", "../../libs/contracts/src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts"]
 }

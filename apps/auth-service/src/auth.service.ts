@@ -2,16 +2,21 @@ import {
   BadRequestException,
   ConflictException,
   HttpException,
+  HttpStatus,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
   OnModuleInit,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import type Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
-import * as nodemailer from 'nodemailer';
 // @ts-ignore
 import { decodeJwt } from 'jose';
 // @ts-ignore
@@ -43,6 +48,13 @@ import {
   extractSocialProfileHints,
   type SocialProfileHints,
 } from './utils/social-profile.util';
+import {
+  AUTH_OTP_EMAIL_QUEUE,
+  REDIS_CLIENT,
+  authOtpCooldownKey,
+  type AuthOtpEmailJobData,
+  type AuthOtpEmailPurpose,
+} from './otp/auth-otp.constants';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -182,6 +194,9 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @InjectQueue(AUTH_OTP_EMAIL_QUEUE)
+    private readonly otpEmailQueue: Queue<AuthOtpEmailJobData>,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) { }
 
   async onModuleInit() {
@@ -317,6 +332,20 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('CONTACT_CHANGE_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private otpResendCooldownSec(purpose: AuthOtpEmailPurpose): number {
+    if (purpose === 'PASSWORD_RESET') {
+      return (
+        this.config.get<number>('PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS') ??
+        this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ??
+        60
+      );
+    }
+    if (purpose === 'SIGNUP') {
+      return this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ?? 60;
+    }
+    return 0;
+  }
+
   private otpDebugResponse(otp: string): { otp?: string } {
     const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
       .trim()
@@ -331,64 +360,69 @@ export class AuthService implements OnModuleInit {
     return randomInt(0, 1_000_000).toString().padStart(6, '0');
   }
 
-  private async sendOtpEmail(input: {
-    to: string;
-    otp: string;
-    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE';
-    expiresInSeconds: number;
-  }): Promise<void> {
-    const { to, otp, purpose, expiresInSeconds } = input;
-    const gmailUser = this.config.get<string>('GMAIL_APP_USER');
-    const gmailAppPassword = this.config.get<string>('GMAIL_APP_PASSWORD');
-
-    // Keep local dev unblocked if SMTP is not configured yet.
-    if (!gmailUser || !gmailAppPassword) {
-      this.logger.warn(
-        `Gmail SMTP credentials missing; falling back to log for ${purpose} OTP`,
-      );
-      this.logger.log(`${purpose} OTP for ${to}: ${otp}`);
+  private async assertOtpResendAllowed(
+    purpose: AuthOtpEmailPurpose,
+    identifier: string,
+  ): Promise<void> {
+    const cooldownSec = this.otpResendCooldownSec(purpose);
+    if (cooldownSec <= 0) {
       return;
     }
+    const key = authOtpCooldownKey(purpose, identifier);
+    const remaining = await this.redis.ttl(key);
+    if (remaining > 0) {
+      throw new HttpException(
+        `Please wait ${remaining} seconds before requesting another verification code`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
-      },
-    });
-    const appName = this.config.get<string>('APP_NAME') ?? 'Menu Assist';
-    const from = this.config.get<string>('OTP_EMAIL_FROM') ?? gmailUser;
-    const minutes = Math.max(1, Math.floor(expiresInSeconds / 60));
-    const purposeText =
-      purpose === 'PASSWORD_RESET'
-        ? 'password reset verification'
-        : purpose === 'CONTACT_CHANGE'
-          ? 'contact change verification'
-          : 'account verification';
-    const subject = `${appName} ${purposeText} code`;
-    const text = `Your ${appName} OTP code is ${otp}. It expires in ${minutes} minute(s).`;
+  private async markOtpResendCooldown(
+    purpose: AuthOtpEmailPurpose,
+    identifier: string,
+  ): Promise<void> {
+    const cooldownSec = this.otpResendCooldownSec(purpose);
+    if (cooldownSec <= 0) {
+      return;
+    }
+    await this.redis.set(
+      authOtpCooldownKey(purpose, identifier),
+      '1',
+      'EX',
+      cooldownSec,
+    );
+  }
 
+  private async enqueueOtpEmail(job: AuthOtpEmailJobData): Promise<void> {
     try {
-      await transporter.sendMail({
-        from,
-        to,
-        subject,
-        text,
+      await this.otpEmailQueue.add('send-otp-email', job, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: true,
+        removeOnFail: 50,
       });
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${to}`, error as Error);
-      throw new InternalServerErrorException('Failed to send OTP email');
+      this.logger.error(
+        `Failed to enqueue ${job.purpose} OTP email to ${job.to}: ${String(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Verification email could not be queued. Please try again shortly.',
+      );
     }
   }
 
   private async createOtpChallenge(
     userId: string,
     channel: 'EMAIL' | 'SMS',
-    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE',
+    purpose: AuthOtpEmailPurpose,
     identifier: string,
     expiresInSeconds: number,
   ): Promise<{ otp: string }> {
+    if (purpose === 'SIGNUP' || purpose === 'PASSWORD_RESET') {
+      await this.assertOtpResendAllowed(purpose, identifier);
+    }
+
     const otp = this.generateOtp6();
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
@@ -404,7 +438,7 @@ export class AuthService implements OnModuleInit {
       },
     });
 
-    await this.prisma.authOtpToken.create({
+    const token = await this.prisma.authOtpToken.create({
       data: {
         userId,
         codeHash: sha256Hex(otp),
@@ -416,12 +450,24 @@ export class AuthService implements OnModuleInit {
     });
 
     if (channel === 'EMAIL') {
-      await this.sendOtpEmail({
-        to: identifier,
-        otp,
-        purpose,
-        expiresInSeconds,
-      });
+      try {
+        await this.enqueueOtpEmail({
+          to: identifier,
+          otp,
+          purpose,
+          expiresInSeconds,
+        });
+      } catch (error) {
+        await this.prisma.authOtpToken.update({
+          where: { id: token.id },
+          data: { consumedAt: new Date() },
+        });
+        throw error;
+      }
+    }
+
+    if (purpose === 'SIGNUP' || purpose === 'PASSWORD_RESET') {
+      await this.markOtpResendCooldown(purpose, identifier);
     }
 
     // TODO: replace with real SMS provider integration.
@@ -1794,7 +1840,7 @@ export class AuthService implements OnModuleInit {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -2074,7 +2120,7 @@ export class AuthService implements OnModuleInit {
       if (input.provider === 'google') {
         const audiences = this.parseAudienceList(
           this.config.get<string>('GOOGLE_CLIENT_ID') ??
-            this.config.get<string>('OIDC_CLIENT_ID'),
+          this.config.get<string>('OIDC_CLIENT_ID'),
         );
         if (audiences.length === 0) {
           throw new BadRequestException('Google sign-in is not configured');
