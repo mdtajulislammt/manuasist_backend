@@ -1919,7 +1919,9 @@ export class AuthService implements OnModuleInit {
     subject: string,
     email: string | undefined | null,
   ) {
-    const existing = await this.prisma.authIdentity.findUnique({
+    const normalizedEmail = email?.trim().toLowerCase() || undefined;
+
+    const existingIdentity = await this.prisma.authIdentity.findUnique({
       where: {
         issuer_subject: { issuer, subject },
       },
@@ -1932,40 +1934,108 @@ export class AuthService implements OnModuleInit {
       },
     });
 
-    if (existing) {
-      if (email && existing.user.email !== email) {
+    if (existingIdentity) {
+      if (
+        normalizedEmail &&
+        existingIdentity.user.email !== normalizedEmail
+      ) {
         await this.prisma.authUser.update({
-          where: { id: existing.userId },
-          data: { email },
+          where: { id: existingIdentity.userId },
+          data: {
+            email: normalizedEmail,
+            emailVerifiedAt:
+              existingIdentity.user.emailVerifiedAt ?? new Date(),
+          },
         });
         await this.prisma.authIdentity.update({
-          where: { id: existing.id },
-          data: { email },
+          where: { id: existingIdentity.id },
+          data: { email: normalizedEmail },
+        });
+        return this.prisma.authUser.findUniqueOrThrow({
+          where: { id: existingIdentity.userId },
+          include: { roles: { include: { role: true } } },
         });
       }
-      return existing.user;
+      return existingIdentity.user;
     }
 
-    return this.prisma.authUser.create({
-      data: {
-        email: email ?? undefined,
-        identities: {
-          create: {
+    // Link OAuth identity to an existing email/password (or other) account.
+    if (normalizedEmail) {
+      const existingByEmail = await this.prisma.authUser.findUnique({
+        where: { email: normalizedEmail },
+        include: { roles: { include: { role: true } } },
+      });
+      if (existingByEmail) {
+        await this.prisma.authIdentity.create({
+          data: {
+            userId: existingByEmail.id,
             issuer,
             subject,
-            email: email ?? undefined,
+            email: normalizedEmail,
+          },
+        });
+        if (!existingByEmail.emailVerifiedAt) {
+          await this.prisma.authUser.update({
+            where: { id: existingByEmail.id },
+            data: { emailVerifiedAt: new Date() },
+          });
+        }
+        return this.prisma.authUser.findUniqueOrThrow({
+          where: { id: existingByEmail.id },
+          include: { roles: { include: { role: true } } },
+        });
+      }
+    }
+
+    try {
+      return await this.prisma.authUser.create({
+        data: {
+          email: normalizedEmail,
+          emailVerifiedAt: normalizedEmail ? new Date() : undefined,
+          identities: {
+            create: {
+              issuer,
+              subject,
+              email: normalizedEmail,
+            },
+          },
+          roles: {
+            create: {
+              role: { connect: { name: 'user' } },
+            },
           },
         },
-        roles: {
-          create: {
-            role: { connect: { name: 'user' } },
-          },
+        include: {
+          roles: { include: { role: true } },
         },
-      },
-      include: {
-        roles: { include: { role: true } },
-      },
-    });
+      });
+    } catch (error) {
+      // Concurrent first login with same email: attach identity to the winner.
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        normalizedEmail
+      ) {
+        const raced = await this.prisma.authUser.findUnique({
+          where: { email: normalizedEmail },
+          include: { roles: { include: { role: true } } },
+        });
+        if (raced) {
+          await this.prisma.authIdentity.upsert({
+            where: { issuer_subject: { issuer, subject } },
+            create: {
+              userId: raced.id,
+              issuer,
+              subject,
+              email: normalizedEmail,
+            },
+            update: { email: normalizedEmail },
+          });
+          return raced;
+        }
+      }
+      throw error;
+    }
   }
 
   // --- PKCE (from PkceStateStore) ---
@@ -2079,26 +2149,48 @@ export class AuthService implements OnModuleInit {
     fullName?: string;
     avatarUrl?: string;
   }): Promise<MobileOAuthResponse> {
-    const claims = await this.verifyMobileIdToken(input);
-    const iss = typeof claims.iss === 'string' ? claims.iss : undefined;
-    const sub = typeof claims.sub === 'string' ? claims.sub : undefined;
-    if (!iss || !sub) {
-      throw new UnauthorizedException('ID token missing iss or sub');
+    try {
+      const claims = await this.verifyMobileIdToken(input);
+      const iss = typeof claims.iss === 'string' ? claims.iss : undefined;
+      const sub = typeof claims.sub === 'string' ? claims.sub : undefined;
+      if (!iss || !sub) {
+        throw new UnauthorizedException('ID token missing iss or sub');
+      }
+
+      const email =
+        typeof claims.email === 'string'
+          ? claims.email
+          : typeof claims.preferred_username === 'string'
+            ? claims.preferred_username
+            : undefined;
+
+      const user = await this.upsertOidcUser(iss, sub, email);
+
+      return this.finalizeOauthSignIn(user.id, claims, {
+        fullName: input.fullName,
+        avatarUrl: input.avatarUrl,
+      });
+    } catch (error) {
+      this.logger.error(
+        `handleMobileOAuth error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
+      }
+      throw new UnauthorizedException('Invalid or expired ID token');
     }
-
-    const email =
-      typeof claims.email === 'string'
-        ? claims.email
-        : typeof claims.preferred_username === 'string'
-          ? claims.preferred_username
-          : undefined;
-
-    const user = await this.upsertOidcUser(iss, sub, email);
-
-    return this.finalizeOauthSignIn(user.id, claims, {
-      fullName: input.fullName,
-      avatarUrl: input.avatarUrl,
-    });
   }
 
   private parseAudienceList(raw: string | undefined): string[] {
