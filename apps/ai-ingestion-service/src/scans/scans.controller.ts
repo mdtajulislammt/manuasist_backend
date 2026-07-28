@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { CurrentUserId } from '../decorators/current-user-id.decorator';
+import { CreateImageScanDto } from './dto/create-image-scan.dto';
 import { CreateTextScanDto } from './dto/create-text-scan.dto';
 import { ListScansQueryDto } from './dto/list-scans-query.dto';
 import { ScansService } from './scans.service';
@@ -54,6 +55,9 @@ export class ScansController {
       required: ['file'],
       properties: {
         file: { type: 'string', format: 'binary' },
+        restaurantName: { type: 'string' },
+        restaurantPlaceId: { type: 'string' },
+        restaurantAddress: { type: 'string' },
       },
     },
   })
@@ -67,12 +71,13 @@ export class ScansController {
   createFromImage(
     @CurrentUserId() userId: string | undefined,
     @UploadedFile() file: MulterFile | undefined,
+    @Body() dto: CreateImageScanDto,
   ) {
     const id = this.requireUserId(userId);
     if (!file?.buffer?.length) {
       throw new BadRequestException('Missing multipart field `file`');
     }
-    return this.scans.createScanFromImage(id, file);
+    return this.scans.createScanFromImage(id, file, dto);
   }
 
   @Post('text')

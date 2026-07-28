@@ -89,6 +89,9 @@ export const MenuScanScalarFieldEnum = {
   naiScore: 'naiScore',
   naiBreakdown: 'naiBreakdown',
   summary: 'summary',
+  restaurantName: 'restaurantName',
+  restaurantPlaceId: 'restaurantPlaceId',
+  restaurantAddress: 'restaurantAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

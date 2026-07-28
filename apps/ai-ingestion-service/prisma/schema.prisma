@@ -35,6 +35,9 @@ model MenuScan {
   naiScore       Int?           @map("nai_score")
   naiBreakdown   Json?          @map("nai_breakdown")
   summary        String?
+  restaurantName    String? @map("restaurant_name")
+  restaurantPlaceId String? @map("restaurant_place_id")
+  restaurantAddress String? @map("restaurant_address")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 

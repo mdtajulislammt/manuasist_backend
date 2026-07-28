@@ -16,6 +16,7 @@ import { AdminFileClientService } from '../clients/admin-file-client.service';
 import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 import { ListScansQueryDto } from './dto/list-scans-query.dto';
+import { CreateImageScanDto } from './dto/create-image-scan.dto';
 import { ScanProcessorService } from './scan-processor.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -54,7 +55,11 @@ export class ScansService {
 
   private readonly logger = new Logger(ScansService.name);
 
-  async createScanFromImage(userId: string, file: MulterFile) {
+  async createScanFromImage(
+    userId: string,
+    file: MulterFile,
+    context: CreateImageScanDto = {},
+  ) {
     await this.applicationClient.assertCanCreateScan(userId);
     const mime = (file.mimetype || '').toLowerCase();
     if (!ALLOWED_MIME.has(mime)) {
@@ -69,6 +74,10 @@ export class ScansService {
     const stored = await this.adminFiles.uploadMenuScan(file);
     const imageUrl = this.adminFiles.buildPublicImageUrl(stored.storedName);
 
+    const restaurantName = context.restaurantName?.trim() || null;
+    const restaurantPlaceId = context.restaurantPlaceId?.trim() || null;
+    const restaurantAddress = context.restaurantAddress?.trim() || null;
+
     try {
       const scan = await this.prisma.menuScan.create({
         data: {
@@ -77,6 +86,9 @@ export class ScansService {
           contentType: stored.contentType,
           imageUrl,
           status: MenuScanStatus.PENDING,
+          restaurantName,
+          restaurantPlaceId,
+          restaurantAddress,
         },
       });
       this.dispatchScanSubmitted({
@@ -221,6 +233,9 @@ export class ScansService {
           naiImpactPoints: this.naiImpactPoints(scan.naiScore),
           summary: scan.summary,
           topDishes: this.topDishNames(scan.dishes),
+          restaurantName: scan.restaurantName,
+          restaurantPlaceId: scan.restaurantPlaceId,
+          restaurantAddress: scan.restaurantAddress,
         };
       });
       return {
@@ -542,10 +557,15 @@ export class ScansService {
   }
 
   private buildHistoryTitle(scan: {
+    restaurantName?: string | null;
     menuText: string | null;
     rawOcrText: string | null;
     summary: string | null;
   }): string {
+    const restaurantName = scan.restaurantName?.trim();
+    if (restaurantName) {
+      return this.compactTitle(restaurantName);
+    }
     const firstLine = (scan.menuText ?? scan.rawOcrText ?? '')
       .split(/\r?\n/)
       .map((line) => line.trim())
