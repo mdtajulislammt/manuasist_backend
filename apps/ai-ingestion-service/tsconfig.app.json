@@ -2,8 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/ai-ingestion-service",
+    "rootDir": "../..",
     "module": "CommonJS",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolvePackageJsonExports": false
   },
   "include": [
@@ -12,5 +14,6 @@
     "../../libs/contracts/src/**/*.ts",
     "../../libs/messaging/src/**/*.ts",
     "../../libs/ai-pipeline/src/**/*.ts"
-  ]
+  ],
+  "exclude": ["src/**/*.spec.ts"]
 }

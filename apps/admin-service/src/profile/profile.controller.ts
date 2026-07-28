@@ -1,4 +1,5 @@
-import { Roles } from "@api-auth/roles.decorator";
+import { CurrentUserId } from '@menu-assist/api-auth';
+import { Roles } from '@api-auth/roles.decorator';
 
 import {
   Body,
@@ -8,9 +9,9 @@ import {
   UnauthorizedException,
   UploadedFiles,
   UseInterceptors,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-import { FileFieldsInterceptor } from "@nestjs/platform-express";
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import {
   ApiBearerAuth,
@@ -20,15 +21,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
-} from "@nestjs/swagger";
+} from '@nestjs/swagger';
 
-import { memoryStorage } from "multer";
+import { memoryStorage } from 'multer';
 
-import { CurrentUserId } from "apps/ai-ingestion-service/src/decorators/current-user-id.decorator";
+import { ProfileService } from './profile.service';
 
-import { ProfileService } from "./profile.service";
-
-import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 type MulterFile = {
   buffer: Buffer;

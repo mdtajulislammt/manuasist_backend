@@ -4,7 +4,8 @@
     "outDir": "../../dist/apps/auth-service",
     "rootDir": "../..",
     "module": "CommonJS",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolvePackageJsonExports": false,
     "paths": {
       "jose": ["../../node_modules/jose/dist/types/index.d.ts"]

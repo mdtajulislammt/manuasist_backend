@@ -2,13 +2,16 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/admin-service",
+    "rootDir": "../..",
     "module": "CommonJS",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolvePackageJsonExports": false
   },
   "include": [
     "src/**/*.ts",
     "generated/**/*.ts",
     "../../libs/contracts/src/**/*.ts"
-  ]
+  ],
+  "exclude": ["src/**/*.spec.ts"]
 }
