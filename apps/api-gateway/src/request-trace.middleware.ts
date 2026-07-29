@@ -19,6 +19,17 @@ const sensitiveQueryKeys = [
 
 export function createRequestTraceMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Socket.IO long-polling / handshake is noisy and long-lived — skip tracing.
+    const url = req.originalUrl || req.url || '';
+    if (
+      url === '/socket.io' ||
+      url.startsWith('/socket.io/') ||
+      url.startsWith('/socket.io?')
+    ) {
+      next();
+      return;
+    }
+
     const startedAt = process.hrtime.bigint();
     const requestId = getOrCreateRequestId(req);
 

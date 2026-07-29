@@ -27,6 +27,14 @@ type NotificationSocketPayload = {
 @WebSocketGateway({
   namespace: '/notifications',
   cors: { origin: true, credentials: true },
+  // Allow polling fallback when websocket is blocked by a proxy/network.
+  transports: ['websocket', 'polling'],
+  // Mobile + reverse-proxy: give more room before declaring the client dead.
+  pingInterval: 20_000,
+  pingTimeout: 60_000,
+  connectTimeout: 45_000,
+  allowUpgrades: true,
+  perMessageDeflate: false,
 })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect {
@@ -49,6 +57,9 @@ export class NotificationsGateway
       }
       client.data.userId = payload.sub;
       await client.join(this.userRoom(payload.sub));
+      this.logger.debug(
+        `Notification socket connected for user ${payload.sub} id=${client.id}`,
+      );
     } catch (error) {
       this.logger.warn(
         `Rejected notification socket: ${error instanceof Error ? error.message : String(error)
@@ -61,7 +72,9 @@ export class NotificationsGateway
   handleDisconnect(client: Socket) {
     const userId = typeof client.data.userId === 'string' ? client.data.userId : null;
     if (userId) {
-      this.logger.debug(`Notification socket disconnected for user ${userId}`);
+      this.logger.debug(
+        `Notification socket disconnected for user ${userId} reason=${client.disconnected ? 'client' : 'server'}`,
+      );
     }
   }
 

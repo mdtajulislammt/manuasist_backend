@@ -10,6 +10,7 @@ import {
 import { config as loadEnv } from 'dotenv';
 import express, { json } from 'express';
 import { AppModule } from './app.module';
+import { createSocketIoProxyBridge } from './gateway-socket-proxy';
 import { GatewayProxyService } from './gateway-proxy.service';
 import { createRequestTraceMiddleware } from './request-trace.middleware';
 
@@ -68,6 +69,9 @@ async function bootstrap() {
   expressApp.use(createRequestTraceMiddleware());
   expressApp.use(json({ limit: '2mb' }));
 
+  const socketIoProxy = createSocketIoProxyBridge();
+  socketIoProxy.mountHttp(expressApp);
+
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(expressApp),
@@ -118,7 +122,9 @@ async function bootstrap() {
     });
   }
 
-  await app.listen(process.env.API_GATEWAY_PORT ?? 2645);
+  const port = Number(process.env.API_GATEWAY_PORT ?? 2645);
+  const httpServer = await app.listen(port);
+  socketIoProxy.attachUpgrade(httpServer);
 }
 
 bootstrap();
