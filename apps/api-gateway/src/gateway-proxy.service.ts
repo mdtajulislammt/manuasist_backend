@@ -176,6 +176,13 @@ export class GatewayProxyService {
       'transfer-encoding',
       'content-length',
       'connection',
+      // Upstream must not override gateway CORS decisions.
+      'access-control-allow-origin',
+      'access-control-allow-credentials',
+      'access-control-allow-headers',
+      'access-control-allow-methods',
+      'access-control-expose-headers',
+      'access-control-max-age',
     ]);
     headers.forEach((value, name) => {
       if (!blockedHeaders.has(name.toLowerCase())) {

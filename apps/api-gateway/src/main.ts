@@ -10,6 +10,10 @@ import {
 import { config as loadEnv } from 'dotenv';
 import express, { json } from 'express';
 import { AppModule } from './app.module';
+import {
+  applyCorsHeaders,
+  parseCorsOrigins,
+} from './gateway-cors';
 import { createSocketIoProxyBridge } from './gateway-socket-proxy';
 import { GatewayProxyService } from './gateway-proxy.service';
 import { createRequestTraceMiddleware } from './request-trace.middleware';
@@ -79,17 +83,32 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Enable cors
-  const corsOrigin = process.env.CORS_ORIGIN?.split(',') || [
-    'http://localhost:3001',
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'http://10.10.9.82:3001',
-    'http://10.10.9.82:3002',
-    'http://10.10.9.82:3000',
-    'https://menuassistanikstudio-phi.vercel.app',
-  ];
-  app.enableCors({ origin: corsOrigin, credentials: true });
+  // Merge env + defaults (env alone used to hide the Vercel origin).
+  const corsOrigin = parseCorsOrigins(process.env.CORS_ORIGIN);
+  app.enableCors({
+    origin: (
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!requestOrigin) {
+        callback(null, true);
+        return;
+      }
+      const normalized = requestOrigin.replace(/\/+$/, '').trim();
+      callback(null, corsOrigin.includes(normalized));
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'X-Request-Id',
+    ],
+    exposedHeaders: ['x-request-id'],
+  });
 
   const proxy = app.get(GatewayProxyService);
 
@@ -102,6 +121,16 @@ async function bootstrap() {
 
   for (const [mountPath, routePrefix, envKey] of mounts) {
     app.use(mountPath, async (req: any, res: any, next: any) => {
+      // Answer preflight here so upstream services cannot break browser CORS.
+      if (req.method === 'OPTIONS') {
+        applyCorsHeaders(req, res, corsOrigin);
+        res.status(204).end();
+        return;
+      }
+
+      // Set CORS before the proxy writes the body (headers must be ready first).
+      applyCorsHeaders(req, res, corsOrigin);
+
       try {
         await proxy.proxyTo(req, res, routePrefix, envKey);
       } catch (error) {
@@ -109,6 +138,7 @@ async function bootstrap() {
           next(error);
           return;
         }
+        applyCorsHeaders(req, res, corsOrigin);
         const status =
           error instanceof HttpException ? error.getStatus() : 502;
         const message = resolveExceptionMessage(error);
