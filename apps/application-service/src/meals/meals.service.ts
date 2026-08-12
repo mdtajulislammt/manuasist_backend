@@ -12,8 +12,13 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { MealLogEntry } from '../../generated/prisma/client';
+import {
+  AdminInternalClientService,
+  type AdminOnboardingStep,
+} from '../admin-internal/admin-internal-client.service';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
 import { PrismaService } from '../prisma.service';
+import { extractDietaryRestrictions } from '../users-me/extract-dietary-restrictions.util';
 import {
   AiIngestionDishesClientService,
   type IngestionDishPayload,
@@ -34,6 +39,7 @@ export class MealsService {
     private readonly prisma: PrismaService,
     private readonly aiDishes: AiIngestionDishesClientService,
     private readonly aiHome: AiIngestionHomeClientService,
+    private readonly admin: AdminInternalClientService,
   ) { }
 
   async getPrefill(userId: string, dishId: string) {
@@ -255,15 +261,16 @@ export class MealsService {
   }
 
   private async loadUserMealContext(userId: string): Promise<UserMealContext> {
-    const [preferences, answers] = await Promise.all([
+    const [preferences, answers, onboardingSteps] = await Promise.all([
       this.prisma.preferences.findUnique({ where: { userId } }),
       this.prisma.userOnboardingAnswer.findMany({ where: { userId } }),
+      this.loadActiveOnboardingSteps(),
     ]);
 
     return {
       calorieTarget: preferences?.calorieTarget ?? null,
       weightGoal: preferences?.weightGoal ?? null,
-      allergies: this.extractAllergies(answers),
+      allergies: extractDietaryRestrictions(answers, onboardingSteps),
     };
   }
 
@@ -429,31 +436,12 @@ export class MealsService {
     };
   }
 
-  private extractAllergies(
-    answers: Array<{ value: unknown }>,
-  ): string[] {
-    const out = new Set<string>();
-    for (const row of answers) {
-      const v = row.value;
-      if (Array.isArray(v)) {
-        for (const item of v) {
-          if (typeof item === 'string' && item.trim()) {
-            out.add(item.trim());
-          }
-        }
-        continue;
-      }
-      if (v && typeof v === 'object' && !Array.isArray(v)) {
-        const o = v as Record<string, unknown>;
-        if (Array.isArray(o.allergies)) {
-          for (const item of o.allergies) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-      }
+  private async loadActiveOnboardingSteps(): Promise<AdminOnboardingStep[]> {
+    try {
+      const flow = await this.admin.getActiveFlow();
+      return flow.data.steps;
+    } catch {
+      return [];
     }
-    return [...out];
   }
 }

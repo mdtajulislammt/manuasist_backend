@@ -23,6 +23,8 @@ Return JSON only:
   "summary"?: "one short sentence"
 }
 RECOMMENDED = likely fits their goals; CAUTION = uncertain or moderate concern; AVOID = likely conflicts (allergens, diet conflict).
+Only values explicitly provided in the allergies field may be treated as the diner's allergens or intolerances.
+Cuisine preferences (for example Italian, Japanese, or Mexican) are positive preferences, never allergens or restrictions.
 Always include at least one reason with a clear message.`;
 
 export function classifyDishHeuristic(

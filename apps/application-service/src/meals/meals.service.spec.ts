@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { AdminInternalClientService } from '../admin-internal/admin-internal-client.service';
 import { AiIngestionDishesClientService } from './ai-ingestion-dishes-client.service';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
 import { PrismaService } from '../prisma.service';
@@ -13,6 +14,7 @@ describe('MealsService', () => {
     userOnboardingAnswer: { findMany: jest.Mock };
   };
   let aiHome: { getHomeSummary: jest.Mock };
+  let admin: { getActiveFlow: jest.Mock };
 
   beforeEach(async () => {
     aiDishes = { getDishForMealPrefill: jest.fn() };
@@ -25,6 +27,11 @@ describe('MealsService', () => {
       userOnboardingAnswer: { findMany: jest.fn().mockResolvedValue([]) },
     };
     aiHome = { getHomeSummary: jest.fn().mockResolvedValue({ latestScore: 72 }) };
+    admin = {
+      getActiveFlow: jest.fn().mockResolvedValue({
+        data: { steps: [] },
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -40,6 +47,10 @@ describe('MealsService', () => {
         {
           provide: AiIngestionHomeClientService,
           useValue: aiHome,
+        },
+        {
+          provide: AdminInternalClientService,
+          useValue: admin,
         },
       ],
     }).compile();

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AdminInternalClientService,
+  type AdminOnboardingStep,
+} from '../admin-internal/admin-internal-client.service';
 import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
+import { extractDietaryRestrictions } from '../users-me/extract-dietary-restrictions.util';
 
 export type DietaryContextPayload = {
   userId: string;
@@ -23,18 +28,20 @@ export class InternalUsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
+    private readonly admin: AdminInternalClientService,
   ) { }
 
   async getDietaryContext(userId: string) {
-    const [preferences, answers] = await Promise.all([
+    const [preferences, answers, onboardingSteps] = await Promise.all([
       this.prisma.preferences.findUnique({ where: { userId } }),
       this.prisma.userOnboardingAnswer.findMany({
         where: { userId },
         orderBy: { answeredAt: 'asc' },
       }),
+      this.loadActiveOnboardingSteps(),
     ]);
 
-    const allergies = this.extractAllergies(answers);
+    const allergies = extractDietaryRestrictions(answers, onboardingSteps);
 
     const data: DietaryContextPayload = {
       userId,
@@ -141,38 +148,14 @@ export class InternalUsersService {
   }
 
 
-  private extractAllergies(
-    answers: Array<{ value: unknown }>,
-  ): string[] {
-    const out = new Set<string>();
-    for (const row of answers) {
-      const v = row.value;
-      if (Array.isArray(v)) {
-        for (const item of v) {
-          if (typeof item === 'string' && item.trim()) {
-            out.add(item.trim());
-          }
-        }
-        continue;
-      }
-      if (v && typeof v === 'object' && !Array.isArray(v)) {
-        const o = v as Record<string, unknown>;
-        if (Array.isArray(o.allergies)) {
-          for (const item of o.allergies) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-        if (typeof o.defaultValues === 'object' && Array.isArray(o.defaultValues)) {
-          for (const item of o.defaultValues) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-      }
+  private async loadActiveOnboardingSteps(): Promise<AdminOnboardingStep[]> {
+    try {
+      const flow = await this.admin.getActiveFlow();
+      return flow.data.steps;
+    } catch {
+      // Explicit `{ allergies: [...] }` answers can still be extracted safely.
+      // Never treat unknown array answers as allergies when metadata is absent.
+      return [];
     }
-    return [...out];
   }
 }
