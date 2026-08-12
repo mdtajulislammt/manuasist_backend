@@ -5,7 +5,7 @@ import {
 } from '../admin-internal/admin-internal-client.service';
 import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
-import { extractDietaryRestrictions } from '../users-me/extract-dietary-restrictions.util';
+import { extractDietaryProfileAnswers } from '../users-me/extract-dietary-restrictions.util';
 
 export type DietaryContextPayload = {
   userId: string;
@@ -21,6 +21,10 @@ export type DietaryContextPayload = {
     value: unknown;
   }>;
   allergies: string[];
+  intolerances: string[];
+  cuisinePreferences: string[];
+  healthObjectives: string[];
+  nutritionTargets: Record<string, string | number | boolean>;
 };
 
 @Injectable()
@@ -41,7 +45,10 @@ export class InternalUsersService {
       this.loadActiveOnboardingSteps(),
     ]);
 
-    const allergies = extractDietaryRestrictions(answers, onboardingSteps);
+    const dietaryProfile = extractDietaryProfileAnswers(
+      answers,
+      onboardingSteps,
+    );
 
     const data: DietaryContextPayload = {
       userId,
@@ -58,7 +65,11 @@ export class InternalUsersService {
         flowVersion: a.flowVersion,
         value: a.value,
       })),
-      allergies,
+      allergies: dietaryProfile.allergies,
+      intolerances: dietaryProfile.intolerances,
+      cuisinePreferences: dietaryProfile.cuisinePreferences,
+      healthObjectives: dietaryProfile.healthObjectives,
+      nutritionTargets: dietaryProfile.nutritionTargets,
     };
 
     return {

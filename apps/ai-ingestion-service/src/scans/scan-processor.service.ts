@@ -211,11 +211,18 @@ export class ScanProcessorService {
     line: ExtractedDishLine,
     prefs: UserPreferenceHints,
   ): Promise<ProcessedDish> {
-    const [classification, nf, dishImageUrl, embedding] = await Promise.all([
-      classifyDish(line, prefs, this.llm),
-      this.lookupNutritionCached(line.name),
-      this.spoonacular.getDishImage(line.name),
-      this.embeddings.embedText(line.name),
+    const nutritionPromise = this.lookupNutritionCached(line.name);
+    const imagePromise = this.spoonacular.getDishImage(line.name);
+    const embeddingPromise = this.embeddings.embedText(line.name);
+
+    // Classification needs measured/estimated nutrition to explain profile
+    // targets without inventing nutrient values. Image and embedding work stay
+    // concurrent while nutrition is resolved.
+    const nf = await nutritionPromise;
+    const [classification, dishImageUrl, embedding] = await Promise.all([
+      classifyDish(line, prefs, nf, this.llm),
+      imagePromise,
+      embeddingPromise,
     ]);
 
     const nai = computeDishNai({
@@ -226,7 +233,7 @@ export class ScanProcessorService {
       weightGoal: prefs.weightGoal,
       category: classification.category,
       allergenFlags: classification.allergenFlags,
-      allergies: prefs.allergies,
+      allergies: [...(prefs.allergies ?? []), ...(prefs.intolerances ?? [])],
     });
 
     return {

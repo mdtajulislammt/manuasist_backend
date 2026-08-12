@@ -1,5 +1,10 @@
+/// <reference types="jest" />
+
 import type { AdminOnboardingStep } from '../admin-internal/admin-internal-client.service';
-import { extractDietaryRestrictions } from './extract-dietary-restrictions.util';
+import {
+  extractDietaryProfileAnswers,
+  extractDietaryRestrictions,
+} from './extract-dietary-restrictions.util';
 
 function step(
   id: string,
@@ -68,5 +73,39 @@ describe('extractDietaryRestrictions', () => {
     );
 
     expect(result).toEqual([]);
+  });
+
+  it('projects cuisines, health objectives, and nutrition targets separately', () => {
+    const result = extractDietaryProfileAnswers(
+      [
+        { stepKey: 'cuisines', value: ['Italian', 'Japanese'] },
+        { stepKey: 'diet-goal', value: 'Weight Loss' },
+        {
+          stepKey: 'nutrition',
+          value: {
+            carbohydrates: 'low',
+            sodium: 'low',
+            protein: 'high',
+          },
+        },
+      ],
+      [
+        step('cuisines', 'What Are Your Favorite Cuisines?'),
+        step('diet-goal', 'What is Your Diet Goal?'),
+        step('nutrition', 'What are your current nutritional preferences?'),
+      ],
+    );
+
+    expect(result).toMatchObject({
+      allergies: [],
+      intolerances: [],
+      cuisinePreferences: ['Italian', 'Japanese'],
+      healthObjectives: ['Weight Loss'],
+      nutritionTargets: {
+        carbohydrates: 'low',
+        sodium: 'low',
+        protein: 'high',
+      },
+    });
   });
 });
