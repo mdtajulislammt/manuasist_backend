@@ -26,13 +26,55 @@ export class AdminFileClientService {
     return `${gateway}/v1/admin/files/menu-scan/${storedName}`;
   }
 
+  buildPublicDishImageUrl(storedName: string): string {
+    const gateway = (
+      this.config.get<string>('API_GATEWAY_PUBLIC_URL') ??
+      'http://localhost:2645'
+    ).replace(/\/$/, '');
+    return `${gateway}/v1/admin/files/dish-image/${storedName}`;
+  }
+
   async uploadMenuScan(file: MulterFile): Promise<StoredFileUploadResult> {
+    return this.uploadFile('MENU_SCAN', file);
+  }
+
+  async uploadDishImage(input: {
+    buffer: Buffer;
+    contentType: 'image/png' | 'image/jpeg' | 'image/webp';
+    displayName: string;
+  }): Promise<StoredFileUploadResult> {
+    const extension =
+      input.contentType === 'image/png'
+        ? 'png'
+        : input.contentType === 'image/jpeg'
+          ? 'jpg'
+          : 'webp';
+    return this.uploadFile(
+      'DISH_IMAGE',
+      {
+        buffer: input.buffer,
+        originalname: `${input.displayName}.${extension}`,
+        mimetype: input.contentType,
+        size: input.buffer.length,
+      },
+      input.displayName,
+    );
+  }
+
+  private async uploadFile(
+    namespace: 'MENU_SCAN' | 'DISH_IMAGE',
+    file: MulterFile,
+    displayName?: string,
+  ): Promise<StoredFileUploadResult> {
     const base = this.config
       .getOrThrow<string>('ADMIN_SERVICE_URL')
       .replace(/\/$/, '');
     const key = this.config.getOrThrow<string>('ADMIN_INTERNAL_API_KEY');
     const form = new FormData();
-    form.append('namespace', 'MENU_SCAN');
+    form.append('namespace', namespace);
+    if (displayName) {
+      form.append('displayName', displayName);
+    }
     form.append(
       'file',
       new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }),
@@ -54,7 +96,7 @@ export class AdminFileClientService {
     if (!res.ok) {
       const text = await res.text();
       throw new BadRequestException(
-        `Menu image upload failed (${res.status}): ${text.slice(0, 500)}`,
+        `${namespace} upload failed (${res.status}): ${text.slice(0, 500)}`,
       );
     }
     const json = (await res.json()) as {

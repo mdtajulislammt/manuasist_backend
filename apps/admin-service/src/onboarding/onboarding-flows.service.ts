@@ -420,9 +420,9 @@ export class OnboardingFlowsService {
       if (!flow) {
         throw new NotFoundException('Flow not found');
       }
-      if (flow.status !== OnboardingFlowStatus.DRAFT) {
-        throw new BadRequestException('Only draft flows can be published');
-      }
+      // if (flow.status !== OnboardingFlowStatus.DRAFT) {
+      //   throw new BadRequestException('Only draft flows can be published');
+      // }
       if (flow.steps.length === 0) {
         throw new BadRequestException('Cannot publish a flow with no steps');
       }

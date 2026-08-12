@@ -49,7 +49,16 @@ export class InternalFilesController {
       required: ['file', 'namespace'],
       properties: {
         file: { type: 'string', format: 'binary' },
-        namespace: { type: 'string', enum: ['ONBOARDING_ICON', 'MENU_SCAN', 'USER_AVATAR', 'GENERIC'] },
+        namespace: {
+          type: 'string',
+          enum: [
+            'ONBOARDING_ICON',
+            'MENU_SCAN',
+            'DISH_IMAGE',
+            'USER_AVATAR',
+            'GENERIC',
+          ],
+        },
         displayName: { type: 'string' },
       },
     },

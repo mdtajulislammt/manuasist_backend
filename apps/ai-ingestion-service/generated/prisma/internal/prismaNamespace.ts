@@ -388,6 +388,7 @@ export const ModelName = {
   Dish: 'Dish',
   DishBookmark: 'DishBookmark',
   NutritionCache: 'NutritionCache',
+  DishImageCache: 'DishImageCache',
   UserDietPattern: 'UserDietPattern'
 } as const
 
@@ -404,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "menuScan" | "dish" | "dishBookmark" | "nutritionCache" | "userDietPattern"
+    modelProps: "menuScan" | "dish" | "dishBookmark" | "nutritionCache" | "dishImageCache" | "userDietPattern"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -704,6 +705,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DishImageCache: {
+      payload: Prisma.$DishImageCachePayload<ExtArgs>
+      fields: Prisma.DishImageCacheFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DishImageCacheFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DishImageCacheFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        findFirst: {
+          args: Prisma.DishImageCacheFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DishImageCacheFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        findMany: {
+          args: Prisma.DishImageCacheFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>[]
+        }
+        create: {
+          args: Prisma.DishImageCacheCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        createMany: {
+          args: Prisma.DishImageCacheCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DishImageCacheCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>[]
+        }
+        delete: {
+          args: Prisma.DishImageCacheDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        update: {
+          args: Prisma.DishImageCacheUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        deleteMany: {
+          args: Prisma.DishImageCacheDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DishImageCacheUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DishImageCacheUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>[]
+        }
+        upsert: {
+          args: Prisma.DishImageCacheUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DishImageCachePayload>
+        }
+        aggregate: {
+          args: Prisma.DishImageCacheAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDishImageCache>
+        }
+        groupBy: {
+          args: Prisma.DishImageCacheGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DishImageCacheGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DishImageCacheCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DishImageCacheCountAggregateOutputType> | number
+        }
+      }
+    }
     UserDietPattern: {
       payload: Prisma.$UserDietPatternPayload<ExtArgs>
       fields: Prisma.UserDietPatternFieldRefs
@@ -888,6 +963,24 @@ export const NutritionCacheScalarFieldEnum = {
 export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
 
 
+export const DishImageCacheScalarFieldEnum = {
+  id: 'id',
+  fingerprint: 'fingerprint',
+  dishName: 'dishName',
+  description: 'description',
+  imageUrl: 'imageUrl',
+  storedFileName: 'storedFileName',
+  source: 'source',
+  prompt: 'prompt',
+  model: 'model',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DishImageCacheScalarFieldEnum = (typeof DishImageCacheScalarFieldEnum)[keyof typeof DishImageCacheScalarFieldEnum]
+
+
 export const UserDietPatternScalarFieldEnum = {
   userId: 'userId',
   scanCount: 'scanCount',
@@ -1052,6 +1145,20 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
+
+/**
+ * Reference to a field of type 'DishImageSource'
+ */
+export type EnumDishImageSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DishImageSource'>
+    
+
+
+/**
+ * Reference to a field of type 'DishImageSource[]'
+ */
+export type ListEnumDishImageSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DishImageSource[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -1151,6 +1258,7 @@ export type GlobalOmitConfig = {
   dish?: Prisma.DishOmit
   dishBookmark?: Prisma.DishBookmarkOmit
   nutritionCache?: Prisma.NutritionCacheOmit
+  dishImageCache?: Prisma.DishImageCacheOmit
   userDietPattern?: Prisma.UserDietPatternOmit
 }
 

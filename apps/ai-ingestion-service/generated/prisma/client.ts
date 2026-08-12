@@ -62,6 +62,11 @@ export type DishBookmark = Prisma.DishBookmarkModel
  */
 export type NutritionCache = Prisma.NutritionCacheModel
 /**
+ * Model DishImageCache
+ * 
+ */
+export type DishImageCache = Prisma.DishImageCacheModel
+/**
  * Model UserDietPattern
  * 
  */

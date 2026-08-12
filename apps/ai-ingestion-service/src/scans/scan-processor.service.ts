@@ -21,7 +21,6 @@ import {
   LlmClient,
   OpenFoodFactsProvider,
   type OcrProviderPort,
-  SpoonacularClient,
   type UserPreferenceHints,
   UsdaFdcProvider,
 } from '../../../../libs/ai-pipeline/src';
@@ -34,6 +33,7 @@ import { PatternsService } from '../patterns/patterns.service';
 import { PrismaService } from '../prisma.service';
 import { NutritionCacheService } from './nutrition-cache.service';
 import { mapWithConcurrency } from './map-with-concurrency';
+import { DishImageService } from './dish-image.service';
 
 const NUTRITION_CACHE_TTL_SEC = 7 * 24 * 60 * 60;
 const NUTRITION_PROVIDER_KEY = 'nutrition_v1';
@@ -53,7 +53,6 @@ export class ScanProcessorService {
   private readonly embeddings: EmbeddingClient;
   private readonly nutrition: CompositeNutritionProvider;
   private readonly ocr: OcrProviderPort;
-  private readonly spoonacular: SpoonacularClient;
   private readonly dishConcurrency: number;
 
   constructor(
@@ -62,6 +61,7 @@ export class ScanProcessorService {
     private readonly config: ConfigService,
     private readonly applicationClient: ApplicationClientService,
     private readonly adminFiles: AdminFileClientService,
+    private readonly dishImages: DishImageService,
     private readonly patterns: PatternsService,
     @Inject(RMQ_EVENT_CLIENT) private readonly rmq: ClientProxy,
   ) {
@@ -87,9 +87,6 @@ export class ScanProcessorService {
       googleVisionApiKey: this.config.get<string>('GOOGLE_VISION_API_KEY'),
       provider: this.config.get<string>('OCR_PROVIDER'),
     });
-    this.spoonacular = new SpoonacularClient(
-      this.config.get<string>('SPOONACULAR_API_KEY'),
-    );
     const configured = Number(this.config.get<string>('SCAN_DISH_CONCURRENCY'));
     this.dishConcurrency =
       Number.isFinite(configured) && configured > 0
@@ -212,7 +209,7 @@ export class ScanProcessorService {
     prefs: UserPreferenceHints,
   ): Promise<ProcessedDish> {
     const nutritionPromise = this.lookupNutritionCached(line.name);
-    const imagePromise = this.spoonacular.getDishImage(line.name);
+    const imagePromise = this.dishImages.getDishImage(line);
     const embeddingPromise = this.embeddings.embedText(line.name);
 
     // Classification needs measured/estimated nutrition to explain profile
@@ -280,8 +277,7 @@ export class ScanProcessorService {
       );
     } catch (error) {
       this.logger.warn(
-        `Failed to emit ${EVENT_PATTERNS.SCAN_CLASSIFICATION_FAILED_V1} for scan=${payload.scanId}: ${
-          error instanceof Error ? error.message : String(error)
+        `Failed to emit ${EVENT_PATTERNS.SCAN_CLASSIFICATION_FAILED_V1} for scan=${payload.scanId}: ${error instanceof Error ? error.message : String(error)
         }`,
       );
     }

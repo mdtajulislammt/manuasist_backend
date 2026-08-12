@@ -87,7 +87,15 @@ services:
       API_GATEWAY_PUBLIC_URL: http://localhost:${API_GATEWAY_PORT:-2645}
       INGESTION_INTERNAL_API_KEY: ${INGESTION_INTERNAL_API_KEY:-dev-internal-ingestion-key}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
+      OPENAI_IMAGE_SIZE: ${OPENAI_IMAGE_SIZE:-1024x1024}
+      OPENAI_IMAGE_QUALITY: ${OPENAI_IMAGE_QUALITY:-medium}
+      OPENAI_IMAGE_TIMEOUT_MS: ${OPENAI_IMAGE_TIMEOUT_MS:-120000}
+      DISH_IMAGE_FALLBACK_CACHE_HOURS: ${DISH_IMAGE_FALLBACK_CACHE_HOURS:-24}
+      SPOONACULAR_API_KEY: ${SPOONACULAR_API_KEY:-}
       GOOGLE_VISION_API_KEY: ${GOOGLE_VISION_API_KEY:-AIzaSyCp-ko0UWWEGvVwiS4-3BjgXJYDoJMwfa8}
       OCR_PROVIDER: ${OCR_PROVIDER:-google}
       SCAN_DISH_CONCURRENCY: ${SCAN_DISH_CONCURRENCY:-4}
@@ -210,6 +218,8 @@ services:
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
     ports:
       - '${ADMIN_SERVICE_PORT:-2648}:${ADMIN_SERVICE_PORT:-2648}'
+    volumes:
+      - file_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -224,3 +234,4 @@ volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
+  file_uploads:

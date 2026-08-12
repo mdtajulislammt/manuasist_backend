@@ -21,6 +21,7 @@ enum StorageProvider {
 enum StoredFileNamespace {
   ONBOARDING_ICON
   MENU_SCAN
+  DISH_IMAGE
   USER_AVATAR
   GENERIC
 }

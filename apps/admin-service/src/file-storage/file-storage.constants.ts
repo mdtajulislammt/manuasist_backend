@@ -3,6 +3,7 @@ import { StoredFileNamespace } from '../../generated/prisma/client';
 export const FILE_NAMESPACE = {
   ONBOARDING_ICON: StoredFileNamespace.ONBOARDING_ICON,
   MENU_SCAN: StoredFileNamespace.MENU_SCAN,
+  DISH_IMAGE: StoredFileNamespace.DISH_IMAGE,
   USER_AVATAR: StoredFileNamespace.USER_AVATAR,
   GENERIC: StoredFileNamespace.GENERIC,
 } as const;
@@ -11,6 +12,7 @@ export const FILE_NAMESPACE = {
 export const NAMESPACE_LOCAL_DIR: Record<StoredFileNamespace, string> = {
   [StoredFileNamespace.ONBOARDING_ICON]: 'onboarding-icons',
   [StoredFileNamespace.MENU_SCAN]: 'menu-scan',
+  [StoredFileNamespace.DISH_IMAGE]: 'dish-images',
   [StoredFileNamespace.USER_AVATAR]: 'user-avatar',
   [StoredFileNamespace.GENERIC]: 'generic',
 };
@@ -37,6 +39,11 @@ export const NAMESPACE_POLICIES: Record<StoredFileNamespace, NamespacePolicy> = 
     maxBytes: 10 * 1024 * 1024,
     allowedMime: new Set(['image/png', 'image/jpeg', 'image/webp']),
     publicPath: '/files/menu-scan',
+  },
+  [StoredFileNamespace.DISH_IMAGE]: {
+    maxBytes: 10 * 1024 * 1024,
+    allowedMime: new Set(['image/png', 'image/jpeg', 'image/webp']),
+    publicPath: '/files/dish-image',
   },
   [StoredFileNamespace.USER_AVATAR]: {
     maxBytes: 2 * 1024 * 1024,

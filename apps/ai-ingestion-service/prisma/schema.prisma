@@ -20,6 +20,11 @@ enum DishCategory {
   AVOID
 }
 
+enum DishImageSource {
+  AI_GENERATED
+  EXTERNAL_FALLBACK
+}
+
 model MenuScan {
   id             String         @id @default(uuid()) @db.Uuid
   userId         String         @map("user_id") @db.Uuid
@@ -101,6 +106,24 @@ model NutritionCache {
 
   @@index([expiresAt])
   @@map("ingestion_nutrition_cache")
+}
+
+model DishImageCache {
+  id             String          @id @default(uuid()) @db.Uuid
+  fingerprint    String          @unique
+  dishName       String          @map("dish_name")
+  description    String?
+  imageUrl       String          @map("image_url")
+  storedFileName String?         @map("stored_file_name")
+  source         DishImageSource
+  prompt         String?
+  model          String?
+  expiresAt      DateTime?       @map("expires_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@index([source, expiresAt])
+  @@map("ingestion_dish_image_cache")
 }
 
 model UserDietPattern {
