@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ProfileModule } from './profile/profile.module';
 import { SubscriptionListModule } from './subscription-list/subscription-list.module';
+import { BrandingModule } from './branding/branding.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -42,6 +43,7 @@ const envFilePaths = [
     AnalyticsModule,
     ProfileModule,
     SubscriptionListModule,
+    BrandingModule,
   ],
   controllers: [HealthController],
   providers: [],

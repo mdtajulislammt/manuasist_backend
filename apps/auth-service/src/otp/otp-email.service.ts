@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { AuthOtpEmailPurpose } from './auth-otp.constants';
+import { buildOtpEmailTemplate } from './otp-email.template';
 
 @Injectable()
 export class OtpEmailService {
@@ -37,15 +38,12 @@ export class OtpEmailService {
     });
     const appName = this.config.get<string>('APP_NAME') ?? 'Menu Assist';
     const from = this.config.get<string>('OTP_EMAIL_FROM') ?? gmailUser;
-    const minutes = Math.max(1, Math.floor(expiresInSeconds / 60));
-    const purposeText =
-      purpose === 'PASSWORD_RESET'
-        ? 'password reset verification'
-        : purpose === 'CONTACT_CHANGE'
-          ? 'contact change verification'
-          : 'account verification';
-    const subject = `${appName} ${purposeText} code`;
-    const text = `Your ${appName} OTP code is ${otp}. It expires in ${minutes} minute(s).`;
+    const { subject, text, html } = buildOtpEmailTemplate({
+      appName,
+      otp,
+      purpose,
+      expiresInSeconds,
+    });
 
     try {
       await transporter.sendMail({
@@ -53,6 +51,7 @@ export class OtpEmailService {
         to,
         subject,
         text,
+        html,
       });
     } catch (error) {
       this.logger.error(`Failed to send OTP email to ${to}`, error as Error);

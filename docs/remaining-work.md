@@ -22,7 +22,7 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 1. ✅ Fix allergy extraction so cuisine ≠ allergen
 2. ✅ Pass full dietary profile into classification + clearer reasons
 3. ✅ AI dish images + store/reuse
-4. Branded HTML OTP / verification emails
+4. ✅ Branded HTML OTP / verification emails
 5. Dashboard-managed splash / onboarding images
 6. Referral live refresh + reward rules
 7. OCI deploy, backups, docs
@@ -73,9 +73,9 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 
 | Item | Status | Notes |
 |------|--------|--------|
-| Branded verification email | **Not started** | Plain text: “Your Menu Assist OTP code is …”. `apps/auth-service/src/otp/otp-email.service.ts`. |
-| Menu Assist branding + HTML layout | **Not started** | No HTML template, no logo CID/URL. |
-| Logo in transactional emails | **Not started** | Blocked on final logo. |
+| ✅ Branded verification email | **Done / QA** | Purpose-specific signup, password-reset, and contact-change emails include responsive HTML plus a plain-text fallback. Real email-client QA remains. |
+| ✅ Menu Assist branding + HTML layout | **Done / QA** | Professional email-safe table layout uses primary brand color `#EB3D4D`, centered Menu Assist wordmark, branded OTP panel, and clear expiry/security copy. |
+| ✅ Brand identity in transactional emails | **Done / QA** | Emails use the app name as a consistent text wordmark, avoiding blocked or distorted external images. Real email-client QA remains. |
 | Email verification reliability | **Done / QA** | OTP queue (BullMQ) + Redis cooldown. Confirm SMTP in each env. |
 | Referral code optional at signup | **Done** | Optional unless business rules change. |
 | Profile fields save correctly | **QA** | Name, gender, age, height, weight, diet, allergies, intolerances, cuisine, spice, health goals, nutrition targets. |
@@ -97,9 +97,10 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 | Upload / replace launch + onboarding images | **Not started** (launch) | Onboarding **step** icons exist; intro carousel images are app assets. |
 | Preview before publish | **Not started** | No launch-image preview API. |
 | Introductory video | **Out of scope** | Future; wait for Menu Assist decision. |
+| ✅ Manage shared application logo | **Done / QA** | Admin upload/replace/delete plus stable public `/branding/logo` route; dashboard UI wiring remains QA. |
 | Icon library (upload, name, preview, select, replace, remove) | **Done / QA** | `admin-service` onboarding icons. Confirm they appear in the app. |
 | Subscription section | **Partial / QA** | Plans/prices + RevenueCat sync exist; dashboard image issues reported. |
-| Dashboard changes without a new mobile build | **Partial** | Dynamic onboarding yes; splash/branding images no. |
+| Dashboard changes without a new mobile build | **Partial** | Dynamic onboarding and shared logo are supported; splash/launch images are not. |
 | User management | **Done / QA** | Admin users APIs. |
 | Admin profile + password | **Done / QA** | |
 | Permissions / access control | **QA** | Roles exist in auth; verify dashboard admin gates. |

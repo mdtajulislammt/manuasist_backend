@@ -22,6 +22,7 @@ enum StoredFileNamespace {
   ONBOARDING_ICON
   MENU_SCAN
   DISH_IMAGE
+  LOGO
   USER_AVATAR
   GENERIC
 }
@@ -57,23 +58,23 @@ enum ReferralOfferStatus {
 }
 
 model PlatformStorageSettings {
-  id             String           @id @default("default")
-  activeProvider StorageProvider  @default(LOCAL) @map("active_provider")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  id             String          @id @default("default")
+  activeProvider StorageProvider @default(LOCAL) @map("active_provider")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   @@map("platform_storage_settings")
 }
 
 model StoredFile {
-  id           String              @id @default(uuid()) @db.Uuid
-  storedName   String              @unique @map("stored_name")
-  namespace    StoredFileNamespace
-  provider     StorageProvider
-  contentType  String              @map("content_type")
-  sizeBytes    Int                 @map("size_bytes")
-  objectKey    String              @map("object_key")
-  displayName  String?             @map("display_name")
-  createdAt    DateTime            @default(now()) @map("created_at")
+  id          String              @id @default(uuid()) @db.Uuid
+  storedName  String              @unique @map("stored_name")
+  namespace   StoredFileNamespace
+  provider    StorageProvider
+  contentType String              @map("content_type")
+  sizeBytes   Int                 @map("size_bytes")
+  objectKey   String              @map("object_key")
+  displayName String?             @map("display_name")
+  createdAt   DateTime            @default(now()) @map("created_at")
 
   @@unique([namespace, storedName])
   @@index([namespace])
@@ -177,15 +178,15 @@ model RevenueCatSyncLog {
 }
 
 model ReferralOffer {
-  id          String              @id @default(uuid()) @db.Uuid
-  name        String
-  status      ReferralOfferStatus @default(DRAFT)
-  isActive    Boolean             @default(false) @map("is_active")
-  shareBaseUrl String?            @map("share_base_url")
-  publishedAt DateTime?           @map("published_at")
-  archivedAt  DateTime?           @map("archived_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  id           String              @id @default(uuid()) @db.Uuid
+  name         String
+  status       ReferralOfferStatus @default(DRAFT)
+  isActive     Boolean             @default(false) @map("is_active")
+  shareBaseUrl String?             @map("share_base_url")
+  publishedAt  DateTime?           @map("published_at")
+  archivedAt   DateTime?           @map("archived_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
 
   tiers ReferralRewardTier[]
 

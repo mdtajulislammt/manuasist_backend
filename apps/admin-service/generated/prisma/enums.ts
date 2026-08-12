@@ -30,6 +30,7 @@ export const StoredFileNamespace = {
   ONBOARDING_ICON: 'ONBOARDING_ICON',
   MENU_SCAN: 'MENU_SCAN',
   DISH_IMAGE: 'DISH_IMAGE',
+  LOGO: 'LOGO',
   USER_AVATAR: 'USER_AVATAR',
   GENERIC: 'GENERIC'
 } as const
