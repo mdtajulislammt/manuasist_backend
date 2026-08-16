@@ -53,6 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   PlatformStorageSettings: 'PlatformStorageSettings',
   StoredFile: 'StoredFile',
+  AppLaunchContentBundle: 'AppLaunchContentBundle',
+  AppLaunchAsset: 'AppLaunchAsset',
   OnboardingFlow: 'OnboardingFlow',
   OnboardingStep: 'OnboardingStep',
   SubscriptionPlan: 'SubscriptionPlan',
@@ -100,6 +102,35 @@ export const StoredFileScalarFieldEnum = {
 } as const
 
 export type StoredFileScalarFieldEnum = (typeof StoredFileScalarFieldEnum)[keyof typeof StoredFileScalarFieldEnum]
+
+
+export const AppLaunchContentBundleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  version: 'version',
+  status: 'status',
+  isActive: 'isActive',
+  publishedAt: 'publishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppLaunchContentBundleScalarFieldEnum = (typeof AppLaunchContentBundleScalarFieldEnum)[keyof typeof AppLaunchContentBundleScalarFieldEnum]
+
+
+export const AppLaunchAssetScalarFieldEnum = {
+  id: 'id',
+  bundleId: 'bundleId',
+  kind: 'kind',
+  orderIndex: 'orderIndex',
+  title: 'title',
+  subtitle: 'subtitle',
+  storedFileId: 'storedFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppLaunchAssetScalarFieldEnum = (typeof AppLaunchAssetScalarFieldEnum)[keyof typeof AppLaunchAssetScalarFieldEnum]
 
 
 export const OnboardingFlowScalarFieldEnum = {

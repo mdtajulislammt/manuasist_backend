@@ -386,6 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   PlatformStorageSettings: 'PlatformStorageSettings',
   StoredFile: 'StoredFile',
+  AppLaunchContentBundle: 'AppLaunchContentBundle',
+  AppLaunchAsset: 'AppLaunchAsset',
   OnboardingFlow: 'OnboardingFlow',
   OnboardingStep: 'OnboardingStep',
   SubscriptionPlan: 'SubscriptionPlan',
@@ -408,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "platformStorageSettings" | "storedFile" | "onboardingFlow" | "onboardingStep" | "subscriptionPlan" | "subscriptionPrice" | "revenueCatSyncLog" | "referralOffer" | "referralRewardTier"
+    modelProps: "platformStorageSettings" | "storedFile" | "appLaunchContentBundle" | "appLaunchAsset" | "onboardingFlow" | "onboardingStep" | "subscriptionPlan" | "subscriptionPrice" | "revenueCatSyncLog" | "referralOffer" | "referralRewardTier"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -557,6 +559,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.StoredFileCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.StoredFileCountAggregateOutputType> | number
+        }
+      }
+    }
+    AppLaunchContentBundle: {
+      payload: Prisma.$AppLaunchContentBundlePayload<ExtArgs>
+      fields: Prisma.AppLaunchContentBundleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AppLaunchContentBundleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AppLaunchContentBundleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        findFirst: {
+          args: Prisma.AppLaunchContentBundleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AppLaunchContentBundleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        findMany: {
+          args: Prisma.AppLaunchContentBundleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>[]
+        }
+        create: {
+          args: Prisma.AppLaunchContentBundleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        createMany: {
+          args: Prisma.AppLaunchContentBundleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AppLaunchContentBundleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>[]
+        }
+        delete: {
+          args: Prisma.AppLaunchContentBundleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        update: {
+          args: Prisma.AppLaunchContentBundleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        deleteMany: {
+          args: Prisma.AppLaunchContentBundleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AppLaunchContentBundleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AppLaunchContentBundleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>[]
+        }
+        upsert: {
+          args: Prisma.AppLaunchContentBundleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchContentBundlePayload>
+        }
+        aggregate: {
+          args: Prisma.AppLaunchContentBundleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAppLaunchContentBundle>
+        }
+        groupBy: {
+          args: Prisma.AppLaunchContentBundleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppLaunchContentBundleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AppLaunchContentBundleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppLaunchContentBundleCountAggregateOutputType> | number
+        }
+      }
+    }
+    AppLaunchAsset: {
+      payload: Prisma.$AppLaunchAssetPayload<ExtArgs>
+      fields: Prisma.AppLaunchAssetFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AppLaunchAssetFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AppLaunchAssetFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        findFirst: {
+          args: Prisma.AppLaunchAssetFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AppLaunchAssetFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        findMany: {
+          args: Prisma.AppLaunchAssetFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>[]
+        }
+        create: {
+          args: Prisma.AppLaunchAssetCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        createMany: {
+          args: Prisma.AppLaunchAssetCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AppLaunchAssetCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>[]
+        }
+        delete: {
+          args: Prisma.AppLaunchAssetDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        update: {
+          args: Prisma.AppLaunchAssetUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        deleteMany: {
+          args: Prisma.AppLaunchAssetDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AppLaunchAssetUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AppLaunchAssetUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>[]
+        }
+        upsert: {
+          args: Prisma.AppLaunchAssetUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppLaunchAssetPayload>
+        }
+        aggregate: {
+          args: Prisma.AppLaunchAssetAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAppLaunchAsset>
+        }
+        groupBy: {
+          args: Prisma.AppLaunchAssetGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppLaunchAssetGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AppLaunchAssetCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppLaunchAssetCountAggregateOutputType> | number
         }
       }
     }
@@ -1141,6 +1291,35 @@ export const StoredFileScalarFieldEnum = {
 export type StoredFileScalarFieldEnum = (typeof StoredFileScalarFieldEnum)[keyof typeof StoredFileScalarFieldEnum]
 
 
+export const AppLaunchContentBundleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  version: 'version',
+  status: 'status',
+  isActive: 'isActive',
+  publishedAt: 'publishedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppLaunchContentBundleScalarFieldEnum = (typeof AppLaunchContentBundleScalarFieldEnum)[keyof typeof AppLaunchContentBundleScalarFieldEnum]
+
+
+export const AppLaunchAssetScalarFieldEnum = {
+  id: 'id',
+  bundleId: 'bundleId',
+  kind: 'kind',
+  orderIndex: 'orderIndex',
+  title: 'title',
+  subtitle: 'subtitle',
+  storedFileId: 'storedFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppLaunchAssetScalarFieldEnum = (typeof AppLaunchAssetScalarFieldEnum)[keyof typeof AppLaunchAssetScalarFieldEnum]
+
+
 export const OnboardingFlowScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -1371,6 +1550,41 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'AppLaunchContentStatus'
+ */
+export type EnumAppLaunchContentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppLaunchContentStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AppLaunchContentStatus[]'
+ */
+export type ListEnumAppLaunchContentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppLaunchContentStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'AppLaunchAssetKind'
+ */
+export type EnumAppLaunchAssetKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppLaunchAssetKind'>
+    
+
+
+/**
+ * Reference to a field of type 'AppLaunchAssetKind[]'
+ */
+export type ListEnumAppLaunchAssetKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppLaunchAssetKind[]'>
+    
+
+
+/**
  * Reference to a field of type 'OnboardingFlowStatus'
  */
 export type EnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus'>
@@ -1381,13 +1595,6 @@ export type EnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputT
  * Reference to a field of type 'OnboardingFlowStatus[]'
  */
 export type ListEnumOnboardingFlowStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OnboardingFlowStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1585,6 +1792,8 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   platformStorageSettings?: Prisma.PlatformStorageSettingsOmit
   storedFile?: Prisma.StoredFileOmit
+  appLaunchContentBundle?: Prisma.AppLaunchContentBundleOmit
+  appLaunchAsset?: Prisma.AppLaunchAssetOmit
   onboardingFlow?: Prisma.OnboardingFlowOmit
   onboardingStep?: Prisma.OnboardingStepOmit
   subscriptionPlan?: Prisma.SubscriptionPlanOmit

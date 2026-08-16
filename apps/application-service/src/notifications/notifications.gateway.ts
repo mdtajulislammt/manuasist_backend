@@ -24,6 +24,11 @@ type NotificationSocketPayload = {
   data: Record<string, unknown>;
 };
 
+export type ReferralUpdatedSocketPayload = {
+  referredUserId: string;
+  verifiedFriendsJoined: number;
+};
+
 @WebSocketGateway({
   namespace: '/notifications',
   cors: { origin: true, credentials: true },
@@ -104,6 +109,18 @@ export class NotificationsGateway
       return;
     }
     this.server.to(this.userRoom(userId)).emit('notifications.read_all');
+  }
+
+  emitReferralUpdated(
+    userId: string,
+    payload: ReferralUpdatedSocketPayload,
+  ): boolean {
+    const server = this.server;
+    if (!server || !this.hasConnectedUser(userId)) {
+      return false;
+    }
+    server.to(this.userRoom(userId)).emit('referral.updated', payload);
+    return true;
   }
 
   private hasConnectedUser(userId: string): boolean {

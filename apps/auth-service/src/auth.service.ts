@@ -70,7 +70,10 @@ function prismaKnownRequestCode(e: unknown): string | undefined {
 
 const BCRYPT_ROUNDS = 12;
 
-const GOOGLE_OIDC_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+const GOOGLE_OIDC_ISSUERS = [
+  'https://accounts.google.com',
+  'accounts.google.com',
+];
 const GOOGLE_JWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/oauth2/v3/certs'),
 );
@@ -83,7 +86,10 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
-function normalizeIdentifier(identifier: string): { email?: string; phone?: string } {
+function normalizeIdentifier(identifier: string): {
+  email?: string;
+  phone?: string;
+} {
   const value = identifier.trim();
   if (!value) {
     return {};
@@ -341,13 +347,19 @@ export class AuthService implements OnModuleInit {
       );
     }
     if (purpose === 'SIGNUP') {
-      return this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ?? 60;
+      return (
+        this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ?? 60
+      );
     }
     return 0;
   }
 
   private otpDebugResponse(otp: string): { otp?: string } {
-    const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
+    const env = (
+      this.config.get<string>('NODE_ENV') ??
+      process.env.NODE_ENV ??
+      ''
+    )
       .trim()
       .toLowerCase();
     if (env === 'development') {
@@ -593,11 +605,15 @@ export class AuthService implements OnModuleInit {
     if (!row) {
       return {
         success: true,
-        message: 'No matching refresh token; already logged out or unknown token.',
+        message:
+          'No matching refresh token; already logged out or unknown token.',
       };
     }
     await this.revokeFamily(row.familyId);
-    return { success: true, message: 'Logged out successfully. Refresh token family revoked.' };
+    return {
+      success: true,
+      message: 'Logged out successfully. Refresh token family revoked.',
+    };
   }
 
   private async revokeFamily(familyId: string) {
@@ -607,7 +623,10 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  private async verifyOtpResponse(identifier: string, otp: string): Promise<any> {
+  private async verifyOtpResponse(
+    identifier: string,
+    otp: string,
+  ): Promise<any> {
     const { email: normalizedEmail, phone: normalizedPhone } =
       normalizeIdentifier(identifier);
     if (!normalizedEmail && !normalizedPhone) {
@@ -702,7 +721,9 @@ export class AuthService implements OnModuleInit {
           where: { email: normalizedEmail },
         });
         if (existingEmail) {
-          throw new ConflictException('An account with this email already exists');
+          throw new ConflictException(
+            'An account with this email already exists',
+          );
         }
       }
 
@@ -711,7 +732,9 @@ export class AuthService implements OnModuleInit {
           where: { phone: normalizedPhone },
         });
         if (existingPhone) {
-          throw new ConflictException('An account with this phone already exists');
+          throw new ConflictException(
+            'An account with this phone already exists',
+          );
         }
       }
 
@@ -755,8 +778,13 @@ export class AuthService implements OnModuleInit {
         ...this.otpDebugResponse(otp),
       };
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('An account with this identifier already exists');
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'An account with this identifier already exists',
+        );
       }
       throw error;
     }
@@ -789,7 +817,9 @@ export class AuthService implements OnModuleInit {
       },
     });
     if (!user) {
-      throw new BadRequestException('Account not found for signup verification');
+      throw new BadRequestException(
+        'Account not found for signup verification',
+      );
     }
 
     if (normalizedEmail && user.emailVerifiedAt) {
@@ -842,7 +872,6 @@ export class AuthService implements OnModuleInit {
           tokenPair,
         };
       }
-
 
       const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
       if (!verifyOtpResponse.success) {
@@ -936,8 +965,6 @@ export class AuthService implements OnModuleInit {
         },
       });
 
-
-
       if (!user) {
         throw new BadRequestException('Invalid OTP');
       }
@@ -984,6 +1011,10 @@ export class AuthService implements OnModuleInit {
         });
       });
 
+      if (user.referredById) {
+        void this.notifyReferralVerified(user.referredById, user.id);
+      }
+
       return this.issuePairForUser(
         user.id,
         'Signup verified. You are signed in.',
@@ -993,6 +1024,39 @@ export class AuthService implements OnModuleInit {
         throw error;
       }
       throw new InternalServerErrorException('Internal Server Error');
+    }
+  }
+
+  private async notifyReferralVerified(
+    referrerId: string,
+    referredUserId: string,
+  ): Promise<void> {
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    try {
+      const response = await fetch(`${base}/internal/referrals/verified`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key,
+        },
+        body: JSON.stringify({ referrerId, referredUserId }),
+        signal: AbortSignal.timeout(3_000),
+      });
+      if (!response.ok) {
+        this.logger.warn(
+          `Referral verification callback failed with status ${response.status}`,
+        );
+      }
+    } catch (error) {
+      // Verification must still succeed if application-service is temporarily down.
+      this.logger.warn(
+        `Referral verification callback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -1079,7 +1143,8 @@ export class AuthService implements OnModuleInit {
       await this.revokeAllUserRefreshTokens(user.id);
       return {
         success: true,
-        message: 'Password reset successful. You can sign in with your new password.',
+        message:
+          'Password reset successful. You can sign in with your new password.',
         status: 'PASSWORD_RESET_SUCCESS',
       };
     } catch (error) {
@@ -1089,7 +1154,6 @@ export class AuthService implements OnModuleInit {
       throw error;
     }
   }
-
 
   async login(input: {
     identifier: string;
@@ -1133,7 +1197,10 @@ export class AuthService implements OnModuleInit {
 
       return this.issuePairForUser(user.id);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Invalid credentials')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Invalid credentials')
+      ) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -1212,7 +1279,8 @@ export class AuthService implements OnModuleInit {
     await this.revokeAllUserRefreshTokens(userId);
     return {
       success: true,
-      message: 'Password updated. Other sessions were signed out; sign in again on those devices.',
+      message:
+        'Password updated. Other sessions were signed out; sign in again on those devices.',
       status: 'PASSWORD_UPDATED',
     };
   }
@@ -1243,7 +1311,10 @@ export class AuthService implements OnModuleInit {
         `This ${input.kind} is already on your account`,
       );
     }
-    await this.ensureContactIdentifierAvailable(input.kind, normalized.identifier);
+    await this.ensureContactIdentifierAvailable(
+      input.kind,
+      normalized.identifier,
+    );
 
     const expiresInSeconds = this.contactChangeOtpTtlSec();
     const { otp } = await this.createOtpChallenge(
@@ -1376,10 +1447,7 @@ export class AuthService implements OnModuleInit {
     allowUserId?: string,
   ) {
     const existing = await this.prisma.authUser.findFirst({
-      where:
-        kind === 'phone'
-          ? { phone: identifier }
-          : { email: identifier },
+      where: kind === 'phone' ? { phone: identifier } : { email: identifier },
       select: { id: true },
     });
     if (existing && existing.id !== allowUserId) {
@@ -1391,9 +1459,13 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  private async getProfilesFromApplicationService(userIds: string[]): Promise<any[]> {
+  private async getProfilesFromApplicationService(
+    userIds: string[],
+  ): Promise<any[]> {
     if (userIds.length === 0) return [];
-    const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
     const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
     const url = `${base}/internal/users/profiles/batch`;
     try {
@@ -1411,21 +1483,30 @@ export class AuthService implements OnModuleInit {
       const json = (await res.json()) as { success: boolean; data?: any[] };
       return json.data || [];
     } catch (e) {
-      this.logger.warn(`Failed to fetch user profiles from application-service: ${e}`);
+      this.logger.warn(
+        `Failed to fetch user profiles from application-service: ${e}`,
+      );
       return [];
     }
   }
 
-  private async updateProfileFromApplicationService(userId: string, data: any): Promise<any> {
+  private async updateProfileFromApplicationService(
+    userId: string,
+    data: any,
+  ): Promise<any> {
     try {
-      const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
-      const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+      const base = this.config
+        .getOrThrow<string>('APPLICATION_SERVICE_URL')
+        .replace(/\/$/, '');
+      const key = this.config.getOrThrow<string>(
+        'APPLICATION_INTERNAL_API_KEY',
+      );
       const url = `${base}/internal/users/${userId}/profile`;
       const res = await fetch(url, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
-          'x-internal-api-key': key
+          'x-internal-api-key': key,
         },
         body: JSON.stringify(data),
       });
@@ -1435,7 +1516,9 @@ export class AuthService implements OnModuleInit {
       const json = (await res.json()) as { success: boolean; data?: any };
       return json.data || null;
     } catch (e) {
-      this.logger.warn(`Failed to update user profile from application-service: ${e}`);
+      this.logger.warn(
+        `Failed to update user profile from application-service: ${e}`,
+      );
       return null;
     }
   }
@@ -1466,7 +1549,10 @@ export class AuthService implements OnModuleInit {
       return null;
     }
 
-    const updated = await this.updateProfileFromApplicationService(userId, payload);
+    const updated = await this.updateProfileFromApplicationService(
+      userId,
+      payload,
+    );
     if (!updated) {
       return null;
     }
@@ -1503,7 +1589,10 @@ export class AuthService implements OnModuleInit {
     }
 
     const profileHints = extractSocialProfileHints(claims, profileOverrides);
-    const syncedProfile = await this.syncSocialUserProfile(userId, profileHints);
+    const syncedProfile = await this.syncSocialUserProfile(
+      userId,
+      profileHints,
+    );
     const profile =
       syncedProfile ?? (await this.getProfileSummaryForUser(userId));
     const tokenPair = await this.issuePairForUser(
@@ -1517,9 +1606,13 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  private async searchProfilesInApplicationService(search: string): Promise<string[]> {
+  private async searchProfilesInApplicationService(
+    search: string,
+  ): Promise<string[]> {
     if (!search) return [];
-    const base = this.config.getOrThrow<string>('APPLICATION_SERVICE_URL').replace(/\/$/, '');
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
     const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
     const url = `${base}/internal/users/profiles/search?q=${encodeURIComponent(search)}`;
     try {
@@ -1532,16 +1625,33 @@ export class AuthService implements OnModuleInit {
       const json = (await res.json()) as { success: boolean; data?: any[] };
       return (json.data || []).map((p: any) => p.userId);
     } catch (e) {
-      this.logger.warn(`Failed to search user profiles from application-service: ${e}`);
+      this.logger.warn(
+        `Failed to search user profiles from application-service: ${e}`,
+      );
       return [];
     }
   }
 
-  async getAllUsers(search = '', page = 1, limit = 10, sort = 'createdAt', order = 'desc') {
+  async getAllUsers(
+    search = '',
+    page = 1,
+    limit = 10,
+    sort = 'createdAt',
+    order = 'desc',
+  ) {
     try {
-      const validSortFields = ['id', 'email', 'phone', 'createdAt', 'updatedAt', 'referralCode'];
+      const validSortFields = [
+        'id',
+        'email',
+        'phone',
+        'createdAt',
+        'updatedAt',
+        'referralCode',
+      ];
       const orderByField = validSortFields.includes(sort) ? sort : 'createdAt';
-      const orderByOrder = ['asc', 'desc'].includes(order.toLowerCase()) ? order.toLowerCase() : 'desc';
+      const orderByOrder = ['asc', 'desc'].includes(order.toLowerCase())
+        ? order.toLowerCase()
+        : 'desc';
 
       const skip = (page - 1) * limit;
       const where: Prisma.AuthUserWhereInput = {};
@@ -1549,22 +1659,25 @@ export class AuthService implements OnModuleInit {
         const searchLower = search.toLowerCase();
 
         // Search profiles in application-service
-        const matchedUserIds = await this.searchProfilesInApplicationService(search);
+        const matchedUserIds =
+          await this.searchProfilesInApplicationService(search);
 
         where.OR = [
           {
             email: {
               contains: searchLower,
-              mode: 'insensitive'   // recommended for case-insensitive search
-            }
+              mode: 'insensitive', // recommended for case-insensitive search
+            },
           },
           {
             phone: {
               contains: searchLower,
-              mode: 'insensitive'
-            }
+              mode: 'insensitive',
+            },
           },
-          ...(matchedUserIds.length > 0 ? [{ id: { in: matchedUserIds } }] : []),
+          ...(matchedUserIds.length > 0
+            ? [{ id: { in: matchedUserIds } }]
+            : []),
         ];
       }
       const [users, total] = await Promise.all([
@@ -1619,14 +1732,16 @@ export class AuthService implements OnModuleInit {
             page,
             limit,
             totalPages: Math.ceil(total / limit),
-          }
+          },
         },
       };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -1653,7 +1768,9 @@ export class AuthService implements OnModuleInit {
     const profiles = await this.getProfilesFromApplicationService(
       users.map((user) => user.id),
     );
-    const profileMap = new Map(profiles.map((profile) => [profile.userId, profile]));
+    const profileMap = new Map(
+      profiles.map((profile) => [profile.userId, profile]),
+    );
 
     return {
       success: true,
@@ -1722,7 +1839,9 @@ export class AuthService implements OnModuleInit {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -1791,7 +1910,9 @@ export class AuthService implements OnModuleInit {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -1840,7 +1961,9 @@ export class AuthService implements OnModuleInit {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException(error instanceof Error ? error.message : String(error));
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -1890,6 +2013,14 @@ export class AuthService implements OnModuleInit {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
+      const referralCode =
+        user.referralCode ?? (await this.generateUniqueReferralCode());
+      if (!user.referralCode) {
+        await this.prisma.authUser.update({
+          where: { id: user.id },
+          data: { referralCode },
+        });
+      }
       const verifiedReferrals = user.referrals.filter(
         (referral) => referral.emailVerifiedAt || referral.phoneVerifiedAt,
       );
@@ -1898,7 +2029,7 @@ export class AuthService implements OnModuleInit {
         message: 'Referral summary returned.',
         data: {
           userId: user.id,
-          referralCode: user.referralCode,
+          referralCode,
           friendsJoined: user.referrals.length,
           verifiedFriendsJoined: verifiedReferrals.length,
           referredUserIds: user.referrals.map((referral) => referral.id),
@@ -1935,10 +2066,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existingIdentity) {
-      if (
-        normalizedEmail &&
-        existingIdentity.user.email !== normalizedEmail
-      ) {
+      if (normalizedEmail && existingIdentity.user.email !== normalizedEmail) {
         await this.prisma.authUser.update({
           where: { id: existingIdentity.userId },
           data: {
@@ -1987,11 +2115,13 @@ export class AuthService implements OnModuleInit {
       }
     }
 
+    const referralCode = await this.generateUniqueReferralCode();
     try {
       return await this.prisma.authUser.create({
         data: {
           email: normalizedEmail,
           emailVerifiedAt: normalizedEmail ? new Date() : undefined,
+          referralCode,
           identities: {
             create: {
               issuer,

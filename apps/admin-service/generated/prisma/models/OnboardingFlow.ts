@@ -437,14 +437,6 @@ export type EnumOnboardingFlowStatusFieldUpdateOperationsInput = {
   set?: $Enums.OnboardingFlowStatus
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type OnboardingFlowCreateNestedOneWithoutStepsInput = {
   create?: Prisma.XOR<Prisma.OnboardingFlowCreateWithoutStepsInput, Prisma.OnboardingFlowUncheckedCreateWithoutStepsInput>
   connectOrCreate?: Prisma.OnboardingFlowCreateOrConnectWithoutStepsInput

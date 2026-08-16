@@ -55,6 +55,8 @@ export class InternalFilesController {
             'ONBOARDING_ICON',
             'MENU_SCAN',
             'DISH_IMAGE',
+            'SPLASH',
+            'INTRO_IMAGE',
             'USER_AVATAR',
             'GENERIC',
           ],

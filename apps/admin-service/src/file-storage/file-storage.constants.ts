@@ -5,6 +5,8 @@ export const FILE_NAMESPACE = {
   MENU_SCAN: StoredFileNamespace.MENU_SCAN,
   DISH_IMAGE: StoredFileNamespace.DISH_IMAGE,
   LOGO: StoredFileNamespace.LOGO,
+  SPLASH: StoredFileNamespace.SPLASH,
+  INTRO_IMAGE: StoredFileNamespace.INTRO_IMAGE,
   USER_AVATAR: StoredFileNamespace.USER_AVATAR,
   GENERIC: StoredFileNamespace.GENERIC,
 } as const;
@@ -15,6 +17,8 @@ export const NAMESPACE_LOCAL_DIR: Record<StoredFileNamespace, string> = {
   [StoredFileNamespace.MENU_SCAN]: 'menu-scan',
   [StoredFileNamespace.DISH_IMAGE]: 'dish-images',
   [StoredFileNamespace.LOGO]: 'logo',
+  [StoredFileNamespace.SPLASH]: 'splash',
+  [StoredFileNamespace.INTRO_IMAGE]: 'intro-images',
   [StoredFileNamespace.USER_AVATAR]: 'user-avatar',
   [StoredFileNamespace.GENERIC]: 'generic',
 };
@@ -52,6 +56,16 @@ export const NAMESPACE_POLICIES: Record<StoredFileNamespace, NamespacePolicy> =
       maxBytes: 2 * 1024 * 1024,
       allowedMime: new Set(['image/png', 'image/jpeg', 'image/webp']),
       publicPath: '/files/logo',
+    },
+    [StoredFileNamespace.SPLASH]: {
+      maxBytes: 10 * 1024 * 1024,
+      allowedMime: new Set(['image/png', 'image/jpeg', 'image/webp']),
+      publicPath: '/files/splash',
+    },
+    [StoredFileNamespace.INTRO_IMAGE]: {
+      maxBytes: 10 * 1024 * 1024,
+      allowedMime: new Set(['image/png', 'image/jpeg', 'image/webp']),
+      publicPath: '/files/intro-image',
     },
     [StoredFileNamespace.USER_AVATAR]: {
       maxBytes: 2 * 1024 * 1024,

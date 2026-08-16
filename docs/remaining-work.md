@@ -23,8 +23,8 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 2. ✅ Pass full dietary profile into classification + clearer reasons
 3. ✅ AI dish images + store/reuse
 4. ✅ Branded HTML OTP / verification emails
-5. Dashboard-managed splash / onboarding images
-6. Referral live refresh + reward rules
+5. ✅ Dashboard-managed splash / onboarding images
+6. ✅ Referral live refresh + reward rules
 7. OCI deploy, backups, docs
 8. Full E2E + complex-menu QA
 9. Branding + App Store / Play submission
@@ -93,14 +93,14 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 
 | Item | Status | Notes |
 |------|--------|--------|
-| Manage initial / splash / launch images | **Not started** | Splash is hardcoded in Flutter `AssetPaths.splash`. No admin API for launch images. |
-| Upload / replace launch + onboarding images | **Not started** (launch) | Onboarding **step** icons exist; intro carousel images are app assets. |
-| Preview before publish | **Not started** | No launch-image preview API. |
+| ✅ Manage initial / splash / launch images | **Done / QA** | Versioned draft/published/archived bundles manage one splash and ordered intro slides; real-device visual QA remains. |
+| ✅ Upload / replace launch + onboarding images | **Done / QA** | Admin APIs support upload, replacement, removal, slide copy/order, and replaced-file cleanup. Dashboard frontend wiring remains QA. |
+| ✅ Preview before publish | **Done / QA** | Admin bundle detail returns draft images and copy without exposing drafts through the public active endpoint. |
 | Introductory video | **Out of scope** | Future; wait for Menu Assist decision. |
 | ✅ Manage shared application logo | **Done / QA** | Admin upload/replace/delete plus stable public `/branding/logo` route; dashboard UI wiring remains QA. |
 | Icon library (upload, name, preview, select, replace, remove) | **Done / QA** | `admin-service` onboarding icons. Confirm they appear in the app. |
 | Subscription section | **Partial / QA** | Plans/prices + RevenueCat sync exist; dashboard image issues reported. |
-| Dashboard changes without a new mobile build | **Partial** | Dynamic onboarding and shared logo are supported; splash/launch images are not. |
+| ✅ Dashboard changes without a new mobile build | **Done / QA** | Published splash and intro-slide content is fetched, cached, preloaded, and rendered by Flutter with bundled fallbacks. Native OS launch screens remain build-time assets by platform design. |
 | User management | **Done / QA** | Admin users APIs. |
 | Admin profile + password | **Done / QA** | |
 | Permissions / access control | **QA** | Roles exist in auth; verify dashboard admin gates. |
@@ -127,14 +127,14 @@ Do these in order. Items 1–3 are the meeting’s “most important” areas.
 
 | Item | Status | Notes |
 |------|--------|--------|
-| User gets a valid code | **Done / QA** | |
+| User gets a valid code | **Done / QA** | Password and social accounts receive a unique code; legacy accounts are backfilled when their referral summary is requested. |
 | Copy + share | **Done / QA** | Flutter clipboard + share. |
 | Register with a code | **Done / QA** | Optional field. |
 | Credit the correct referrer | **Done / QA** | |
-| Contact verification where required | **QA** | |
-| Referral count auto-refresh | **Partial** | Loads on page open only. No socket / live update. |
-| Milestones + reward rules | **Partial / Blocked** | Admin tiers exist; **final rules** from Menu Assist not locked. |
-| Rewards only after all conditions | **QA** | |
+| Contact verification where required | **Done / QA** | Referral qualification and user-facing copy consistently use verified-account completion. |
+| ✅ Referral count auto-refresh | **Done / QA** | Verified referrals trigger a protected auth-to-application callback and `referral.updated` Socket.IO event; an open Flutter referral screen silently reloads its summary. |
+| ✅ Milestones + reward rules | **Done / QA** | Published admin tiers now use absolute, strictly increasing friend thresholds and must grant scans or premium days. Final business values still require Menu Assist approval. |
+| ✅ Rewards only after all conditions | **Done / QA** | Only contact-verified referrals count; conditional usage-credit updates make milestone awards idempotent under concurrent refreshes. |
 | Duplicate / fraud / invalid referrals | **QA** | |
 
 ---

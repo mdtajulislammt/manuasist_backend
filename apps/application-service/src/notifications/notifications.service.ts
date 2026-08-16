@@ -321,6 +321,17 @@ export class NotificationsService {
         });
     }
 
+  emitReferralUpdated(
+    userId: string,
+    referredUserId: string,
+    verifiedFriendsJoined: number,
+  ): boolean {
+    return this.gateway.emitReferralUpdated(userId, {
+      referredUserId,
+      verifiedFriendsJoined,
+    });
+  }
+
   async notifyScanFailed(userId: string, scanId: string, error: string) {
     return this.createNotification({
       userId,
