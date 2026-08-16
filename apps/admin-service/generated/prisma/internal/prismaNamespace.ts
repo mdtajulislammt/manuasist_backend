@@ -1294,7 +1294,6 @@ export type StoredFileScalarFieldEnum = (typeof StoredFileScalarFieldEnum)[keyof
 export const AppLaunchContentBundleScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  version: 'version',
   status: 'status',
   isActive: 'isActive',
   publishedAt: 'publishedAt',

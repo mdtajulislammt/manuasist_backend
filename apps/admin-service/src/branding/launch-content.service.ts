@@ -43,28 +43,11 @@ export class LaunchContentService {
   ) {}
 
   async createBundle(dto: CreateLaunchContentDto) {
-    const name = dto.name.trim();
-    let version = dto.version;
-    if (version === undefined) {
-      const latest = await this.prisma.appLaunchContentBundle.findFirst({
-        where: { name },
-        orderBy: { version: 'desc' },
-      });
-      version = (latest?.version ?? 0) + 1;
-    }
-
-    try {
-      const bundle = await this.prisma.appLaunchContentBundle.create({
-        data: { name, version },
-        include: bundleInclude,
-      });
-      return this.toBundleDto(bundle, false);
-    } catch (error) {
-      this.rethrowKnownConstraint(
-        error,
-        'A bundle with this name and version already exists',
-      );
-    }
+    const bundle = await this.prisma.appLaunchContentBundle.create({
+      data: { name: dto.name.trim() },
+      include: bundleInclude,
+    });
+    return this.toBundleDto(bundle, false);
   }
 
   async listBundles() {
@@ -85,19 +68,12 @@ export class LaunchContentService {
       return this.toBundleDto(existing, false);
     }
 
-    try {
-      const updated = await this.prisma.appLaunchContentBundle.update({
-        where: { id },
-        data: { name: dto.name.trim() },
-        include: bundleInclude,
-      });
-      return this.toBundleDto(updated, false);
-    } catch (error) {
-      this.rethrowKnownConstraint(
-        error,
-        'A bundle with this name and version already exists',
-      );
-    }
+    const updated = await this.prisma.appLaunchContentBundle.update({
+      where: { id },
+      data: { name: dto.name.trim() },
+      include: bundleInclude,
+    });
+    return this.toBundleDto(updated, false);
   }
 
   async deleteBundle(id: string) {
@@ -419,7 +395,6 @@ export class LaunchContentService {
     return {
       id: bundle.id,
       name: bundle.name,
-      version: bundle.version,
       status: bundle.status,
       isActive: bundle.isActive,
       publishedAt: bundle.publishedAt,

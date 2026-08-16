@@ -20,24 +20,13 @@ export type AppLaunchContentBundleModel = runtime.Types.Result.DefaultSelection<
 
 export type AggregateAppLaunchContentBundle = {
   _count: AppLaunchContentBundleCountAggregateOutputType | null
-  _avg: AppLaunchContentBundleAvgAggregateOutputType | null
-  _sum: AppLaunchContentBundleSumAggregateOutputType | null
   _min: AppLaunchContentBundleMinAggregateOutputType | null
   _max: AppLaunchContentBundleMaxAggregateOutputType | null
-}
-
-export type AppLaunchContentBundleAvgAggregateOutputType = {
-  version: number | null
-}
-
-export type AppLaunchContentBundleSumAggregateOutputType = {
-  version: number | null
 }
 
 export type AppLaunchContentBundleMinAggregateOutputType = {
   id: string | null
   name: string | null
-  version: number | null
   status: $Enums.AppLaunchContentStatus | null
   isActive: boolean | null
   publishedAt: Date | null
@@ -48,7 +37,6 @@ export type AppLaunchContentBundleMinAggregateOutputType = {
 export type AppLaunchContentBundleMaxAggregateOutputType = {
   id: string | null
   name: string | null
-  version: number | null
   status: $Enums.AppLaunchContentStatus | null
   isActive: boolean | null
   publishedAt: Date | null
@@ -59,7 +47,6 @@ export type AppLaunchContentBundleMaxAggregateOutputType = {
 export type AppLaunchContentBundleCountAggregateOutputType = {
   id: number
   name: number
-  version: number
   status: number
   isActive: number
   publishedAt: number
@@ -69,18 +56,9 @@ export type AppLaunchContentBundleCountAggregateOutputType = {
 }
 
 
-export type AppLaunchContentBundleAvgAggregateInputType = {
-  version?: true
-}
-
-export type AppLaunchContentBundleSumAggregateInputType = {
-  version?: true
-}
-
 export type AppLaunchContentBundleMinAggregateInputType = {
   id?: true
   name?: true
-  version?: true
   status?: true
   isActive?: true
   publishedAt?: true
@@ -91,7 +69,6 @@ export type AppLaunchContentBundleMinAggregateInputType = {
 export type AppLaunchContentBundleMaxAggregateInputType = {
   id?: true
   name?: true
-  version?: true
   status?: true
   isActive?: true
   publishedAt?: true
@@ -102,7 +79,6 @@ export type AppLaunchContentBundleMaxAggregateInputType = {
 export type AppLaunchContentBundleCountAggregateInputType = {
   id?: true
   name?: true
-  version?: true
   status?: true
   isActive?: true
   publishedAt?: true
@@ -149,18 +125,6 @@ export type AppLaunchContentBundleAggregateArgs<ExtArgs extends runtime.Types.Ex
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
-   * Select which fields to average
-  **/
-  _avg?: AppLaunchContentBundleAvgAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
-   * Select which fields to sum
-  **/
-  _sum?: AppLaunchContentBundleSumAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
    * Select which fields to find the minimum value
   **/
   _min?: AppLaunchContentBundleMinAggregateInputType
@@ -191,8 +155,6 @@ export type AppLaunchContentBundleGroupByArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   _count?: AppLaunchContentBundleCountAggregateInputType | true
-  _avg?: AppLaunchContentBundleAvgAggregateInputType
-  _sum?: AppLaunchContentBundleSumAggregateInputType
   _min?: AppLaunchContentBundleMinAggregateInputType
   _max?: AppLaunchContentBundleMaxAggregateInputType
 }
@@ -200,15 +162,12 @@ export type AppLaunchContentBundleGroupByArgs<ExtArgs extends runtime.Types.Exte
 export type AppLaunchContentBundleGroupByOutputType = {
   id: string
   name: string
-  version: number
   status: $Enums.AppLaunchContentStatus
   isActive: boolean
   publishedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: AppLaunchContentBundleCountAggregateOutputType | null
-  _avg: AppLaunchContentBundleAvgAggregateOutputType | null
-  _sum: AppLaunchContentBundleSumAggregateOutputType | null
   _min: AppLaunchContentBundleMinAggregateOutputType | null
   _max: AppLaunchContentBundleMaxAggregateOutputType | null
 }
@@ -234,7 +193,6 @@ export type AppLaunchContentBundleWhereInput = {
   NOT?: Prisma.AppLaunchContentBundleWhereInput | Prisma.AppLaunchContentBundleWhereInput[]
   id?: Prisma.UuidFilter<"AppLaunchContentBundle"> | string
   name?: Prisma.StringFilter<"AppLaunchContentBundle"> | string
-  version?: Prisma.IntFilter<"AppLaunchContentBundle"> | number
   status?: Prisma.EnumAppLaunchContentStatusFilter<"AppLaunchContentBundle"> | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFilter<"AppLaunchContentBundle"> | boolean
   publishedAt?: Prisma.DateTimeNullableFilter<"AppLaunchContentBundle"> | Date | string | null
@@ -246,7 +204,6 @@ export type AppLaunchContentBundleWhereInput = {
 export type AppLaunchContentBundleOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -257,34 +214,29 @@ export type AppLaunchContentBundleOrderByWithRelationInput = {
 
 export type AppLaunchContentBundleWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  name_version?: Prisma.AppLaunchContentBundleNameVersionCompoundUniqueInput
   AND?: Prisma.AppLaunchContentBundleWhereInput | Prisma.AppLaunchContentBundleWhereInput[]
   OR?: Prisma.AppLaunchContentBundleWhereInput[]
   NOT?: Prisma.AppLaunchContentBundleWhereInput | Prisma.AppLaunchContentBundleWhereInput[]
   name?: Prisma.StringFilter<"AppLaunchContentBundle"> | string
-  version?: Prisma.IntFilter<"AppLaunchContentBundle"> | number
   status?: Prisma.EnumAppLaunchContentStatusFilter<"AppLaunchContentBundle"> | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFilter<"AppLaunchContentBundle"> | boolean
   publishedAt?: Prisma.DateTimeNullableFilter<"AppLaunchContentBundle"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"AppLaunchContentBundle"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AppLaunchContentBundle"> | Date | string
   assets?: Prisma.AppLaunchAssetListRelationFilter
-}, "id" | "name_version">
+}, "id">
 
 export type AppLaunchContentBundleOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AppLaunchContentBundleCountOrderByAggregateInput
-  _avg?: Prisma.AppLaunchContentBundleAvgOrderByAggregateInput
   _max?: Prisma.AppLaunchContentBundleMaxOrderByAggregateInput
   _min?: Prisma.AppLaunchContentBundleMinOrderByAggregateInput
-  _sum?: Prisma.AppLaunchContentBundleSumOrderByAggregateInput
 }
 
 export type AppLaunchContentBundleScalarWhereWithAggregatesInput = {
@@ -293,7 +245,6 @@ export type AppLaunchContentBundleScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AppLaunchContentBundleScalarWhereWithAggregatesInput | Prisma.AppLaunchContentBundleScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"AppLaunchContentBundle"> | string
   name?: Prisma.StringWithAggregatesFilter<"AppLaunchContentBundle"> | string
-  version?: Prisma.IntWithAggregatesFilter<"AppLaunchContentBundle"> | number
   status?: Prisma.EnumAppLaunchContentStatusWithAggregatesFilter<"AppLaunchContentBundle"> | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolWithAggregatesFilter<"AppLaunchContentBundle"> | boolean
   publishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AppLaunchContentBundle"> | Date | string | null
@@ -304,7 +255,6 @@ export type AppLaunchContentBundleScalarWhereWithAggregatesInput = {
 export type AppLaunchContentBundleCreateInput = {
   id?: string
   name: string
-  version: number
   status?: $Enums.AppLaunchContentStatus
   isActive?: boolean
   publishedAt?: Date | string | null
@@ -316,7 +266,6 @@ export type AppLaunchContentBundleCreateInput = {
 export type AppLaunchContentBundleUncheckedCreateInput = {
   id?: string
   name: string
-  version: number
   status?: $Enums.AppLaunchContentStatus
   isActive?: boolean
   publishedAt?: Date | string | null
@@ -328,7 +277,6 @@ export type AppLaunchContentBundleUncheckedCreateInput = {
 export type AppLaunchContentBundleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -340,7 +288,6 @@ export type AppLaunchContentBundleUpdateInput = {
 export type AppLaunchContentBundleUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -352,7 +299,6 @@ export type AppLaunchContentBundleUncheckedUpdateInput = {
 export type AppLaunchContentBundleCreateManyInput = {
   id?: string
   name: string
-  version: number
   status?: $Enums.AppLaunchContentStatus
   isActive?: boolean
   publishedAt?: Date | string | null
@@ -363,7 +309,6 @@ export type AppLaunchContentBundleCreateManyInput = {
 export type AppLaunchContentBundleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -374,7 +319,6 @@ export type AppLaunchContentBundleUpdateManyMutationInput = {
 export type AppLaunchContentBundleUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -382,15 +326,9 @@ export type AppLaunchContentBundleUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type AppLaunchContentBundleNameVersionCompoundUniqueInput = {
-  name: string
-  version: number
-}
-
 export type AppLaunchContentBundleCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
@@ -398,14 +336,9 @@ export type AppLaunchContentBundleCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type AppLaunchContentBundleAvgOrderByAggregateInput = {
-  version?: Prisma.SortOrder
-}
-
 export type AppLaunchContentBundleMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
@@ -416,16 +349,11 @@ export type AppLaunchContentBundleMaxOrderByAggregateInput = {
 export type AppLaunchContentBundleMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-}
-
-export type AppLaunchContentBundleSumOrderByAggregateInput = {
-  version?: Prisma.SortOrder
 }
 
 export type AppLaunchContentBundleScalarRelationFilter = {
@@ -462,7 +390,6 @@ export type AppLaunchContentBundleUpdateOneRequiredWithoutAssetsNestedInput = {
 export type AppLaunchContentBundleCreateWithoutAssetsInput = {
   id?: string
   name: string
-  version: number
   status?: $Enums.AppLaunchContentStatus
   isActive?: boolean
   publishedAt?: Date | string | null
@@ -473,7 +400,6 @@ export type AppLaunchContentBundleCreateWithoutAssetsInput = {
 export type AppLaunchContentBundleUncheckedCreateWithoutAssetsInput = {
   id?: string
   name: string
-  version: number
   status?: $Enums.AppLaunchContentStatus
   isActive?: boolean
   publishedAt?: Date | string | null
@@ -500,7 +426,6 @@ export type AppLaunchContentBundleUpdateToOneWithWhereWithoutAssetsInput = {
 export type AppLaunchContentBundleUpdateWithoutAssetsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -511,7 +436,6 @@ export type AppLaunchContentBundleUpdateWithoutAssetsInput = {
 export type AppLaunchContentBundleUncheckedUpdateWithoutAssetsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumAppLaunchContentStatusFieldUpdateOperationsInput | $Enums.AppLaunchContentStatus
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -553,7 +477,6 @@ export type AppLaunchContentBundleCountOutputTypeCountAssetsArgs<ExtArgs extends
 export type AppLaunchContentBundleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  version?: boolean
   status?: boolean
   isActive?: boolean
   publishedAt?: boolean
@@ -566,7 +489,6 @@ export type AppLaunchContentBundleSelect<ExtArgs extends runtime.Types.Extension
 export type AppLaunchContentBundleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  version?: boolean
   status?: boolean
   isActive?: boolean
   publishedAt?: boolean
@@ -577,7 +499,6 @@ export type AppLaunchContentBundleSelectCreateManyAndReturn<ExtArgs extends runt
 export type AppLaunchContentBundleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  version?: boolean
   status?: boolean
   isActive?: boolean
   publishedAt?: boolean
@@ -588,7 +509,6 @@ export type AppLaunchContentBundleSelectUpdateManyAndReturn<ExtArgs extends runt
 export type AppLaunchContentBundleSelectScalar = {
   id?: boolean
   name?: boolean
-  version?: boolean
   status?: boolean
   isActive?: boolean
   publishedAt?: boolean
@@ -596,7 +516,7 @@ export type AppLaunchContentBundleSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AppLaunchContentBundleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "version" | "status" | "isActive" | "publishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["appLaunchContentBundle"]>
+export type AppLaunchContentBundleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "status" | "isActive" | "publishedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["appLaunchContentBundle"]>
 export type AppLaunchContentBundleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assets?: boolean | Prisma.AppLaunchContentBundle$assetsArgs<ExtArgs>
   _count?: boolean | Prisma.AppLaunchContentBundleCountOutputTypeDefaultArgs<ExtArgs>
@@ -612,7 +532,6 @@ export type $AppLaunchContentBundlePayload<ExtArgs extends runtime.Types.Extensi
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
-    version: number
     status: $Enums.AppLaunchContentStatus
     isActive: boolean
     publishedAt: Date | null
@@ -1044,7 +963,6 @@ export interface Prisma__AppLaunchContentBundleClient<T, Null = never, ExtArgs e
 export interface AppLaunchContentBundleFieldRefs {
   readonly id: Prisma.FieldRef<"AppLaunchContentBundle", 'String'>
   readonly name: Prisma.FieldRef<"AppLaunchContentBundle", 'String'>
-  readonly version: Prisma.FieldRef<"AppLaunchContentBundle", 'Int'>
   readonly status: Prisma.FieldRef<"AppLaunchContentBundle", 'AppLaunchContentStatus'>
   readonly isActive: Prisma.FieldRef<"AppLaunchContentBundle", 'Boolean'>
   readonly publishedAt: Prisma.FieldRef<"AppLaunchContentBundle", 'DateTime'>

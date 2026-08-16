@@ -56,7 +56,6 @@ function draftBundle(assets: Array<Record<string, unknown>> = []) {
   return {
     id: 'bundle-id',
     name: 'Default',
-    version: 1,
     status: AppLaunchContentStatus.DRAFT,
     isActive: false,
     publishedAt: null,

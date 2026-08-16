@@ -99,7 +99,6 @@ model StoredFile {
 model AppLaunchContentBundle {
   id          String                 @id @default(uuid()) @db.Uuid
   name        String
-  version     Int
   status      AppLaunchContentStatus @default(DRAFT)
   isActive    Boolean                @default(false) @map("is_active")
   publishedAt DateTime?              @map("published_at")
@@ -108,7 +107,6 @@ model AppLaunchContentBundle {
 
   assets AppLaunchAsset[]
 
-  @@unique([name, version])
   @@index([status, isActive])
   @@map("admin_app_launch_content_bundles")
 }
