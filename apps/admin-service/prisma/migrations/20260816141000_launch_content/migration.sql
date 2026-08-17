@@ -7,6 +7,7 @@ CREATE TYPE "AppLaunchAssetKind" AS ENUM ('SPLASH', 'INTRO_SLIDE');
 CREATE TABLE "admin_app_launch_content_bundles" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
+    "version" INTEGER NOT NULL,
     "status" "AppLaunchContentStatus" NOT NULL DEFAULT 'DRAFT',
     "is_active" BOOLEAN NOT NULL DEFAULT false,
     "published_at" TIMESTAMP(3),
@@ -29,6 +30,9 @@ CREATE TABLE "admin_app_launch_assets" (
 
     CONSTRAINT "admin_app_launch_assets_pkey" PRIMARY KEY ("id")
 );
+
+CREATE UNIQUE INDEX "admin_app_launch_content_bundles_name_version_key"
+ON "admin_app_launch_content_bundles"("name", "version");
 
 CREATE INDEX "admin_app_launch_content_bundles_status_is_active_idx"
 ON "admin_app_launch_content_bundles"("status", "is_active");
