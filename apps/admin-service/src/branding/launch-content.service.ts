@@ -30,6 +30,14 @@ const bundleInclude = {
   },
 } satisfies Prisma.AppLaunchContentBundleInclude;
 
+const bundleListInclude = {
+  _count: {
+    select: {
+      assets: { where: { kind: AppLaunchAssetKind.INTRO_SLIDE } },
+    },
+  },
+} satisfies Prisma.AppLaunchContentBundleInclude;
+
 type LaunchBundleWithAssets = Prisma.AppLaunchContentBundleGetPayload<{
   include: typeof bundleInclude;
 }>;
@@ -53,9 +61,18 @@ export class LaunchContentService {
   async listBundles() {
     const bundles = await this.prisma.appLaunchContentBundle.findMany({
       orderBy: [{ createdAt: 'desc' }],
-      include: bundleInclude,
+      include: bundleListInclude,
     });
-    return bundles.map((bundle) => this.toBundleDto(bundle, false));
+    return bundles.map((bundle) => ({
+      id: bundle.id,
+      name: bundle.name,
+      status: bundle.status,
+      isActive: bundle.isActive,
+      publishedAt: bundle.publishedAt,
+      createdAt: bundle.createdAt,
+      updatedAt: bundle.updatedAt,
+      introSlideCount: bundle._count.assets,
+    }));
   }
 
   async getBundle(id: string) {

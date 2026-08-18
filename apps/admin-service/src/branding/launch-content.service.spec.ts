@@ -144,6 +144,32 @@ describe('LaunchContentService', () => {
     jest.clearAllMocks();
   });
 
+  it('returns only bundle metadata and the intro slide count in the list', async () => {
+    prisma.appLaunchContentBundle.findMany.mockResolvedValue([
+      {
+        ...draftBundle(),
+        _count: { assets: 2 },
+      },
+    ]);
+
+    const result = await service.listBundles();
+
+    expect(result[0].introSlideCount).toBe(2);
+    expect(result[0]).not.toHaveProperty('introSlides');
+    expect(result[0]).not.toHaveProperty('splash');
+    expect(prisma.appLaunchContentBundle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          _count: {
+            select: {
+              assets: { where: { kind: AppLaunchAssetKind.INTRO_SLIDE } },
+            },
+          },
+        }),
+      }),
+    );
+  });
+
   it('returns only the active published bundle with ordered slides', async () => {
     prisma.appLaunchContentBundle.findFirst.mockResolvedValue({
       ...draftBundle([introAsset(1), splashAsset(), introAsset(0)]),
