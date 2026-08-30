@@ -78,7 +78,7 @@ async function main() {
     throw new Error('AUTH_DATABASE_URL is required for admin seed');
   }
 
-  const password = process.env.AUTH_SEED_STAFF_ADMIN_PASSWORD ?? 'Admin@123456';
+  const password = process.env.AUTH_SEED_STAFF_ADMIN_PASSWORD ?? 'Admin@##2600';
   const emails = staffAdminEmails();
   const prisma = new PrismaService(databaseUrl);
   await prisma.onModuleInit();
