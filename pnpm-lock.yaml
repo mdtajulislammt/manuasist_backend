@@ -65,6 +65,9 @@ importers:
       firebase-admin:
         specifier: ^13.10.0
         version: 13.10.0
+      http-proxy:
+        specifier: ^1.18.1
+        version: 1.18.1
       ioredis:
         specifier: ^5.11.1
         version: 5.11.1
