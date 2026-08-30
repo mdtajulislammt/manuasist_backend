@@ -100,11 +100,11 @@ pnpm run start:dev:ai
 
 From `.env.example`:
 
-- API Gateway: `2645`
-- Auth Service: `2646`
-- Application Service: `2647`
-- Admin Service: `2648`
-- AI Ingestion Service: `2649`
+- API Gateway: `4000`
+- Auth Service: `4001`
+- Application Service: `4002`
+- Admin Service: `4003`
+- AI Ingestion Service: `4004`
 
 ## Common Commands
 
@@ -145,7 +145,7 @@ If an upstream (auth/app/admin/ai) is down, the gateway returns **HTTP 502** JSO
 Quick check (gateway up, auth stopped):
 
 ```bash
-curl -i http://localhost:2645/v1/auth/health
+curl -i http://localhost:4000/v1/auth/health
 # expect 502; gateway process still alive
 ```
 
@@ -183,6 +183,8 @@ pnpm run prisma:generate:ai
 ```
 
 ## Docker
+
+Service ports come from root `.env` (`API_GATEWAY_PORT=4000`, etc.).
 
 Run only infrastructure:
 
@@ -233,7 +235,7 @@ Flutter purchases sync to `application-service` via:
 Full dashboard setup, ngrok local testing, and verification steps:
 [`docs/revenuecat-webhook-setup.md`](docs/revenuecat-webhook-setup.md)
 
-Quick local smoke test (gateway on port 2645):
+Quick local smoke test (gateway on port 4000):
 
 ```powershell
 .\scripts\test-revenuecat-webhook.ps1 -UserId "<auth-user-uuid>"

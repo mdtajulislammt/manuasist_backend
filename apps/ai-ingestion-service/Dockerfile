@@ -10,6 +10,5 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build:ai
 
-EXPOSE 2649
-ENV AI_INGESTION_SERVICE_PORT=2649
+EXPOSE 4004
 CMD ["node", "dist/apps/ai-ingestion-service/apps/ai-ingestion-service/src/main.js"]

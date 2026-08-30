@@ -35,7 +35,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, swaggerDocument);
 
   await app.startAllMicroservices();
-  await app.listen(process.env.APPLICATION_SERVICE_PORT ?? 2647);
+  await app.listen(process.env.APPLICATION_SERVICE_PORT ?? 4002);
 }
 
 bootstrap();

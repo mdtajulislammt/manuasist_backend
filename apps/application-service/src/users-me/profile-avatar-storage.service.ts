@@ -160,7 +160,7 @@ export class ProfileAvatarStorageService {
       this.config.get<string>('APPLICATION_PUBLIC_URL') ??
       this.gatewayAppBaseUrl() ??
       this.config.get<string>('APPLICATION_SERVICE_URL') ??
-      'http://localhost:2647';
+      'http://localhost:4002';
     return `${appBase.replace(/\/$/, '')}/files/${AVATAR_URL_NAMESPACE}/${storedName}`;
   }
 

@@ -21,7 +21,7 @@ export class AdminFileClientService {
   buildPublicImageUrl(storedName: string): string {
     const gateway = (
       this.config.get<string>('API_GATEWAY_PUBLIC_URL') ??
-      'http://localhost:2645'
+      'http://localhost:4000'
     ).replace(/\/$/, '');
     return `${gateway}/v1/admin/files/menu-scan/${storedName}`;
   }
@@ -29,7 +29,7 @@ export class AdminFileClientService {
   buildPublicDishImageUrl(storedName: string): string {
     const gateway = (
       this.config.get<string>('API_GATEWAY_PUBLIC_URL') ??
-      'http://localhost:2645'
+      'http://localhost:4000'
     ).replace(/\/$/, '');
     return `${gateway}/v1/admin/files/dish-image/${storedName}`;
   }

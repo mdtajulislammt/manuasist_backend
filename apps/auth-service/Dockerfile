@@ -11,6 +11,5 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm run prisma:generate:auth
 RUN pnpm run build:auth
 
-EXPOSE 2646
-ENV AUTH_SERVICE_PORT=2646
+EXPOSE 4001
 CMD ["node", "dist/apps/auth-service/apps/auth-service/src/main.js"]

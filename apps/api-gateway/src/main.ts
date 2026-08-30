@@ -152,7 +152,7 @@ async function bootstrap() {
     });
   }
 
-  const port = Number(process.env.API_GATEWAY_PORT ?? 2645);
+  const port = Number(process.env.API_GATEWAY_PORT ?? 4000);
   const httpServer = await app.listen(port);
   socketIoProxy.attachUpgrade(httpServer);
 }

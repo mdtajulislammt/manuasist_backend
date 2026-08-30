@@ -9,7 +9,7 @@ const logger = new Logger('GatewaySocketProxy');
 const SOCKET_IO_PATH_PREFIX = '/socket.io';
 
 export function resolveApplicationServiceUrl(): string {
-  return process.env.APPLICATION_SERVICE_URL ?? 'http://127.0.0.1:2647';
+  return process.env.APPLICATION_SERVICE_URL ?? 'http://127.0.0.1:4002';
 }
 
 function isSocketIoRequest(url: string | undefined): boolean {
