@@ -14,7 +14,7 @@ export const DEFAULT_CORS_ORIGINS = [
   'http://10.10.9.82:3001',
   'http://10.10.9.82:3002',
   'https://menuassistanikstudio-phi.vercel.app',
-  'https://danla2025-ninja-designer24-fiverr.vercel.app/login',
+  'https://danla2025-ninja-designer24-fiverr.vercel.app',
   'https://dashboard.dev.menuassistapp.com',
   'https://dashboard.menuassistapp.com',
 ] as const;
