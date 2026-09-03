@@ -4,6 +4,11 @@ import * as nodemailer from 'nodemailer';
 import type { AuthOtpEmailPurpose } from './auth-otp.constants';
 import { buildOtpEmailTemplate } from './otp-email.template';
 
+function parseSmtpSecure(value: string | undefined): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
 @Injectable()
 export class OtpEmailService {
   private readonly logger = new Logger(OtpEmailService.name);
@@ -17,27 +22,35 @@ export class OtpEmailService {
     expiresInSeconds: number;
   }): Promise<void> {
     const { to, otp, purpose, expiresInSeconds } = input;
-    const gmailUser = this.config.get<string>('GMAIL_APP_USER');
-    const gmailAppPassword = this.config.get<string>('GMAIL_APP_PASSWORD');
+    const host = this.config.get<string>('SMTP_HOST')?.trim();
+    const user = this.config.get<string>('SMTP_USER')?.trim();
+    const password = this.config.get<string>('SMTP_PASSWORD');
 
-    // Keep local dev unblocked if SMTP is not configured yet.
-    if (!gmailUser || !gmailAppPassword) {
+    if (!host || !user || !password) {
       this.logger.warn(
-        `Gmail SMTP credentials missing; falling back to log for ${purpose} OTP`,
+        `SMTP credentials missing; falling back to log for ${purpose} OTP`,
       );
       this.logger.log(`${purpose} OTP for ${to}: ${otp}`);
       return;
     }
 
+    const port = Number(this.config.get<string>('SMTP_PORT') ?? 587);
+    const secure = parseSmtpSecure(this.config.get<string>('SMTP_SECURE'));
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host,
+      port: Number.isFinite(port) ? port : 587,
+      secure,
+      requireTLS: !secure,
       auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
+        user,
+        pass: password,
       },
     });
     const appName = this.config.get<string>('APP_NAME') ?? 'Menu Assist';
-    const from = this.config.get<string>('OTP_EMAIL_FROM') ?? gmailUser;
+    const from =
+      this.config.get<string>('SMTP_FROM')?.trim() ||
+      this.config.get<string>('OTP_EMAIL_FROM')?.trim() ||
+      user;
     const { subject, text, html } = buildOtpEmailTemplate({
       appName,
       otp,

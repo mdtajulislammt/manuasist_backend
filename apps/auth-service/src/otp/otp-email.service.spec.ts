@@ -24,9 +24,13 @@ describe('OtpEmailService', () => {
 
   it('sends branded HTML and plain-text alternatives', async () => {
     const values: Record<string, string> = {
-      GMAIL_APP_USER: 'sender@example.com',
-      GMAIL_APP_PASSWORD: 'app-password',
-      OTP_EMAIL_FROM: 'Menu Assist <sender@example.com>',
+      SMTP_HOST: 'smtp.office365.com',
+      SMTP_PORT: '587',
+      SMTP_SECURE: 'false',
+      SMTP_USER: 'notify@menuassistapp.com',
+      SMTP_PASSWORD: 'mailbox-password',
+      SMTP_FROM: 'notify@menuassistapp.com',
+      OTP_EMAIL_FROM: 'Menu Assist <notify@menuassistapp.com>',
       APP_NAME: 'Menu Assist',
     };
     const config = {
@@ -42,10 +46,13 @@ describe('OtpEmailService', () => {
     });
 
     expect(createTransport).toHaveBeenCalledWith({
-      service: 'gmail',
+      host: 'smtp.office365.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: {
-        user: 'sender@example.com',
-        pass: 'app-password',
+        user: 'notify@menuassistapp.com',
+        pass: 'mailbox-password',
       },
     });
     const expectedTemplate = buildOtpEmailTemplate({
@@ -55,9 +62,37 @@ describe('OtpEmailService', () => {
       expiresInSeconds: 600,
     });
     expect(sendMail).toHaveBeenCalledWith({
-      from: 'Menu Assist <sender@example.com>',
+      from: 'notify@menuassistapp.com',
       to: 'user@example.com',
       ...expectedTemplate,
     });
+  });
+
+  it('uses OTP_EMAIL_FROM when SMTP_FROM is unset', async () => {
+    const values: Record<string, string> = {
+      SMTP_HOST: 'smtp.office365.com',
+      SMTP_PORT: '587',
+      SMTP_SECURE: 'false',
+      SMTP_USER: 'notify@menuassistapp.com',
+      SMTP_PASSWORD: 'mailbox-password',
+      OTP_EMAIL_FROM: 'Menu Assist <notify@menuassistapp.com>',
+    };
+    const config = {
+      get: jest.fn((key: string) => values[key]),
+    } as unknown as ConfigService;
+    const service = new OtpEmailService(config);
+
+    await service.send({
+      to: 'user@example.com',
+      otp: '123456',
+      purpose: 'SIGNUP',
+      expiresInSeconds: 600,
+    });
+
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'Menu Assist <notify@menuassistapp.com>',
+      }),
+    );
   });
 });
