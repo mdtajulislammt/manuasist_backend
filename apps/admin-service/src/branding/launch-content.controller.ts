@@ -206,12 +206,16 @@ export class LaunchContentAdminController {
 
   @Post(':id/publish')
   @ApiOperation({
-    summary: 'Publish and activate a complete launch-content bundle',
+    summary:
+      'Toggle publish: activate a complete bundle, or unpublish the active one back to draft',
   })
   async publish(@Param('id', ParseUUIDPipe) id: string) {
+    const data = await this.launchContent.publishBundle(id);
     return this.success(
-      'Launch content published',
-      await this.launchContent.publishBundle(id),
+      data.isActive
+        ? 'Launch content published'
+        : 'Launch content unpublished',
+      data,
     );
   }
 

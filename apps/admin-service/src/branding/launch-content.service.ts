@@ -255,7 +255,22 @@ export class LaunchContentService {
   }
 
   async publishBundle(bundleId: string) {
-    const bundle = await this.requireDraftBundle(bundleId);
+    const bundle = await this.requireBundle(bundleId);
+
+    if (
+      bundle.status === AppLaunchContentStatus.PUBLISHED &&
+      bundle.isActive
+    ) {
+      await this.prisma.appLaunchContentBundle.update({
+        where: { id: bundleId },
+        data: {
+          status: AppLaunchContentStatus.DRAFT,
+          isActive: false,
+        },
+      });
+      return this.getBundle(bundleId);
+    }
+
     this.assertPublishable(bundle);
 
     await this.prisma.$transaction(

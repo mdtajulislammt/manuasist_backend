@@ -236,6 +236,40 @@ describe('LaunchContentService', () => {
     expect(tx.appLaunchContentBundle.update).toHaveBeenCalledTimes(1);
   });
 
+  it('unpublishes an active bundle back to draft', async () => {
+    const published = {
+      ...draftBundle([splashAsset(), introAsset()]),
+      status: AppLaunchContentStatus.PUBLISHED,
+      isActive: true,
+      publishedAt: new Date('2026-08-16T00:00:00.000Z'),
+    };
+    prisma.appLaunchContentBundle.findUnique
+      .mockResolvedValueOnce(published)
+      .mockResolvedValueOnce({
+        ...published,
+        status: AppLaunchContentStatus.DRAFT,
+        isActive: false,
+      });
+    prisma.appLaunchContentBundle.update.mockResolvedValue({
+      ...published,
+      status: AppLaunchContentStatus.DRAFT,
+      isActive: false,
+    });
+
+    const result = await service.publishBundle('bundle-id');
+
+    expect(prisma.appLaunchContentBundle.update).toHaveBeenCalledWith({
+      where: { id: 'bundle-id' },
+      data: {
+        status: AppLaunchContentStatus.DRAFT,
+        isActive: false,
+      },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(result.status).toBe(AppLaunchContentStatus.DRAFT);
+    expect(result.isActive).toBe(false);
+  });
+
   it('rejects publishing incomplete or unordered content', async () => {
     prisma.appLaunchContentBundle.findUnique.mockResolvedValue(
       draftBundle([introAsset(1)]),
