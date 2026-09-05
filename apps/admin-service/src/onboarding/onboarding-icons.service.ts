@@ -18,6 +18,9 @@ export type OnboardingIconUploadFile = {
 
 const NS = FILE_NAMESPACE.ONBOARDING_ICON;
 
+const STORED_FILE_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
  * Optional **admin-assigned label** for an icon (e.g. `Peanuts`).
  * Not the stored UUID filename and not the upload file name.
@@ -118,6 +121,23 @@ export class OnboardingIconsService {
     return { deleted: true as const, filename };
   }
 
+  async deleteIconById(id: string, stepId?: string) {
+    await this.assertOptionalDraftStep(stepId);
+    const row = await this.files.findById(id);
+    if (row.namespace !== NS) {
+      throw new NotFoundException('Icon not found');
+    }
+    await this.files.deleteById(id);
+    return { deleted: true as const, id, filename: row.storedName };
+  }
+
+  async deleteIconByIdOrFilename(idOrFilename: string, stepId?: string) {
+    if (STORED_FILE_ID_RE.test(idOrFilename)) {
+      return this.deleteIconById(idOrFilename, stepId);
+    }
+    return this.deleteIcon(idOrFilename, stepId);
+  }
+
   async getReadStream(filename: string) {
     this.files.assertValidStoredName(filename);
     try {
@@ -129,6 +149,7 @@ export class OnboardingIconsService {
 
   async listAllIcons(): Promise<{
     icons: Array<{
+      id: string;
       filename: string;
       iconUrl: string;
       iconName?: string;
