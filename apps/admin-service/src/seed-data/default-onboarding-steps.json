@@ -29,7 +29,8 @@
             "step": 1,
             "default": 180,
             "leftCaption": "0 CM",
-            "rightCaption": "500 CM"
+            "rightCaption": "500 CM",
+            "icon": "/onboarding/icons/{uuid-height}.png"
           },
           {
             "label": "Weight",
@@ -39,7 +40,8 @@
             "step": 1,
             "default": 80,
             "leftCaption": "0 KG",
-            "rightCaption": "200 KG"
+            "rightCaption": "200 KG",
+            "icon": "/onboarding/icons/{uuid-weight}.png"
           },
           {
             "label": "Age",
@@ -49,7 +51,8 @@
             "step": 1,
             "default": 56,
             "leftCaption": "0 Year",
-            "rightCaption": "100 Years"
+            "rightCaption": "100 Years",
+            "icon": "/onboarding/icons/{uuid-age}.png"
           }
         ]
       }

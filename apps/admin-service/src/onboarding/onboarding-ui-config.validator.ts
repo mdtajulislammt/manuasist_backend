@@ -70,6 +70,33 @@ function validateSingleSelect(obj: Record<string, unknown>) {
   });
 }
 
+function normalizeOptionalIcon(
+  raw: unknown,
+  path: string,
+): string | undefined {
+  if (raw === undefined || raw === null) {
+    return undefined;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    return trimmed;
+  }
+  if (isPlainObject(raw)) {
+    const fromObject = [raw.iconUrl, raw.icon, raw.filename, raw.id].find(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    );
+    if (typeof fromObject === 'string') {
+      return fromObject.trim();
+    }
+  }
+  throw new BadRequestException(
+    `${path} must be a non-empty string (asset key, image URL, or stored filename) when set`,
+  );
+}
+
 function validateMultiSlider(
   obj: Record<string, unknown>,
   requireStableKeys: boolean,
@@ -101,6 +128,12 @@ function validateMultiSlider(
     }
     if (raw.rightCaption !== undefined && raw.rightCaption !== null && typeof raw.rightCaption !== 'string') {
       throw new BadRequestException(`${p}.rightCaption must be a string when set`);
+    }
+    const icon = normalizeOptionalIcon(raw.icon, `${p}.icon`);
+    if (icon) {
+      raw.icon = icon;
+    } else {
+      delete raw.icon;
     }
   });
 }
@@ -243,7 +276,8 @@ function validateMultiScale(
 /**
  * Validates `uiConfig` when present. Matches the onboarding step JSON shapes in `steps.txt`
  * (single_select, multi_slider, single_select_cards, multi_select_cards, multi_scale).
- * Optional per-option `icon` is allowed for card kinds (string: asset key or image URL).
+ * Optional `icon` is allowed on card `options[]` and multi_slider `fields[]`
+ * (string: asset key, image URL, or stored filename).
  * Field keys and option values may be omitted on input; use `prepareOnboardingUiConfig` to generate them.
  */
 export function assertValidOnboardingUiConfig(

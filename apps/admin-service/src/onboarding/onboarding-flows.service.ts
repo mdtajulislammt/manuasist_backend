@@ -274,7 +274,10 @@ export class OnboardingFlowsService {
           );
         }
 
-        return results;
+        return results.map((step) => ({
+          ...step,
+          uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+        }));
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -370,7 +373,10 @@ export class OnboardingFlowsService {
       return {
         success: true,
         message: 'Step updated successfully',
-        data: updatedStep,
+        data: {
+          ...updatedStep,
+          uiConfig: enrichStepUiConfigForResponse(updatedStep.uiConfig),
+        },
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

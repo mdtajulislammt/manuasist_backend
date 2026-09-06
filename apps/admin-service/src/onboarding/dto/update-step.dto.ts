@@ -38,7 +38,7 @@ export class UpdateStepDto {
 
   @ApiPropertyOptional({
     description:
-      'Updated UI config (JSON). Same `kind` rules as create step; optional `icon` per option on card kinds. See `steps.txt` for examples.',
+      'Updated UI config (JSON). Same `kind` rules as create step; optional `icon` per card option and per `multi_slider` field. See `steps.txt` for examples.',
     type: 'object',
     additionalProperties: true,
     example: {

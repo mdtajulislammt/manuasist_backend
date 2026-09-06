@@ -1,5 +1,6 @@
 import {
   normalizeOnboardingUiConfig,
+  prepareOnboardingUiConfig,
   slugifyOnboardingKey,
 } from './onboarding-ui-config.normalizer';
 
@@ -74,6 +75,30 @@ describe('normalizeOnboardingUiConfig', () => {
     ]);
   });
 
+  it('keeps optional icons on multi_slider fields', () => {
+    const normalized = normalizeOnboardingUiConfig({
+      kind: 'multi_slider',
+      fields: [
+        {
+          label: 'Height',
+          unit: 'CM',
+          min: 0,
+          max: 500,
+          step: 1,
+          default: 180,
+          icon: '/onboarding/icons/height.png',
+        },
+      ],
+    });
+
+    expect(normalized?.fields).toEqual([
+      expect.objectContaining({
+        key: 'height_cm',
+        icon: '/onboarding/icons/height.png',
+      }),
+    ]);
+  });
+
   it('preserves explicit keys and values when provided', () => {
     const normalized = normalizeOnboardingUiConfig({
       kind: 'multi_slider',
@@ -92,6 +117,36 @@ describe('normalizeOnboardingUiConfig', () => {
 
     expect(normalized?.fields).toEqual([
       expect.objectContaining({ key: 'heightCm' }),
+    ]);
+  });
+});
+
+describe('prepareOnboardingUiConfig', () => {
+  it('stores multi_slider field icons as strings, including uploaded-icon objects', () => {
+    const prepared = prepareOnboardingUiConfig({
+      kind: 'multi_slider',
+      fields: [
+        {
+          label: 'Height',
+          unit: 'CM',
+          min: 0,
+          max: 500,
+          step: 1,
+          default: 180,
+          icon: {
+            id: '11111111-1111-4111-8111-111111111111',
+            iconUrl: '/onboarding/icons/height.png',
+            filename: 'height.png',
+          },
+        },
+      ],
+    });
+
+    expect(prepared?.fields).toEqual([
+      expect.objectContaining({
+        key: 'height_cm',
+        icon: '/onboarding/icons/height.png',
+      }),
     ]);
   });
 });

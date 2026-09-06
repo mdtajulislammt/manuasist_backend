@@ -50,7 +50,7 @@ export class CreateStepDto {
     description:
       'UI config (JSON). Supported `kind` values: single_select | multi_slider | single_select_cards | multi_select_cards | multi_scale. ' +
       'Field keys (`fields[].key`) and option values (`options[].value`) are auto-generated from labels when omitted. ' +
-      'For card kinds, each option may include optional `icon` (string: asset key or image URL). See repo `steps.txt` for full payload examples.',
+      'For card kinds, each option may include optional `icon`. For `multi_slider`, each field may include optional `icon` (asset key, image URL, or stored filename). See repo `steps.txt` for full payload examples.',
     type: 'object',
     additionalProperties: true,
     example: {

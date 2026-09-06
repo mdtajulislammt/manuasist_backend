@@ -91,6 +91,7 @@ function normalizeCardOptions(options: unknown[]): Record<string, unknown>[] {
 /**
  * Fills missing stable keys/values in uiConfig before persistence or API response.
  * - multi_slider / multi_scale: `fields[].key` from label (+ unit for sliders)
+ * - multi_slider: optional `fields[].icon` (asset key, image URL, or stored filename)
  * - card kinds: `options[].value` from label when omitted
  */
 export function normalizeOnboardingUiConfig(
