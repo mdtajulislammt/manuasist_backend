@@ -1698,6 +1698,7 @@ export class AuthService implements OnModuleInit {
             createdAt: true,
             updatedAt: true,
             status: true,
+            roles: true,
           },
         }),
         this.prisma.authUser.count({ where }),
@@ -1718,6 +1719,8 @@ export class AuthService implements OnModuleInit {
           emailVerified: !!user.emailVerifiedAt,
           phoneVerified: !!user.phoneVerifiedAt,
           registeredDate: user.createdAt,
+          // Role will be either 'user' or 'admin'
+          roles: user.roles.map((role) => role.roleId === 'admin' ? 'ADMIN' : 'USER'),
           status: user.status,
         };
       });
