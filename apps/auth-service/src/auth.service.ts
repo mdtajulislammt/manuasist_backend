@@ -1719,8 +1719,7 @@ export class AuthService implements OnModuleInit {
           emailVerified: !!user.emailVerifiedAt,
           phoneVerified: !!user.phoneVerifiedAt,
           registeredDate: user.createdAt,
-          // Role will be either 'user' or 'admin'
-          roles: user.roles.map((role) => role.roleId === 'admin' ? 'ADMIN' : 'USER'),
+          role: user.roles.some((role) => role.roleId === 'admin') ? 'ADMIN' : 'USER',
           status: user.status,
         };
       });
