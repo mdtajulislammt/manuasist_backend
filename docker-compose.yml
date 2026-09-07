@@ -119,6 +119,7 @@ services:
       context: .
       dockerfile: apps/auth-service/Dockerfile
     env_file:
+      - .env
       - apps/auth-service/.env
     environment:
       NODE_ENV: ${NODE_ENV:-development}

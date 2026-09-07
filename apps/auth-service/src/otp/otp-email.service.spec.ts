@@ -54,6 +54,10 @@ describe('OtpEmailService', () => {
         user: 'notify@menuassistapp.com',
         pass: 'mailbox-password',
       },
+      tls: {
+        minVersion: 'TLSv1.2',
+        servername: 'smtp.office365.com',
+      },
     });
     const expectedTemplate = buildOtpEmailTemplate({
       appName: 'Menu Assist',
@@ -94,5 +98,27 @@ describe('OtpEmailService', () => {
         from: 'Menu Assist <notify@menuassistapp.com>',
       }),
     );
+  });
+
+  it('throws when SMTP host is set but the password is empty', async () => {
+    const values: Record<string, string> = {
+      SMTP_HOST: 'smtp.office365.com',
+      SMTP_USER: 'notify@menuassistapp.com',
+      SMTP_PASSWORD: '',
+    };
+    const config = {
+      get: jest.fn((key: string) => values[key]),
+    } as unknown as ConfigService;
+    const service = new OtpEmailService(config);
+
+    await expect(
+      service.send({
+        to: 'user@example.com',
+        otp: '123456',
+        purpose: 'SIGNUP',
+        expiresInSeconds: 600,
+      }),
+    ).rejects.toThrow(/SMTP_PASSWORD/);
+    expect(createTransport).not.toHaveBeenCalled();
   });
 });
