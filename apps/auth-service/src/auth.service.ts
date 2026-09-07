@@ -694,7 +694,6 @@ export class AuthService implements OnModuleInit {
       }
 
       const referrerCode = this.normalizeReferralCode(input.referralCode);
-      const referralCodeForNewUser = await this.generateUniqueReferralCode();
       let referredById: string | undefined;
 
       if (referrerCode) {
@@ -716,67 +715,57 @@ export class AuthService implements OnModuleInit {
         );
       }
 
-      if (normalizedEmail) {
-        const existingEmail = await this.prisma.authUser.findUnique({
-          where: { email: normalizedEmail },
-        });
-        if (existingEmail) {
-          throw new ConflictException(
-            'An account with this email already exists',
-          );
-        }
-      }
+      const existing = normalizedEmail
+        ? await this.prisma.authUser.findUnique({
+            where: { email: normalizedEmail },
+          })
+        : await this.prisma.authUser.findUnique({
+            where: { phone: normalizedPhone! },
+          });
 
-      if (normalizedPhone) {
-        const existingPhone = await this.prisma.authUser.findUnique({
-          where: { phone: normalizedPhone },
-        });
-        if (existingPhone) {
-          throw new ConflictException(
-            'An account with this phone already exists',
-          );
-        }
+      const identifierVerified = existing
+        ? Boolean(
+            normalizedEmail
+              ? existing.emailVerifiedAt
+              : existing.phoneVerifiedAt,
+          )
+        : false;
+
+      if (existing && identifierVerified) {
+        throw new ConflictException(
+          normalizedEmail
+            ? 'An account with this email already exists'
+            : 'An account with this phone already exists',
+        );
       }
 
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-      const user = await this.prisma.authUser.create({
-        data: {
-          email: normalizedEmail,
-          phone: normalizedPhone,
-          passwordHash,
-          referralCode: referralCodeForNewUser,
-          referredById,
-          roles: {
-            create: {
-              role: { connect: { name: 'user' } },
+      const user = existing
+        ? await this.prisma.authUser.update({
+            where: { id: existing.id },
+            data: {
+              passwordHash,
+              ...(referredById ? { referredById } : {}),
             },
-          },
-        },
-      });
+          })
+        : await this.prisma.authUser.create({
+            data: {
+              email: normalizedEmail,
+              phone: normalizedPhone,
+              passwordHash,
+              referralCode: await this.generateUniqueReferralCode(),
+              referredById,
+              roles: {
+                create: {
+                  role: { connect: { name: 'user' } },
+                },
+              },
+            },
+          });
 
       const channel = normalizedPhone ? 'SMS' : 'EMAIL';
       const targetIdentifier = normalizedPhone ?? normalizedEmail!;
-      const expiresInSeconds = this.signupOtpTtlSec();
-      const { otp } = await this.createOtpChallenge(
-        user.id,
-        channel,
-        'SIGNUP',
-        targetIdentifier,
-        expiresInSeconds,
-      );
-
-      return {
-        success: true,
-        message:
-          channel === 'SMS'
-            ? 'Account created. A verification code was sent to your phone.'
-            : 'Account created. A verification code was sent to your email.',
-        status: 'PENDING_VERIFICATION',
-        channel: channel === 'SMS' ? 'sms' : 'email',
-        identifier: targetIdentifier,
-        expires_in_seconds: expiresInSeconds,
-        ...this.otpDebugResponse(otp),
-      };
+      return this.sendSignupVerification(user.id, channel, targetIdentifier);
     } catch (error) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -831,22 +820,41 @@ export class AuthService implements OnModuleInit {
 
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
-    const expiresInSeconds = this.signupOtpTtlSec();
-    const { otp } = await this.createOtpChallenge(
+    const sent = await this.sendSignupVerification(
       user.id,
       channel,
-      'SIGNUP',
       targetIdentifier,
-      expiresInSeconds,
     );
-
     return {
-      success: true,
+      ...sent,
       message:
         channel === 'SMS'
           ? 'A signup verification code was sent to your phone.'
           : 'A signup verification code was sent to your email.',
       status: 'OTP_SENT',
+    };
+  }
+
+  private async sendSignupVerification(
+    userId: string,
+    channel: 'EMAIL' | 'SMS',
+    targetIdentifier: string,
+  ): Promise<RegisterPendingVerificationResponse> {
+    const expiresInSeconds = this.signupOtpTtlSec();
+    const { otp } = await this.createOtpChallenge(
+      userId,
+      channel,
+      'SIGNUP',
+      targetIdentifier,
+      expiresInSeconds,
+    );
+    return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'Account created. A verification code was sent to your phone.'
+          : 'Account created. A verification code was sent to your email.',
+      status: 'PENDING_VERIFICATION',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,

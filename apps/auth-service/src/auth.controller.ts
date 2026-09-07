@@ -78,7 +78,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register user with identifier and password' })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({
-    description: 'User registered. Returns pending OTP verification state.',
+    description:
+      'User registered or an unverified signup was resumed. Returns pending OTP verification state. Verified emails/phones still conflict.',
   })
   @ApiBadRequestResponse({ description: 'Invalid input or identifier format.' })
   register(@Body() body: RegisterDto) {
