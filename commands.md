@@ -20,35 +20,65 @@ cp apps/ai-ingestion-service/.env.example apps/ai-ingestion-service/.env
 
 Ensure `DATABASE_URL` / `*_DATABASE_URL` values in those `.env` files match Postgres (see [docker/postgres/init/01-create-service-databases.sql](docker/postgres/init/01-create-service-databases.sql)).
 
-After Postgres is up, apply the **auth-service** schema (creates `auth_roles` and related tables):
+**application-service** also needs Redis (see Docker section below):
 
-```bash
-pnpm run prisma:migrate:auth
+```env
+REDIS_URL=redis://127.0.0.1:6379
+CONTACT_CHANGE_OTP_RESEND_COOLDOWN_SECONDS=60
 ```
-
-This runs `prisma migrate deploy` in `apps/auth-service` using `AUTH_DATABASE_URL` from `apps/auth-service/.env` (loaded automatically by Prisma from that folder).
 
 ## Database and messaging (Docker)
 
-Start **Postgres** and **RabbitMQ** only (typical for local Nest development):
+All local infra runs in the Compose project **`menuassistai-powereddietaryintelligenceapp`** (same group as before). Named volumes keep Postgres, RabbitMQ, and Redis data across restarts:
+
+- `menuassistai-powereddietaryintelligenceapp_postgres_data`
+- `menuassistai-powereddietaryintelligenceapp_rabbitmq_data`
+- `menuassistai-powereddietaryintelligenceapp_redis_data`
+
+Start **Postgres**, **RabbitMQ**, and **Redis** together (typical for local Nest development):
 
 ```bash
-docker compose up -d postgres rabbitmq
+docker compose up -d postgres rabbitmq redis
 ```
 
-- Postgres: `localhost:5433` (host port mapped to container 5432; user/password `postgres` / `postgres` per [docker-compose.yml](docker-compose.yml)).
+- Postgres: `localhost:5433` (user/password `postgres` / `postgres`).
 - RabbitMQ AMQP: `5672`; management UI: [http://localhost:15672](http://localhost:15672) (`guest` / `guest`).
+- Redis: `localhost:6379` (required by **application-service** for BullMQ profile OTP).
 
-Stop:
+Stop containers (volumes are kept):
 
 ```bash
 docker compose down
+```
+
+Do **not** use `-v` unless you intentionally want to wipe all local DB, queue, and Redis data:
+
+```bash
+docker compose down -v
 ```
 
 Full stack (all services built from Dockerfiles):
 
 ```bash
 docker compose up --build
+```
+
+## Sync all Postgres databases
+
+After Postgres is up, apply every service schema from the repo root:
+
+```bash
+pnpm run prisma:generate:all
+pnpm run prisma:migrate:auth
+pnpm run prisma:migrate:application
+pnpm run prisma:migrate:admin
+pnpm run prisma:migrate:ai
+```
+
+Optional dev seed:
+
+```bash
+pnpm run seed:all
 ```
 
 ## Run Nest services locally (watch mode)
@@ -79,7 +109,7 @@ pnpm run start:debug
 
 ```bash
 pnpm run build
-node dist/apps/api-gateway/main.js
+node dist/apps/api-gateway/apps/api-gateway/src/main.js
 ```
 
 (or `pnpm run start:prod` for the gateway entrypoint).

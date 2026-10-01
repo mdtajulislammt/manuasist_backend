@@ -7,6 +7,7 @@ import { RecommendationsService } from '../recommendations/recommendations.servi
 import { ScansController } from './scans.controller';
 import { ScansService } from './scans.service';
 import { ScanProcessorService } from './scan-processor.service';
+import { DishImageService } from './dish-image.service';
 import { NutritionCacheService } from './nutrition-cache.service';
 import { RmqConnectService } from './rmq-connect.service';
 
@@ -18,6 +19,7 @@ import { RmqConnectService } from './rmq-connect.service';
     RmqConnectService,
     ScansService,
     NutritionCacheService,
+    DishImageService,
     ScanProcessorService,
     RecommendationsService,
   ],

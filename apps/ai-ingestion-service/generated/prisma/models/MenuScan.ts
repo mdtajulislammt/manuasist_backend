@@ -47,6 +47,9 @@ export type MenuScanMinAggregateOutputType = {
   parseError: string | null
   naiScore: number | null
   summary: string | null
+  restaurantName: string | null
+  restaurantPlaceId: string | null
+  restaurantAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,6 +67,9 @@ export type MenuScanMaxAggregateOutputType = {
   parseError: string | null
   naiScore: number | null
   summary: string | null
+  restaurantName: string | null
+  restaurantPlaceId: string | null
+  restaurantAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -83,6 +89,9 @@ export type MenuScanCountAggregateOutputType = {
   naiScore: number
   naiBreakdown: number
   summary: number
+  restaurantName: number
+  restaurantPlaceId: number
+  restaurantAddress: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -110,6 +119,9 @@ export type MenuScanMinAggregateInputType = {
   parseError?: true
   naiScore?: true
   summary?: true
+  restaurantName?: true
+  restaurantPlaceId?: true
+  restaurantAddress?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -127,6 +139,9 @@ export type MenuScanMaxAggregateInputType = {
   parseError?: true
   naiScore?: true
   summary?: true
+  restaurantName?: true
+  restaurantPlaceId?: true
+  restaurantAddress?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -146,6 +161,9 @@ export type MenuScanCountAggregateInputType = {
   naiScore?: true
   naiBreakdown?: true
   summary?: true
+  restaurantName?: true
+  restaurantPlaceId?: true
+  restaurantAddress?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -252,6 +270,9 @@ export type MenuScanGroupByOutputType = {
   naiScore: number | null
   naiBreakdown: runtime.JsonValue | null
   summary: string | null
+  restaurantName: string | null
+  restaurantPlaceId: string | null
+  restaurantAddress: string | null
   createdAt: Date
   updatedAt: Date
   _count: MenuScanCountAggregateOutputType | null
@@ -294,6 +315,9 @@ export type MenuScanWhereInput = {
   naiScore?: Prisma.IntNullableFilter<"MenuScan"> | number | null
   naiBreakdown?: Prisma.JsonNullableFilter<"MenuScan">
   summary?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantName?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantPlaceId?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantAddress?: Prisma.StringNullableFilter<"MenuScan"> | string | null
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
@@ -315,6 +339,9 @@ export type MenuScanOrderByWithRelationInput = {
   naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
   naiBreakdown?: Prisma.SortOrderInput | Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantName?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantPlaceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   dishes?: Prisma.DishOrderByRelationAggregateInput
@@ -339,6 +366,9 @@ export type MenuScanWhereUniqueInput = Prisma.AtLeast<{
   naiScore?: Prisma.IntNullableFilter<"MenuScan"> | number | null
   naiBreakdown?: Prisma.JsonNullableFilter<"MenuScan">
   summary?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantName?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantPlaceId?: Prisma.StringNullableFilter<"MenuScan"> | string | null
+  restaurantAddress?: Prisma.StringNullableFilter<"MenuScan"> | string | null
   createdAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MenuScan"> | Date | string
   dishes?: Prisma.DishListRelationFilter
@@ -360,6 +390,9 @@ export type MenuScanOrderByWithAggregationInput = {
   naiScore?: Prisma.SortOrderInput | Prisma.SortOrder
   naiBreakdown?: Prisma.SortOrderInput | Prisma.SortOrder
   summary?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantName?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantPlaceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  restaurantAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.MenuScanCountOrderByAggregateInput
@@ -387,6 +420,9 @@ export type MenuScanScalarWhereWithAggregatesInput = {
   naiScore?: Prisma.IntNullableWithAggregatesFilter<"MenuScan"> | number | null
   naiBreakdown?: Prisma.JsonNullableWithAggregatesFilter<"MenuScan">
   summary?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
+  restaurantName?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
+  restaurantPlaceId?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
+  restaurantAddress?: Prisma.StringNullableWithAggregatesFilter<"MenuScan"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MenuScan"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"MenuScan"> | Date | string
 }
@@ -406,6 +442,9 @@ export type MenuScanCreateInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishCreateNestedManyWithoutScanInput
@@ -427,6 +466,9 @@ export type MenuScanUncheckedCreateInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishUncheckedCreateNestedManyWithoutScanInput
@@ -448,6 +490,9 @@ export type MenuScanUpdateInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUpdateManyWithoutScanNestedInput
@@ -469,6 +514,9 @@ export type MenuScanUncheckedUpdateInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUncheckedUpdateManyWithoutScanNestedInput
@@ -490,6 +538,9 @@ export type MenuScanCreateManyInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -509,6 +560,9 @@ export type MenuScanUpdateManyMutationInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -528,6 +582,9 @@ export type MenuScanUncheckedUpdateManyInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -547,6 +604,9 @@ export type MenuScanCountOrderByAggregateInput = {
   naiScore?: Prisma.SortOrder
   naiBreakdown?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  restaurantName?: Prisma.SortOrder
+  restaurantPlaceId?: Prisma.SortOrder
+  restaurantAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -568,6 +628,9 @@ export type MenuScanMaxOrderByAggregateInput = {
   parseError?: Prisma.SortOrder
   naiScore?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  restaurantName?: Prisma.SortOrder
+  restaurantPlaceId?: Prisma.SortOrder
+  restaurantAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -585,6 +648,9 @@ export type MenuScanMinOrderByAggregateInput = {
   parseError?: Prisma.SortOrder
   naiScore?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  restaurantName?: Prisma.SortOrder
+  restaurantPlaceId?: Prisma.SortOrder
+  restaurantAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -665,6 +731,9 @@ export type MenuScanCreateWithoutDishesInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.DishBookmarkCreateNestedManyWithoutScanInput
@@ -685,6 +754,9 @@ export type MenuScanUncheckedCreateWithoutDishesInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.DishBookmarkUncheckedCreateNestedManyWithoutScanInput
@@ -721,6 +793,9 @@ export type MenuScanUpdateWithoutDishesInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.DishBookmarkUpdateManyWithoutScanNestedInput
@@ -741,6 +816,9 @@ export type MenuScanUncheckedUpdateWithoutDishesInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.DishBookmarkUncheckedUpdateManyWithoutScanNestedInput
@@ -761,6 +839,9 @@ export type MenuScanCreateWithoutBookmarksInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishCreateNestedManyWithoutScanInput
@@ -781,6 +862,9 @@ export type MenuScanUncheckedCreateWithoutBookmarksInput = {
   naiScore?: number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: string | null
+  restaurantName?: string | null
+  restaurantPlaceId?: string | null
+  restaurantAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   dishes?: Prisma.DishUncheckedCreateNestedManyWithoutScanInput
@@ -817,6 +901,9 @@ export type MenuScanUpdateWithoutBookmarksInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUpdateManyWithoutScanNestedInput
@@ -837,6 +924,9 @@ export type MenuScanUncheckedUpdateWithoutBookmarksInput = {
   naiScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   naiBreakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   summary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantPlaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restaurantAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dishes?: Prisma.DishUncheckedUpdateManyWithoutScanNestedInput
@@ -897,6 +987,9 @@ export type MenuScanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   naiScore?: boolean
   naiBreakdown?: boolean
   summary?: boolean
+  restaurantName?: boolean
+  restaurantPlaceId?: boolean
+  restaurantAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
@@ -919,6 +1012,9 @@ export type MenuScanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   naiScore?: boolean
   naiBreakdown?: boolean
   summary?: boolean
+  restaurantName?: boolean
+  restaurantPlaceId?: boolean
+  restaurantAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["menuScan"]>
@@ -938,6 +1034,9 @@ export type MenuScanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   naiScore?: boolean
   naiBreakdown?: boolean
   summary?: boolean
+  restaurantName?: boolean
+  restaurantPlaceId?: boolean
+  restaurantAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["menuScan"]>
@@ -957,11 +1056,14 @@ export type MenuScanSelectScalar = {
   naiScore?: boolean
   naiBreakdown?: boolean
   summary?: boolean
+  restaurantName?: boolean
+  restaurantPlaceId?: boolean
+  restaurantAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MenuScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "storedFileName" | "contentType" | "imageUrl" | "menuText" | "status" | "scanTime" | "rawOcrText" | "parseError" | "parseMetadata" | "naiScore" | "naiBreakdown" | "summary" | "createdAt" | "updatedAt", ExtArgs["result"]["menuScan"]>
+export type MenuScanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "storedFileName" | "contentType" | "imageUrl" | "menuText" | "status" | "scanTime" | "rawOcrText" | "parseError" | "parseMetadata" | "naiScore" | "naiBreakdown" | "summary" | "restaurantName" | "restaurantPlaceId" | "restaurantAddress" | "createdAt" | "updatedAt", ExtArgs["result"]["menuScan"]>
 export type MenuScanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dishes?: boolean | Prisma.MenuScan$dishesArgs<ExtArgs>
   bookmarks?: boolean | Prisma.MenuScan$bookmarksArgs<ExtArgs>
@@ -991,6 +1093,9 @@ export type $MenuScanPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     naiScore: number | null
     naiBreakdown: runtime.JsonValue | null
     summary: string | null
+    restaurantName: string | null
+    restaurantPlaceId: string | null
+    restaurantAddress: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["menuScan"]>
@@ -1432,6 +1537,9 @@ export interface MenuScanFieldRefs {
   readonly naiScore: Prisma.FieldRef<"MenuScan", 'Int'>
   readonly naiBreakdown: Prisma.FieldRef<"MenuScan", 'Json'>
   readonly summary: Prisma.FieldRef<"MenuScan", 'String'>
+  readonly restaurantName: Prisma.FieldRef<"MenuScan", 'String'>
+  readonly restaurantPlaceId: Prisma.FieldRef<"MenuScan", 'String'>
+  readonly restaurantAddress: Prisma.FieldRef<"MenuScan", 'String'>
   readonly createdAt: Prisma.FieldRef<"MenuScan", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"MenuScan", 'DateTime'>
 }

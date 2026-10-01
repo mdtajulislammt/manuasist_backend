@@ -1,5 +1,6 @@
 import { ApiAuthModule } from '@menu-assist/api-auth';
 import { FileStorageModule } from '@menu-assist/file-storage';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
@@ -16,6 +17,7 @@ import { HomeModule } from './home/home.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { MealsModule } from './meals/meals.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -27,6 +29,16 @@ const envFilePaths = [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: envFilePaths,
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          url: config.get<string>('REDIS_URL') ?? 'redis://127.0.0.1:6379',
+          maxRetriesPerRequest: null,
+        },
+      }),
     }),
     PrismaModule,
     FileStorageModule.forRootAsync({
@@ -68,6 +80,7 @@ const envFilePaths = [
     NotificationsModule,
     BookmarksModule,
     MealsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

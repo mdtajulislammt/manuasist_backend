@@ -6,12 +6,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OnboardingFlowStatus, Prisma } from '../../generated/prisma/client';
+import type { OnboardingStep } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { CreateStepDto } from './dto/create-step.dto';
 import { UpdateFlowDto } from './dto/update-flow.dto';
 import { UpdateStepDto } from './dto/update-step.dto';
-import { assertValidOnboardingUiConfig } from './onboarding-ui-config.validator';
+import {
+  enrichStepUiConfigForResponse,
+  prepareOnboardingUiConfig,
+} from './onboarding-ui-config.normalizer';
 
 @Injectable()
 export class OnboardingFlowsService {
@@ -57,12 +61,20 @@ export class OnboardingFlowsService {
     try {
       const flows = await this.prisma.onboardingFlow.findMany({
         orderBy: [{ name: 'asc' }, { version: 'desc' }],
-        include: { steps: { orderBy: { orderIndex: 'asc' } } },
+        include: { _count: { select: { steps: true } } },
       });
+      const flowsWithStepsCount = flows.map((flow) => {
+        const { _count, ...flowWithoutCount } = flow;
+        return {
+          ...flowWithoutCount,
+          stepsCount: _count.steps,
+        };
+      });
+  
       return {
         success: true,
         message: 'Flows listed successfully',
-        data: flows,
+        data: flowsWithStepsCount,
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -84,7 +96,13 @@ export class OnboardingFlowsService {
       return {
         success: true,
         message: 'Flow retrieved successfully',
-        data: flow,
+        data: {
+          ...flow,
+          steps: flow.steps.map((step) => ({
+            ...step,
+            uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+          })),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -146,60 +164,121 @@ export class OnboardingFlowsService {
   }
 
   async addStep(flowId: string, dto: CreateStepDto) {
-    const steps = await this.createSteps(flowId, [dto]);
+    const steps = await this.upsertSteps(flowId, [dto]);
     return {
       success: true,
-      message: 'Step created successfully',
+      message: 'Step saved successfully',
       data: steps[0],
     };
   }
 
   async addSteps(flowId: string, dtos: CreateStepDto[]) {
-    const steps = await this.createSteps(flowId, dtos);
+    const steps = await this.upsertSteps(flowId, dtos);
     return {
       success: true,
-      message: `${steps.length} step(s) created successfully`,
+      message: `${steps.length} step(s) saved successfully`,
       data: steps,
     };
   }
 
-  private async createSteps(flowId: string, dtos: CreateStepDto[]) {
+  private async upsertSteps(flowId: string, dtos: CreateStepDto[]) {
     if (dtos.length === 0) {
       throw new BadRequestException('At least one step is required');
     }
     try {
       await this.ensureDraft(flowId);
       this.assertUniqueOrderIndexesInRequest(dtos);
+      this.assertUniqueIdsInRequest(dtos);
       for (const dto of dtos) {
         try {
-          assertValidOnboardingUiConfig(dto.uiConfig);
+          prepareOnboardingUiConfig(dto.uiConfig);
         } catch (error) {
           if (error instanceof BadRequestException) {
             const detail = this.formatHttpExceptionMessage(error);
             throw new BadRequestException(
-              `Step orderIndex ${dto.orderIndex} (${dto.type}): ${detail}`,
+              `Step orderIndex ${dto.orderIndex}: ${detail}`,
             );
           }
           throw error;
         }
       }
-      return await this.prisma.$transaction(
-        dtos.map((dto) =>
-          this.prisma.onboardingStep.create({
-            data: {
-              flowId,
-              orderIndex: dto.orderIndex,
-              type: dto.type,
-              title: dto.title,
-              subtitle: dto.subtitle,
-              uiConfig:
-                dto.uiConfig === undefined
-                  ? undefined
-                  : (dto.uiConfig as Prisma.InputJsonValue),
-            },
-          }),
-        ),
-      );
+
+      return await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.onboardingStep.findMany({
+          where: { flowId },
+          orderBy: { orderIndex: 'asc' },
+        });
+        const existingById = new Map(existing.map((step) => [step.id, step]));
+        const existingByOrder = new Map(
+          existing.map((step) => [step.orderIndex, step]),
+        );
+
+        const tempBase = 1_000_000;
+        for (let i = 0; i < existing.length; i++) {
+          await tx.onboardingStep.update({
+            where: { id: existing[i].id },
+            data: { orderIndex: tempBase + i },
+          });
+        }
+
+        const results: OnboardingStep[] = [];
+        const consumedIds = new Set<string>();
+
+        for (const dto of dtos) {
+          const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
+          const data = {
+            orderIndex: dto.orderIndex,
+            title: dto.title,
+            subtitle: dto.subtitle,
+            uiConfig:
+              uiConfig === undefined
+                ? undefined
+                : (uiConfig as Prisma.InputJsonValue),
+          };
+
+          let target = dto.id ? existingById.get(dto.id) : undefined;
+          if (target && target.flowId !== flowId) {
+            throw new BadRequestException(
+              `Step ${dto.id} does not belong to this flow`,
+            );
+          }
+          if (!target) {
+            target = existingByOrder.get(dto.orderIndex);
+          }
+          if (target && consumedIds.has(target.id)) {
+            target = undefined;
+          }
+
+          if (target) {
+            consumedIds.add(target.id);
+            results.push(
+              await tx.onboardingStep.update({
+                where: { id: target.id },
+                data,
+              }),
+            );
+            continue;
+          }
+
+          if (dto.id) {
+            throw new NotFoundException(`Step not found: ${dto.id}`);
+          }
+
+          results.push(
+            await tx.onboardingStep.create({
+              data: {
+                flowId,
+                ...data,
+              },
+            }),
+          );
+        }
+
+        return results.map((step) => ({
+          ...step,
+          uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+        }));
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -209,7 +288,20 @@ export class OnboardingFlowsService {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to add step(s)');
+      throw new InternalServerErrorException('Failed to save step(s)');
+    }
+  }
+
+  private assertUniqueIdsInRequest(dtos: CreateStepDto[]): void {
+    const seen = new Set<string>();
+    for (const dto of dtos) {
+      if (!dto.id) {
+        continue;
+      }
+      if (seen.has(dto.id)) {
+        throw new BadRequestException(`Duplicate step id ${dto.id} in request`);
+      }
+      seen.add(dto.id);
     }
   }
 
@@ -241,9 +333,6 @@ export class OnboardingFlowsService {
       if (dto.orderIndex !== undefined) {
         data.orderIndex = dto.orderIndex;
       }
-      if (dto.type !== undefined) {
-        data.type = dto.type;
-      }
       if (dto.title !== undefined) {
         data.title = dto.title;
       }
@@ -251,17 +340,43 @@ export class OnboardingFlowsService {
         data.subtitle = dto.subtitle;
       }
       if (dto.uiConfig !== undefined) {
-        assertValidOnboardingUiConfig(dto.uiConfig);
-        data.uiConfig = dto.uiConfig as Prisma.InputJsonValue;
+        const uiConfig = prepareOnboardingUiConfig(dto.uiConfig);
+        data.uiConfig = uiConfig as Prisma.InputJsonValue;
       }
-      const updatedStep = await this.prisma.onboardingStep.update({
-        where: { id: stepId },
-        data,
+
+      const updatedStep = await this.prisma.$transaction(async (tx) => {
+        if (
+          dto.orderIndex !== undefined &&
+          dto.orderIndex !== step.orderIndex
+        ) {
+          const conflict = await tx.onboardingStep.findUnique({
+            where: {
+              flowId_orderIndex: {
+                flowId: step.flowId,
+                orderIndex: dto.orderIndex,
+              },
+            },
+          });
+          if (conflict && conflict.id !== stepId) {
+            await tx.onboardingStep.update({
+              where: { id: conflict.id },
+              data: { orderIndex: step.orderIndex },
+            });
+          }
+        }
+
+        return tx.onboardingStep.update({
+          where: { id: stepId },
+          data,
+        });
       });
       return {
         success: true,
         message: 'Step updated successfully',
-        data: updatedStep,
+        data: {
+          ...updatedStep,
+          uiConfig: enrichStepUiConfigForResponse(updatedStep.uiConfig),
+        },
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -311,9 +426,9 @@ export class OnboardingFlowsService {
       if (!flow) {
         throw new NotFoundException('Flow not found');
       }
-      if (flow.status !== OnboardingFlowStatus.DRAFT) {
-        throw new BadRequestException('Only draft flows can be published');
-      }
+      // if (flow.status !== OnboardingFlowStatus.DRAFT) {
+      //   throw new BadRequestException('Only draft flows can be published');
+      // }
       if (flow.steps.length === 0) {
         throw new BadRequestException('Cannot publish a flow with no steps');
       }
@@ -361,7 +476,13 @@ export class OnboardingFlowsService {
       return {
         success: true,
         message: 'Active published flow retrieved successfully',
-        data: flow,
+        data: {
+          ...flow,
+          steps: flow.steps.map((step) => ({
+            ...step,
+            uiConfig: enrichStepUiConfigForResponse(step.uiConfig),
+          })),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {

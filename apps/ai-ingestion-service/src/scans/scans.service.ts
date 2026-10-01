@@ -16,6 +16,7 @@ import { AdminFileClientService } from '../clients/admin-file-client.service';
 import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 import { ListScansQueryDto } from './dto/list-scans-query.dto';
+import { CreateImageScanDto } from './dto/create-image-scan.dto';
 import { ScanProcessorService } from './scan-processor.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -54,7 +55,11 @@ export class ScansService {
 
   private readonly logger = new Logger(ScansService.name);
 
-  async createScanFromImage(userId: string, file: MulterFile) {
+  async createScanFromImage(
+    userId: string,
+    file: MulterFile,
+    context: CreateImageScanDto = {},
+  ) {
     await this.applicationClient.assertCanCreateScan(userId);
     const mime = (file.mimetype || '').toLowerCase();
     if (!ALLOWED_MIME.has(mime)) {
@@ -69,6 +74,10 @@ export class ScansService {
     const stored = await this.adminFiles.uploadMenuScan(file);
     const imageUrl = this.adminFiles.buildPublicImageUrl(stored.storedName);
 
+    const restaurantName = context.restaurantName?.trim() || null;
+    const restaurantPlaceId = context.restaurantPlaceId?.trim() || null;
+    const restaurantAddress = context.restaurantAddress?.trim() || null;
+
     try {
       const scan = await this.prisma.menuScan.create({
         data: {
@@ -77,6 +86,9 @@ export class ScansService {
           contentType: stored.contentType,
           imageUrl,
           status: MenuScanStatus.PENDING,
+          restaurantName,
+          restaurantPlaceId,
+          restaurantAddress,
         },
       });
       this.dispatchScanSubmitted({
@@ -221,6 +233,9 @@ export class ScansService {
           naiImpactPoints: this.naiImpactPoints(scan.naiScore),
           summary: scan.summary,
           topDishes: this.topDishNames(scan.dishes),
+          restaurantName: scan.restaurantName,
+          restaurantPlaceId: scan.restaurantPlaceId,
+          restaurantAddress: scan.restaurantAddress,
         };
       });
       return {
@@ -249,14 +264,72 @@ export class ScansService {
     }
   }
 
+  async getCompletedScansForUser(
+    userId: string,
+    from: Date,
+    to: Date,
+  ) {
+    try {
+      const scans = await this.prisma.menuScan.findMany({
+        where: {
+          userId,
+          status: MenuScanStatus.COMPLETED,
+          scanTime: { gte: from, lt: to },
+        },
+        orderBy: { scanTime: 'asc' },
+        include: { dishes: true },
+      });
+
+      return {
+        success: true,
+        message: 'Completed scans retrieved successfully.',
+        data: scans.map((scan) => ({
+          id: scan.id,
+          scanTime: scan.scanTime.toISOString(),
+          naiScore: scan.naiScore,
+          menuText: scan.menuText,
+          summary: scan.summary,
+          displayTitle: this.buildHistoryTitle(scan),
+          dishes: scan.dishes.map((dish) => {
+            const macros = this.extractScanDishMacros(dish.macros);
+            return {
+              id: dish.id,
+              name: dish.name,
+              calories: dish.calories,
+              macros,
+              proteinG: macros.proteinG,
+              carbG: macros.carbG,
+              fatG: macros.fatG,
+              category: dish.category,
+            };
+          }),
+        })),
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to list completed scans for analytics user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new InternalServerErrorException('Failed to list completed scans');
+    }
+  }
+
   async getHomeSummaryForUser(userId: string, requestedRange?: string) {
     try {
       const trackingRange = this.homeTrackingRange(requestedRange);
       const now = new Date();
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);
-      const tomorrowStart = new Date(todayStart);
-      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+      const todayStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
+      const tomorrowStart = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() + 1,
+        ),
+      );
       const chartStart = this.homeChartStart(now, trackingRange);
 
       const [latestCompleted, previousCompleted, todayCompleted, chartScans] =
@@ -298,8 +371,8 @@ export class ScansService {
         trackingRange,
         chartScans,
       );
-      const referenceScan = todayCompleted ?? latestCompleted;
-      const latestScore = referenceScan?.naiScore ?? null;
+      const latestScore = latestCompleted?.naiScore ?? null;
+      const todayScore = todayCompleted?.naiScore ?? null;
       const previousScore = previousCompleted[0]?.naiScore ?? null;
 
       return {
@@ -308,17 +381,20 @@ export class ScansService {
         data: {
           trackingRange,
           hasCompletedScan: latestCompleted !== null,
-          latestScanId: referenceScan?.id ?? null,
+          latestScanId: latestCompleted?.id ?? null,
           latestScore,
+          todayScore,
           previousScore,
-          scoreChangePercent: this.scoreChangePercent(latestScore, previousScore),
+          scoreChangePercent: todayCompleted
+            ? this.scoreChangePercent(todayScore, previousScore)
+            : null,
           todayCalories: todayCompleted
             ? this.totalCalories(todayCompleted.dishes)
             : 0,
-          latestCalories: referenceScan
-            ? this.totalCalories(referenceScan.dishes)
+          latestCalories: latestCompleted
+            ? this.totalCalories(latestCompleted.dishes)
             : 0,
-          latestScannedAt: referenceScan?.scanTime ?? null,
+          latestScannedAt: latestCompleted?.scanTime ?? null,
           chartPoints,
           warning: this.homeWarning(chartScans),
         },
@@ -481,10 +557,15 @@ export class ScansService {
   }
 
   private buildHistoryTitle(scan: {
+    restaurantName?: string | null;
     menuText: string | null;
     rawOcrText: string | null;
     summary: string | null;
   }): string {
+    const restaurantName = scan.restaurantName?.trim();
+    if (restaurantName) {
+      return this.compactTitle(restaurantName);
+    }
     const firstLine = (scan.menuText ?? scan.rawOcrText ?? '')
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -500,6 +581,18 @@ export class ScansService {
     return normalized.length > 48
       ? `${normalized.slice(0, 45).trim()}...`
       : normalized;
+  }
+
+  private extractScanDishMacros(macros: unknown) {
+    if (!macros || typeof macros !== 'object' || Array.isArray(macros)) {
+      return { proteinG: 0, carbG: 0, fatG: 0 };
+    }
+    const record = macros as Record<string, unknown>;
+    return {
+      proteinG: typeof record.proteinG === 'number' ? record.proteinG : 0,
+      carbG: typeof record.carbG === 'number' ? record.carbG : 0,
+      fatG: typeof record.fatG === 'number' ? record.fatG : 0,
+    };
   }
 
   private formatScannedAt(date: Date): string {

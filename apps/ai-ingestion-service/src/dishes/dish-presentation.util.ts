@@ -78,13 +78,17 @@ export function buildDishDescription(dish: DishPresentationSource): string {
   return 'This dish may not align with your dietary profile.';
 }
 
-export function extractDishMacros(dish: DishPresentationSource) {
-  const macros = asRecord(dish.macros);
+export function extractMacrosFromJson(macros: unknown) {
+  const record = asRecord(macros);
   return {
-    proteinG: numberValue(macros?.proteinG),
-    carbG: numberValue(macros?.carbG),
-    fatG: numberValue(macros?.fatG),
+    proteinG: numberValue(record?.proteinG),
+    carbG: numberValue(record?.carbG),
+    fatG: numberValue(record?.fatG),
   };
+}
+
+export function extractDishMacros(dish: DishPresentationSource) {
+  return extractMacrosFromJson(dish.macros);
 }
 
 export function extractAllergenFlags(
@@ -135,4 +139,63 @@ function pushUnique(values: string[], value: string) {
   if (!values.includes(value)) {
     values.push(value);
   }
+}
+
+export function buildScoreLabel(score: number): string {
+  return `${score}% match`;
+}
+
+export function buildCaloriesLabel(calories: number): string {
+  return `${calories} kcal`;
+}
+
+export function resolveDishImageUrl(input: {
+  dishImageUrl: string | null;
+  scanImageUrl: string | null;
+  scanStoredFileName: string | null;
+  buildMenuScanPublicUrl: (storedName: string) => string;
+}): string | null {
+  for (const raw of [input.dishImageUrl, input.scanImageUrl]) {
+    const normalized = normalizePublicImageUrl(
+      raw,
+      input.buildMenuScanPublicUrl,
+    );
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  const storedName = input.scanStoredFileName?.trim();
+  if (storedName) {
+    return input.buildMenuScanPublicUrl(storedName);
+  }
+
+  return null;
+}
+
+function normalizePublicImageUrl(
+  raw: string | null,
+  buildMenuScanPublicUrl: (storedName: string) => string,
+): string | null {
+  const value = raw?.trim();
+  if (!value) {
+    return null;
+  }
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+
+  const menuScanMarker = '/menu-scan/';
+  if (value.includes(menuScanMarker)) {
+    const storedName = value.split(menuScanMarker).pop();
+    if (storedName) {
+      return buildMenuScanPublicUrl(decodeURIComponent(storedName));
+    }
+  }
+
+  if (!value.includes('/')) {
+    return buildMenuScanPublicUrl(value);
+  }
+
+  return null;
 }

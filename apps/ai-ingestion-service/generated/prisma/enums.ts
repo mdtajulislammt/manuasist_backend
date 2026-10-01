@@ -26,3 +26,11 @@ export const DishCategory = {
 } as const
 
 export type DishCategory = (typeof DishCategory)[keyof typeof DishCategory]
+
+
+export const DishImageSource = {
+  AI_GENERATED: 'AI_GENERATED',
+  EXTERNAL_FALLBACK: 'EXTERNAL_FALLBACK'
+} as const
+
+export type DishImageSource = (typeof DishImageSource)[keyof typeof DishImageSource]

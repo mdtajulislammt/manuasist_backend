@@ -52,6 +52,16 @@ export type PlatformStorageSettings = Prisma.PlatformStorageSettingsModel
  */
 export type StoredFile = Prisma.StoredFileModel
 /**
+ * Model AppLaunchContentBundle
+ * 
+ */
+export type AppLaunchContentBundle = Prisma.AppLaunchContentBundleModel
+/**
+ * Model AppLaunchAsset
+ * 
+ */
+export type AppLaunchAsset = Prisma.AppLaunchAssetModel
+/**
  * Model OnboardingFlow
  * 
  */

@@ -31,6 +31,13 @@ enum EntitlementStatus {
 enum NotificationType {
   SYSTEM
   SCAN_PROCESSING
+  SCAN_RESULT_READY
+  SCAN_FAILED
+  PROFILE_UPDATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_EXPIRED
+  PROMOTION
+  // Legacy values retained for backward compatibility with existing rows.
   SCAN_READY
   DAILY_PROGRESS
   WEEKLY_PROGRESS
@@ -69,6 +76,7 @@ model UserProfile {
   fullName              String?   @map("full_name")
   avatarFileId          String?   @map("avatar_file_id") @db.Uuid
   avatarUrl             String?   @map("avatar_url")
+  address               String?
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
@@ -170,10 +178,10 @@ model UserNotification {
 
   deliveries NotificationDelivery[]
 
+  @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
   @@index([userId, readAt])
   @@index([expiresAt])
-  @@unique([userId, dedupeKey])
   @@map("application_user_notifications")
 }
 

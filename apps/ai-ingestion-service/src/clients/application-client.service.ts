@@ -19,6 +19,10 @@ export type DietaryContextResponse = {
     } | null;
     onboardingAnswers: Array<{ stepKey: string; flowVersion: number; value: unknown }>;
     allergies: string[];
+    intolerances: string[];
+    cuisinePreferences: string[];
+    healthObjectives: string[];
+    nutritionTargets: Record<string, string | number | boolean>;
   };
 };
 
@@ -40,6 +44,10 @@ export class ApplicationClientService {
         spiceLevel: p?.spiceLevel ?? null,
         weightGoal: p?.weightGoal ?? null,
         allergies: ctx.data.allergies ?? [],
+        intolerances: ctx.data.intolerances ?? [],
+        cuisinePreferences: ctx.data.cuisinePreferences ?? [],
+        healthObjectives: ctx.data.healthObjectives ?? [],
+        nutritionTargets: ctx.data.nutritionTargets ?? {},
       };
     } catch (e) {
       this.logger.warn(

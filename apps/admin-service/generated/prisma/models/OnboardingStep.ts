@@ -38,7 +38,6 @@ export type OnboardingStepMinAggregateOutputType = {
   id: string | null
   flowId: string | null
   orderIndex: number | null
-  type: string | null
   title: string | null
   subtitle: string | null
   createdAt: Date | null
@@ -49,7 +48,6 @@ export type OnboardingStepMaxAggregateOutputType = {
   id: string | null
   flowId: string | null
   orderIndex: number | null
-  type: string | null
   title: string | null
   subtitle: string | null
   createdAt: Date | null
@@ -60,7 +58,6 @@ export type OnboardingStepCountAggregateOutputType = {
   id: number
   flowId: number
   orderIndex: number
-  type: number
   title: number
   subtitle: number
   uiConfig: number
@@ -82,7 +79,6 @@ export type OnboardingStepMinAggregateInputType = {
   id?: true
   flowId?: true
   orderIndex?: true
-  type?: true
   title?: true
   subtitle?: true
   createdAt?: true
@@ -93,7 +89,6 @@ export type OnboardingStepMaxAggregateInputType = {
   id?: true
   flowId?: true
   orderIndex?: true
-  type?: true
   title?: true
   subtitle?: true
   createdAt?: true
@@ -104,7 +99,6 @@ export type OnboardingStepCountAggregateInputType = {
   id?: true
   flowId?: true
   orderIndex?: true
-  type?: true
   title?: true
   subtitle?: true
   uiConfig?: true
@@ -203,7 +197,6 @@ export type OnboardingStepGroupByOutputType = {
   id: string
   flowId: string
   orderIndex: number
-  type: string
   title: string
   subtitle: string | null
   uiConfig: runtime.JsonValue | null
@@ -238,7 +231,6 @@ export type OnboardingStepWhereInput = {
   id?: Prisma.UuidFilter<"OnboardingStep"> | string
   flowId?: Prisma.UuidFilter<"OnboardingStep"> | string
   orderIndex?: Prisma.IntFilter<"OnboardingStep"> | number
-  type?: Prisma.StringFilter<"OnboardingStep"> | string
   title?: Prisma.StringFilter<"OnboardingStep"> | string
   subtitle?: Prisma.StringNullableFilter<"OnboardingStep"> | string | null
   uiConfig?: Prisma.JsonNullableFilter<"OnboardingStep">
@@ -251,7 +243,6 @@ export type OnboardingStepOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   flowId?: Prisma.SortOrder
   orderIndex?: Prisma.SortOrder
-  type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   subtitle?: Prisma.SortOrderInput | Prisma.SortOrder
   uiConfig?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -268,7 +259,6 @@ export type OnboardingStepWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.OnboardingStepWhereInput | Prisma.OnboardingStepWhereInput[]
   flowId?: Prisma.UuidFilter<"OnboardingStep"> | string
   orderIndex?: Prisma.IntFilter<"OnboardingStep"> | number
-  type?: Prisma.StringFilter<"OnboardingStep"> | string
   title?: Prisma.StringFilter<"OnboardingStep"> | string
   subtitle?: Prisma.StringNullableFilter<"OnboardingStep"> | string | null
   uiConfig?: Prisma.JsonNullableFilter<"OnboardingStep">
@@ -281,7 +271,6 @@ export type OnboardingStepOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   flowId?: Prisma.SortOrder
   orderIndex?: Prisma.SortOrder
-  type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   subtitle?: Prisma.SortOrderInput | Prisma.SortOrder
   uiConfig?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -301,7 +290,6 @@ export type OnboardingStepScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"OnboardingStep"> | string
   flowId?: Prisma.UuidWithAggregatesFilter<"OnboardingStep"> | string
   orderIndex?: Prisma.IntWithAggregatesFilter<"OnboardingStep"> | number
-  type?: Prisma.StringWithAggregatesFilter<"OnboardingStep"> | string
   title?: Prisma.StringWithAggregatesFilter<"OnboardingStep"> | string
   subtitle?: Prisma.StringNullableWithAggregatesFilter<"OnboardingStep"> | string | null
   uiConfig?: Prisma.JsonNullableWithAggregatesFilter<"OnboardingStep">
@@ -312,7 +300,6 @@ export type OnboardingStepScalarWhereWithAggregatesInput = {
 export type OnboardingStepCreateInput = {
   id?: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -325,7 +312,6 @@ export type OnboardingStepUncheckedCreateInput = {
   id?: string
   flowId: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -336,7 +322,6 @@ export type OnboardingStepUncheckedCreateInput = {
 export type OnboardingStepUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -349,7 +334,6 @@ export type OnboardingStepUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   flowId?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -361,7 +345,6 @@ export type OnboardingStepCreateManyInput = {
   id?: string
   flowId: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -372,7 +355,6 @@ export type OnboardingStepCreateManyInput = {
 export type OnboardingStepUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -384,7 +366,6 @@ export type OnboardingStepUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   flowId?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -411,7 +392,6 @@ export type OnboardingStepCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   flowId?: Prisma.SortOrder
   orderIndex?: Prisma.SortOrder
-  type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   subtitle?: Prisma.SortOrder
   uiConfig?: Prisma.SortOrder
@@ -427,7 +407,6 @@ export type OnboardingStepMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   flowId?: Prisma.SortOrder
   orderIndex?: Prisma.SortOrder
-  type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   subtitle?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -438,7 +417,6 @@ export type OnboardingStepMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   flowId?: Prisma.SortOrder
   orderIndex?: Prisma.SortOrder
-  type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   subtitle?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -494,7 +472,6 @@ export type OnboardingStepUncheckedUpdateManyWithoutFlowNestedInput = {
 export type OnboardingStepCreateWithoutFlowInput = {
   id?: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -505,7 +482,6 @@ export type OnboardingStepCreateWithoutFlowInput = {
 export type OnboardingStepUncheckedCreateWithoutFlowInput = {
   id?: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -546,7 +522,6 @@ export type OnboardingStepScalarWhereInput = {
   id?: Prisma.UuidFilter<"OnboardingStep"> | string
   flowId?: Prisma.UuidFilter<"OnboardingStep"> | string
   orderIndex?: Prisma.IntFilter<"OnboardingStep"> | number
-  type?: Prisma.StringFilter<"OnboardingStep"> | string
   title?: Prisma.StringFilter<"OnboardingStep"> | string
   subtitle?: Prisma.StringNullableFilter<"OnboardingStep"> | string | null
   uiConfig?: Prisma.JsonNullableFilter<"OnboardingStep">
@@ -557,7 +532,6 @@ export type OnboardingStepScalarWhereInput = {
 export type OnboardingStepCreateManyFlowInput = {
   id?: string
   orderIndex: number
-  type: string
   title: string
   subtitle?: string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -568,7 +542,6 @@ export type OnboardingStepCreateManyFlowInput = {
 export type OnboardingStepUpdateWithoutFlowInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -579,7 +552,6 @@ export type OnboardingStepUpdateWithoutFlowInput = {
 export type OnboardingStepUncheckedUpdateWithoutFlowInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -590,7 +562,6 @@ export type OnboardingStepUncheckedUpdateWithoutFlowInput = {
 export type OnboardingStepUncheckedUpdateManyWithoutFlowInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderIndex?: Prisma.IntFieldUpdateOperationsInput | number
-  type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   subtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   uiConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -604,7 +575,6 @@ export type OnboardingStepSelect<ExtArgs extends runtime.Types.Extensions.Intern
   id?: boolean
   flowId?: boolean
   orderIndex?: boolean
-  type?: boolean
   title?: boolean
   subtitle?: boolean
   uiConfig?: boolean
@@ -617,7 +587,6 @@ export type OnboardingStepSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   id?: boolean
   flowId?: boolean
   orderIndex?: boolean
-  type?: boolean
   title?: boolean
   subtitle?: boolean
   uiConfig?: boolean
@@ -630,7 +599,6 @@ export type OnboardingStepSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   id?: boolean
   flowId?: boolean
   orderIndex?: boolean
-  type?: boolean
   title?: boolean
   subtitle?: boolean
   uiConfig?: boolean
@@ -643,7 +611,6 @@ export type OnboardingStepSelectScalar = {
   id?: boolean
   flowId?: boolean
   orderIndex?: boolean
-  type?: boolean
   title?: boolean
   subtitle?: boolean
   uiConfig?: boolean
@@ -651,7 +618,7 @@ export type OnboardingStepSelectScalar = {
   updatedAt?: boolean
 }
 
-export type OnboardingStepOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "flowId" | "orderIndex" | "type" | "title" | "subtitle" | "uiConfig" | "createdAt" | "updatedAt", ExtArgs["result"]["onboardingStep"]>
+export type OnboardingStepOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "flowId" | "orderIndex" | "title" | "subtitle" | "uiConfig" | "createdAt" | "updatedAt", ExtArgs["result"]["onboardingStep"]>
 export type OnboardingStepInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   flow?: boolean | Prisma.OnboardingFlowDefaultArgs<ExtArgs>
 }
@@ -671,7 +638,6 @@ export type $OnboardingStepPayload<ExtArgs extends runtime.Types.Extensions.Inte
     id: string
     flowId: string
     orderIndex: number
-    type: string
     title: string
     subtitle: string | null
     uiConfig: runtime.JsonValue | null
@@ -1104,7 +1070,6 @@ export interface OnboardingStepFieldRefs {
   readonly id: Prisma.FieldRef<"OnboardingStep", 'String'>
   readonly flowId: Prisma.FieldRef<"OnboardingStep", 'String'>
   readonly orderIndex: Prisma.FieldRef<"OnboardingStep", 'Int'>
-  readonly type: Prisma.FieldRef<"OnboardingStep", 'String'>
   readonly title: Prisma.FieldRef<"OnboardingStep", 'String'>
   readonly subtitle: Prisma.FieldRef<"OnboardingStep", 'String'>
   readonly uiConfig: Prisma.FieldRef<"OnboardingStep", 'Json'>

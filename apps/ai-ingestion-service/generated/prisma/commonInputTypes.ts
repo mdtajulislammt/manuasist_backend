@@ -354,6 +354,13 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
 }
 
+export type EnumDishImageSourceFilter<$PrismaModel = never> = {
+  equals?: $Enums.DishImageSource | Prisma.EnumDishImageSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel> | $Enums.DishImageSource
+}
+
 export type DateTimeNullableFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel> | null
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -363,6 +370,16 @@ export type DateTimeNullableFilter<$PrismaModel = never> = {
   gt?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   gte?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   not?: Prisma.NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+}
+
+export type EnumDishImageSourceWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DishImageSource | Prisma.EnumDishImageSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDishImageSourceWithAggregatesFilter<$PrismaModel> | $Enums.DishImageSource
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel>
 }
 
 export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -665,6 +682,13 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
+export type NestedEnumDishImageSourceFilter<$PrismaModel = never> = {
+  equals?: $Enums.DishImageSource | Prisma.EnumDishImageSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel> | $Enums.DishImageSource
+}
+
 export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel> | null
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -674,6 +698,16 @@ export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
   gt?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   gte?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   not?: Prisma.NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+}
+
+export type NestedEnumDishImageSourceWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DishImageSource | Prisma.EnumDishImageSourceFieldRefInput<$PrismaModel>
+  in?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DishImageSource[] | Prisma.ListEnumDishImageSourceFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDishImageSourceWithAggregatesFilter<$PrismaModel> | $Enums.DishImageSource
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDishImageSourceFilter<$PrismaModel>
 }
 
 export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {

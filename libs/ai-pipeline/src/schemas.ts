@@ -17,6 +17,10 @@ export type ExtractedDishLine = z.infer<typeof extractedDishLineSchema>;
 export const reasonCodeSchema = z.enum([
   'DIET_ALIGN',
   'ALLERGEN',
+  'INTOLERANCE',
+  'CUISINE',
+  'HEALTH_GOAL',
+  'NUTRITION_TARGET',
   'MACRO',
   'SPICE',
   'CALORIE',

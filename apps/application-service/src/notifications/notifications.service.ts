@@ -17,6 +17,11 @@ import { PrismaService } from '../prisma.service';
 import { DevicePlatformDto, RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 import { ListNotificationsQueryDto } from './dto/list-notifications-query.dto';
 import { FcmPushService } from './fcm-push.service';
+import {
+  assertNotificationDataForType,
+  toNotificationTypeApi,
+  type NotificationTypeApiValue,
+} from './notification-type';
 import { NotificationsGateway } from './notifications.gateway';
 
 const DEFAULT_PAGE = 1;
@@ -28,7 +33,7 @@ type NotificationCreateInput = {
     userId: string;
     title: string;
     body: string;
-    type?: NotificationType;
+    type: NotificationType;
     icon?: string;
     data?: Record<string, unknown>;
     dedupeKey?: string;
@@ -37,6 +42,7 @@ type NotificationCreateInput = {
 
 type NotificationCard = {
     id: string;
+    type: NotificationTypeApiValue;
     title: string;
     body: string;
     icon: string;
@@ -232,6 +238,8 @@ export class NotificationsService {
     }
 
     async createNotification(input: NotificationCreateInput) {
+      assertNotificationDataForType(input.type, input.data);
+
       if (input.dedupeKey) {
         const existing = await this.prisma.userNotification.findUnique({
           where: {
@@ -253,7 +261,7 @@ export class NotificationsService {
                 userId: input.userId,
                 title: input.title,
                 body: input.body,
-                type: input.type ?? NotificationType.SYSTEM,
+                type: input.type,
                 icon: input.icon ?? 'bell',
                 data: (input.data ?? {}) as Prisma.InputJsonValue,
                 dedupeKey: input.dedupeKey,
@@ -305,7 +313,7 @@ export class NotificationsService {
     async notifyScanReady(userId: string, scanId: string) {
         return this.createNotification({
             userId,
-            type: NotificationType.SCAN_READY,
+            type: NotificationType.SCAN_RESULT_READY,
             title: 'Your Results Are Ready!',
             body: 'Check out recommended options tailored to your preferences.',
             data: { scanId },
@@ -313,10 +321,21 @@ export class NotificationsService {
         });
     }
 
+  emitReferralUpdated(
+    userId: string,
+    referredUserId: string,
+    verifiedFriendsJoined: number,
+  ): boolean {
+    return this.gateway.emitReferralUpdated(userId, {
+      referredUserId,
+      verifiedFriendsJoined,
+    });
+  }
+
   async notifyScanFailed(userId: string, scanId: string, error: string) {
     return this.createNotification({
       userId,
-      type: NotificationType.SYSTEM,
+      type: NotificationType.SCAN_FAILED,
       title: 'Scan could not be completed',
       body: "We couldn't analyze this menu. Please try again with a clearer photo or menu text.",
       data: {
@@ -490,6 +509,7 @@ export class NotificationsService {
     ): NotificationCard {
         return {
             id: notification.id,
+            type: toNotificationTypeApi(notification.type),
             title: notification.title,
             body: notification.body,
             icon: notification.icon,
@@ -556,7 +576,7 @@ export class NotificationsService {
     private buildFcmData(notification: Prisma.UserNotificationModel) {
         return {
             notificationId: notification.id,
-            type: notification.type,
+            type: toNotificationTypeApi(notification.type),
             data: JSON.stringify(this.asRecord(notification.data)),
         };
     }

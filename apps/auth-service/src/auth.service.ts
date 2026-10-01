@@ -2,20 +2,32 @@ import {
   BadRequestException,
   ConflictException,
   HttpException,
+  HttpStatus,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
   OnModuleInit,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import type Redis from 'ioredis';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
-import * as nodemailer from 'nodemailer';
 // @ts-ignore
 import { createRemoteJWKSet, decodeJwt } from 'jose';
 // @ts-ignore
-import { exportJWK, importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose';
+import {
+  createRemoteJWKSet,
+  exportJWK,
+  importPKCS8,
+  importSPKI,
+  jwtVerify,
+  SignJWT,
+} from 'jose';
 // @ts-ignore
 import type { JWK, KeyLike, RemoteJWKSetOptions } from 'jose';
 import type { Configuration } from 'openid-client';
@@ -31,7 +43,18 @@ import {
 } from 'openid-client';
 import { PrismaService } from './prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { isError } from 'node:util';
+import { Prisma } from '../generated/prisma/client';
+import {
+  extractSocialProfileHints,
+  type SocialProfileHints,
+} from './utils/social-profile.util';
+import {
+  AUTH_OTP_EMAIL_QUEUE,
+  REDIS_CLIENT,
+  authOtpCooldownKey,
+  type AuthOtpEmailJobData,
+  type AuthOtpEmailPurpose,
+} from './otp/auth-otp.constants';
 
 function prismaKnownRequestCode(e: unknown): string | undefined {
   if (
@@ -47,11 +70,26 @@ function prismaKnownRequestCode(e: unknown): string | undefined {
 
 const BCRYPT_ROUNDS = 12;
 
+const GOOGLE_OIDC_ISSUERS = [
+  'https://accounts.google.com',
+  'accounts.google.com',
+];
+const GOOGLE_JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/oauth2/v3/certs'),
+);
+const APPLE_OIDC_ISSUER = 'https://appleid.apple.com';
+const APPLE_JWKS = createRemoteJWKSet(
+  new URL('https://appleid.apple.com/auth/keys'),
+);
+
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
-function normalizeIdentifier(identifier: string): { email?: string; phone?: string } {
+function normalizeIdentifier(identifier: string): {
+  email?: string;
+  phone?: string;
+} {
   const value = identifier.trim();
   if (!value) {
     return {};
@@ -73,10 +111,20 @@ function normalizeIdentifier(identifier: string): { email?: string; phone?: stri
 export type TokenPairResponse = {
   success: boolean;
   message: string;
+  user_type: string;
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
   refresh_token: string;
+};
+
+export type SocialProfileSummary = {
+  fullName: string | null;
+  avatarUrl: string | null;
+};
+
+export type MobileOAuthResponse = TokenPairResponse & {
+  profile: SocialProfileSummary;
 };
 
 export type RegisterPendingVerificationResponse = {
@@ -178,6 +226,9 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @InjectQueue(AUTH_OTP_EMAIL_QUEUE)
+    private readonly otpEmailQueue: Queue<AuthOtpEmailJobData>,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) { }
 
   async onModuleInit() {
@@ -221,8 +272,12 @@ export class AuthService implements OnModuleInit {
   // --- JWKS / access JWT (from AccessJwtService) ---
 
   private async initJwtKeys() {
-    const privatePem = this.config.getOrThrow<string>('JWT_PRIVATE_KEY');
-    const publicPem = this.config.getOrThrow<string>('JWT_PUBLIC_KEY');
+    const privatePem = this.normalizePem(
+      this.config.getOrThrow<string>('JWT_PRIVATE_KEY'),
+    );
+    const publicPem = this.normalizePem(
+      this.config.getOrThrow<string>('JWT_PUBLIC_KEY'),
+    );
     this.privateKey = await importPKCS8(privatePem, 'RS256');
     const pub = await importSPKI(publicPem, 'RS256');
     this.publicKey = pub;
@@ -236,6 +291,11 @@ export class AuthService implements OnModuleInit {
 
   getJwks() {
     return this.jwksBody;
+  }
+
+  /** Accept PEM with literal \n (common in .env / Docker Compose). */
+  private normalizePem(pem: string): string {
+    return pem.replace(/\\n/g, '\n').trim();
   }
 
   async signAccessToken(userId: string, roles: string[]) {
@@ -272,7 +332,7 @@ export class AuthService implements OnModuleInit {
 
   private normalizeReferralCode(referralCode?: string): string | undefined {
     const code = referralCode?.trim();
-    return code ? code : undefined;
+    return code && code !== 'MENU-' ? code : undefined;
   }
 
   private generateReferralCodeCandidate(): string {
@@ -304,8 +364,28 @@ export class AuthService implements OnModuleInit {
     return this.config.get<number>('CONTACT_CHANGE_OTP_TTL_SECONDS') ?? 600;
   }
 
+  private otpResendCooldownSec(purpose: AuthOtpEmailPurpose): number {
+    if (purpose === 'PASSWORD_RESET') {
+      return (
+        this.config.get<number>('PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS') ??
+        this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ??
+        60
+      );
+    }
+    if (purpose === 'SIGNUP') {
+      return (
+        this.config.get<number>('SIGNUP_OTP_RESEND_COOLDOWN_SECONDS') ?? 60
+      );
+    }
+    return 0;
+  }
+
   private otpDebugResponse(otp: string): { otp?: string } {
-    const env = (this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? '')
+    const env = (
+      this.config.get<string>('NODE_ENV') ??
+      process.env.NODE_ENV ??
+      ''
+    )
       .trim()
       .toLowerCase();
     if (env === 'development') {
@@ -318,64 +398,69 @@ export class AuthService implements OnModuleInit {
     return randomInt(0, 1_000_000).toString().padStart(6, '0');
   }
 
-  private async sendOtpEmail(input: {
-    to: string;
-    otp: string;
-    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE';
-    expiresInSeconds: number;
-  }): Promise<void> {
-    const { to, otp, purpose, expiresInSeconds } = input;
-    const gmailUser = this.config.get<string>('GMAIL_APP_USER');
-    const gmailAppPassword = this.config.get<string>('GMAIL_APP_PASSWORD');
-
-    // Keep local dev unblocked if SMTP is not configured yet.
-    if (!gmailUser || !gmailAppPassword) {
-      this.logger.warn(
-        `Gmail SMTP credentials missing; falling back to log for ${purpose} OTP`,
-      );
-      this.logger.log(`${purpose} OTP for ${to}: ${otp}`);
+  private async assertOtpResendAllowed(
+    purpose: AuthOtpEmailPurpose,
+    identifier: string,
+  ): Promise<void> {
+    const cooldownSec = this.otpResendCooldownSec(purpose);
+    if (cooldownSec <= 0) {
       return;
     }
+    const key = authOtpCooldownKey(purpose, identifier);
+    const remaining = await this.redis.ttl(key);
+    if (remaining > 0) {
+      throw new HttpException(
+        `Please wait ${remaining} seconds before requesting another verification code`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
-      },
-    });
-    const appName = this.config.get<string>('APP_NAME') ?? 'Menu Assist';
-    const from = this.config.get<string>('OTP_EMAIL_FROM') ?? gmailUser;
-    const minutes = Math.max(1, Math.floor(expiresInSeconds / 60));
-    const purposeText =
-      purpose === 'PASSWORD_RESET'
-        ? 'password reset verification'
-        : purpose === 'CONTACT_CHANGE'
-          ? 'contact change verification'
-          : 'account verification';
-    const subject = `${appName} ${purposeText} code`;
-    const text = `Your ${appName} OTP code is ${otp}. It expires in ${minutes} minute(s).`;
+  private async markOtpResendCooldown(
+    purpose: AuthOtpEmailPurpose,
+    identifier: string,
+  ): Promise<void> {
+    const cooldownSec = this.otpResendCooldownSec(purpose);
+    if (cooldownSec <= 0) {
+      return;
+    }
+    await this.redis.set(
+      authOtpCooldownKey(purpose, identifier),
+      '1',
+      'EX',
+      cooldownSec,
+    );
+  }
 
+  private async enqueueOtpEmail(job: AuthOtpEmailJobData): Promise<void> {
     try {
-      await transporter.sendMail({
-        from,
-        to,
-        subject,
-        text,
+      await this.otpEmailQueue.add('send-otp-email', job, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: true,
+        removeOnFail: 50,
       });
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${to}`, error as Error);
-      throw new InternalServerErrorException('Failed to send OTP email');
+      this.logger.error(
+        `Failed to enqueue ${job.purpose} OTP email to ${job.to}: ${String(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Verification email could not be queued. Please try again shortly.',
+      );
     }
   }
 
   private async createOtpChallenge(
     userId: string,
     channel: 'EMAIL' | 'SMS',
-    purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'CONTACT_CHANGE',
+    purpose: AuthOtpEmailPurpose,
     identifier: string,
     expiresInSeconds: number,
   ): Promise<{ otp: string }> {
+    if (purpose === 'SIGNUP' || purpose === 'PASSWORD_RESET') {
+      await this.assertOtpResendAllowed(purpose, identifier);
+    }
+
     const otp = this.generateOtp6();
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
@@ -391,7 +476,7 @@ export class AuthService implements OnModuleInit {
       },
     });
 
-    await this.prisma.authOtpToken.create({
+    const token = await this.prisma.authOtpToken.create({
       data: {
         userId,
         codeHash: sha256Hex(otp),
@@ -403,12 +488,24 @@ export class AuthService implements OnModuleInit {
     });
 
     if (channel === 'EMAIL') {
-      await this.sendOtpEmail({
-        to: identifier,
-        otp,
-        purpose,
-        expiresInSeconds,
-      });
+      try {
+        await this.enqueueOtpEmail({
+          to: identifier,
+          otp,
+          purpose,
+          expiresInSeconds,
+        });
+      } catch (error) {
+        await this.prisma.authOtpToken.update({
+          where: { id: token.id },
+          data: { consumedAt: new Date() },
+        });
+        throw error;
+      }
+    }
+
+    if (purpose === 'SIGNUP' || purpose === 'PASSWORD_RESET') {
+      await this.markOtpResendCooldown(purpose, identifier);
     }
 
     // TODO: replace with real SMS provider integration.
@@ -437,6 +534,7 @@ export class AuthService implements OnModuleInit {
     return {
       success: true,
       message,
+      user_type: roleNames.includes('admin') ? 'admin' : 'user',
       access_token,
       token_type: 'Bearer',
       expires_in: this.accessTtlSec(),
@@ -509,13 +607,14 @@ export class AuthService implements OnModuleInit {
       return {
         success: true,
         message: 'Refresh successful.',
+        user_type: roleNames.includes('admin') ? 'admin' : 'user',
         access_token,
         token_type: 'Bearer',
         expires_in: this.accessTtlSec(),
         refresh_token: newRaw,
       };
     } catch (error) {
-      if (isError(error) && error.message.includes('Invalid')) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -532,11 +631,15 @@ export class AuthService implements OnModuleInit {
     if (!row) {
       return {
         success: true,
-        message: 'No matching refresh token; already logged out or unknown token.',
+        message:
+          'No matching refresh token; already logged out or unknown token.',
       };
     }
     await this.revokeFamily(row.familyId);
-    return { success: true, message: 'Logged out successfully. Refresh token family revoked.' };
+    return {
+      success: true,
+      message: 'Logged out successfully. Refresh token family revoked.',
+    };
   }
 
   private async revokeFamily(familyId: string) {
@@ -546,7 +649,10 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  private async verifyOtpResponse(identifier: string, otp: string): Promise<any> {
+  private async verifyOtpResponse(
+    identifier: string,
+    otp: string,
+  ): Promise<any> {
     const { email: normalizedEmail, phone: normalizedPhone } =
       normalizeIdentifier(identifier);
     if (!normalizedEmail && !normalizedPhone) {
@@ -564,7 +670,7 @@ export class AuthService implements OnModuleInit {
       },
     });
     if (!user) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
@@ -579,16 +685,16 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
+      throw new BadRequestException('OTP expired or invalid');
     }
 
     if (otpRow.attempts >= 5) {
-      throw new UnauthorizedException('OTP attempt limit exceeded');
+      throw new BadRequestException('OTP attempt limit exceeded');
     }
 
     const codeHash = sha256Hex(otp);
     if (otpRow.codeHash !== codeHash) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     return {
@@ -614,7 +720,6 @@ export class AuthService implements OnModuleInit {
       }
 
       const referrerCode = this.normalizeReferralCode(input.referralCode);
-      const referralCodeForNewUser = await this.generateUniqueReferralCode();
       let referredById: string | undefined;
 
       if (referrerCode) {
@@ -636,66 +741,65 @@ export class AuthService implements OnModuleInit {
         );
       }
 
-      if (normalizedEmail) {
-        const existingEmail = await this.prisma.authUser.findUnique({
-          where: { email: normalizedEmail },
-        });
-        if (existingEmail) {
-          throw new ConflictException('An account with this email already exists');
-        }
-      }
+      const existing = normalizedEmail
+        ? await this.prisma.authUser.findUnique({
+            where: { email: normalizedEmail },
+          })
+        : await this.prisma.authUser.findUnique({
+            where: { phone: normalizedPhone! },
+          });
 
-      if (normalizedPhone) {
-        const existingPhone = await this.prisma.authUser.findUnique({
-          where: { phone: normalizedPhone },
-        });
-        if (existingPhone) {
-          throw new ConflictException('An account with this phone already exists');
-        }
+      const identifierVerified = existing
+        ? Boolean(
+            normalizedEmail
+              ? existing.emailVerifiedAt
+              : existing.phoneVerifiedAt,
+          )
+        : false;
+
+      if (existing && identifierVerified) {
+        throw new ConflictException(
+          normalizedEmail
+            ? 'An account with this email already exists'
+            : 'An account with this phone already exists',
+        );
       }
 
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-      const user = await this.prisma.authUser.create({
-        data: {
-          email: normalizedEmail,
-          phone: normalizedPhone,
-          passwordHash,
-          referralCode: referralCodeForNewUser,
-          referredById,
-          roles: {
-            create: {
-              role: { connect: { name: 'user' } },
+      const user = existing
+        ? await this.prisma.authUser.update({
+            where: { id: existing.id },
+            data: {
+              passwordHash,
+              ...(referredById ? { referredById } : {}),
             },
-          },
-        },
-      });
+          })
+        : await this.prisma.authUser.create({
+            data: {
+              email: normalizedEmail,
+              phone: normalizedPhone,
+              passwordHash,
+              referralCode: await this.generateUniqueReferralCode(),
+              referredById,
+              roles: {
+                create: {
+                  role: { connect: { name: 'user' } },
+                },
+              },
+            },
+          });
 
       const channel = normalizedPhone ? 'SMS' : 'EMAIL';
       const targetIdentifier = normalizedPhone ?? normalizedEmail!;
-      const expiresInSeconds = this.signupOtpTtlSec();
-      const { otp } = await this.createOtpChallenge(
-        user.id,
-        channel,
-        'SIGNUP',
-        targetIdentifier,
-        expiresInSeconds,
-      );
-
-      return {
-        success: true,
-        message:
-          channel === 'SMS'
-            ? 'Account created. A verification code was sent to your phone.'
-            : 'Account created. A verification code was sent to your email.',
-        status: 'PENDING_VERIFICATION',
-        channel: channel === 'SMS' ? 'sms' : 'email',
-        identifier: targetIdentifier,
-        expires_in_seconds: expiresInSeconds,
-        ...this.otpDebugResponse(otp),
-      };
+      return this.sendSignupVerification(user.id, channel, targetIdentifier);
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('An account with this identifier already exists');
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'An account with this identifier already exists',
+        );
       }
       throw error;
     }
@@ -728,7 +832,9 @@ export class AuthService implements OnModuleInit {
       },
     });
     if (!user) {
-      throw new BadRequestException('Account not found for signup verification');
+      throw new BadRequestException(
+        'Account not found for signup verification',
+      );
     }
 
     if (normalizedEmail && user.emailVerifiedAt) {
@@ -740,22 +846,41 @@ export class AuthService implements OnModuleInit {
 
     const channel = normalizedPhone ? 'SMS' : 'EMAIL';
     const targetIdentifier = normalizedPhone ?? normalizedEmail!;
-    const expiresInSeconds = this.signupOtpTtlSec();
-    const { otp } = await this.createOtpChallenge(
+    const sent = await this.sendSignupVerification(
       user.id,
       channel,
-      'SIGNUP',
       targetIdentifier,
-      expiresInSeconds,
     );
-
     return {
-      success: true,
+      ...sent,
       message:
         channel === 'SMS'
           ? 'A signup verification code was sent to your phone.'
           : 'A signup verification code was sent to your email.',
       status: 'OTP_SENT',
+    };
+  }
+
+  private async sendSignupVerification(
+    userId: string,
+    channel: 'EMAIL' | 'SMS',
+    targetIdentifier: string,
+  ): Promise<RegisterPendingVerificationResponse> {
+    const expiresInSeconds = this.signupOtpTtlSec();
+    const { otp } = await this.createOtpChallenge(
+      userId,
+      channel,
+      'SIGNUP',
+      targetIdentifier,
+      expiresInSeconds,
+    );
+    return {
+      success: true,
+      message:
+        channel === 'SMS'
+          ? 'Account created. A verification code was sent to your phone.'
+          : 'Account created. A verification code was sent to your email.',
+      status: 'PENDING_VERIFICATION',
       channel: channel === 'SMS' ? 'sms' : 'email',
       identifier: targetIdentifier,
       expires_in_seconds: expiresInSeconds,
@@ -774,13 +899,13 @@ export class AuthService implements OnModuleInit {
       const { identifier, type, otp } = input;
       if (type === 'SIGNUP') {
         const tokenPair = await this.verifySignupOtp(identifier, otp);
+        // console.log(tokenPair, 'token pair');
         return {
           success: true,
           message: tokenPair.message,
           tokenPair,
         };
       }
-
 
       const verifyOtpResponse = await this.verifyOtpResponse(identifier, otp);
       if (!verifyOtpResponse.success) {
@@ -791,7 +916,7 @@ export class AuthService implements OnModuleInit {
         message: verifyOtpResponse.message,
       };
     } catch (error) {
-      if (isError(error) && (error.message.includes('Invalid OTP') || error.message.includes('OTP expired') || error.message.includes('OTP attempt limit exceeded'))) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -856,72 +981,117 @@ export class AuthService implements OnModuleInit {
     identifier: string,
     otp: string,
   ): Promise<TokenPairResponse> {
-    const { email: normalizedEmail, phone: normalizedPhone } =
-      normalizeIdentifier(identifier);
-    if (!normalizedEmail && !normalizedPhone) {
-      throw new BadRequestException(
-        'Identifier must be a valid email or E.164 phone number',
+    try {
+      const { email: normalizedEmail, phone: normalizedPhone } =
+        normalizeIdentifier(identifier);
+      if (!normalizedEmail && !normalizedPhone) {
+        throw new BadRequestException(
+          'Identifier must be a valid email or E.164 phone number',
+        );
+      }
+
+      const user = await this.prisma.authUser.findFirst({
+        where: {
+          OR: [
+            ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+            ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+          ],
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Invalid OTP');
+      }
+
+      const channel = normalizedPhone ? 'SMS' : 'EMAIL';
+      const otpRow = await this.prisma.authOtpToken.findFirst({
+        where: {
+          userId: user.id,
+          channel,
+          purpose: 'SIGNUP',
+          consumedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpRow || otpRow.expiresAt < new Date()) {
+        throw new UnauthorizedException('OTP expired or invalid');
+      }
+
+      if (otpRow.attempts >= 5) {
+        throw new UnauthorizedException('OTP attempt limit exceeded');
+      }
+
+      const codeHash = sha256Hex(otp);
+      if (otpRow.codeHash !== codeHash) {
+        await this.prisma.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { attempts: { increment: 1 } },
+        });
+        throw new BadRequestException('Invalid OTP');
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.authOtpToken.update({
+          where: { id: otpRow.id },
+          data: { consumedAt: new Date() },
+        });
+
+        await tx.authUser.update({
+          where: { id: user.id },
+          data: normalizedPhone
+            ? { phoneVerifiedAt: new Date() }
+            : { emailVerifiedAt: new Date() },
+        });
+      });
+
+      if (user.referredById) {
+        void this.notifyReferralVerified(user.referredById, user.id);
+      }
+
+      return this.issuePairForUser(
+        user.id,
+        'Signup verified. You are signed in.',
+      );
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Internal Server Error');
+    }
+  }
+
+  private async notifyReferralVerified(
+    referrerId: string,
+    referredUserId: string,
+  ): Promise<void> {
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    try {
+      const response = await fetch(`${base}/internal/referrals/verified`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key,
+        },
+        body: JSON.stringify({ referrerId, referredUserId }),
+        signal: AbortSignal.timeout(3_000),
+      });
+      if (!response.ok) {
+        this.logger.warn(
+          `Referral verification callback failed with status ${response.status}`,
+        );
+      }
+    } catch (error) {
+      // Verification must still succeed if application-service is temporarily down.
+      this.logger.warn(
+        `Referral verification callback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
-
-    const user = await this.prisma.authUser.findFirst({
-      where: {
-        OR: [
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-        ],
-      },
-    });
-    if (!user) {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    const channel = normalizedPhone ? 'SMS' : 'EMAIL';
-    const otpRow = await this.prisma.authOtpToken.findFirst({
-      where: {
-        userId: user.id,
-        channel,
-        purpose: 'SIGNUP',
-        consumedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
-    }
-
-    if (otpRow.attempts >= 5) {
-      throw new UnauthorizedException('OTP attempt limit exceeded');
-    }
-
-    const codeHash = sha256Hex(otp);
-    if (otpRow.codeHash !== codeHash) {
-      await this.prisma.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.authOtpToken.update({
-        where: { id: otpRow.id },
-        data: { consumedAt: new Date() },
-      });
-
-      await tx.authUser.update({
-        where: { id: user.id },
-        data: normalizedPhone
-          ? { phoneVerifiedAt: new Date() }
-          : { emailVerifiedAt: new Date() },
-      });
-    });
-
-    return this.issuePairForUser(
-      user.id,
-      'Signup verified. You are signed in.',
-    );
   }
 
   async resetPasswordWithOtp(input: {
@@ -955,7 +1125,7 @@ export class AuthService implements OnModuleInit {
         },
       });
       if (!user) {
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       const channel = normalizedPhone ? 'SMS' : 'EMAIL';
@@ -983,7 +1153,7 @@ export class AuthService implements OnModuleInit {
           where: { id: otpRow.id },
           data: { attempts: { increment: 1 } },
         });
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -1007,17 +1177,17 @@ export class AuthService implements OnModuleInit {
       await this.revokeAllUserRefreshTokens(user.id);
       return {
         success: true,
-        message: 'Password reset successful. You can sign in with your new password.',
+        message:
+          'Password reset successful. You can sign in with your new password.',
         status: 'PASSWORD_RESET_SUCCESS',
       };
     } catch (error) {
-      if (isError(error) && error.message.includes('Invalid OTP')) {
+      if (error instanceof Error) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
     }
   }
-
 
   async login(input: {
     identifier: string;
@@ -1061,7 +1231,10 @@ export class AuthService implements OnModuleInit {
 
       return this.issuePairForUser(user.id);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Invalid credentials')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Invalid credentials')
+      ) {
         throw new UnauthorizedException(error.message);
       }
       throw error;
@@ -1129,7 +1302,7 @@ export class AuthService implements OnModuleInit {
 
     const currentOk = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!currentOk) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new BadRequestException('Current password is incorrect');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -1140,7 +1313,8 @@ export class AuthService implements OnModuleInit {
     await this.revokeAllUserRefreshTokens(userId);
     return {
       success: true,
-      message: 'Password updated. Other sessions were signed out; sign in again on those devices.',
+      message:
+        'Password updated. Other sessions were signed out; sign in again on those devices.',
       status: 'PASSWORD_UPDATED',
     };
   }
@@ -1171,7 +1345,10 @@ export class AuthService implements OnModuleInit {
         `This ${input.kind} is already on your account`,
       );
     }
-    await this.ensureContactIdentifierAvailable(input.kind, normalized.identifier);
+    await this.ensureContactIdentifierAvailable(
+      input.kind,
+      normalized.identifier,
+    );
 
     const expiresInSeconds = this.contactChangeOtpTtlSec();
     const { otp } = await this.createOtpChallenge(
@@ -1228,7 +1405,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!otpRow || otpRow.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired or invalid');
+      throw new BadRequestException('OTP expired or invalid');
     }
 
     if (otpRow.attempts >= 5) {
@@ -1241,7 +1418,7 @@ export class AuthService implements OnModuleInit {
         where: { id: otpRow.id },
         data: { attempts: { increment: 1 } },
       });
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -1304,10 +1481,7 @@ export class AuthService implements OnModuleInit {
     allowUserId?: string,
   ) {
     const existing = await this.prisma.authUser.findFirst({
-      where:
-        kind === 'phone'
-          ? { phone: identifier }
-          : { email: identifier },
+      where: kind === 'phone' ? { phone: identifier } : { email: identifier },
       select: { id: true },
     });
     if (existing && existing.id !== allowUserId) {
@@ -1315,6 +1489,520 @@ export class AuthService implements OnModuleInit {
         kind === 'phone'
           ? 'An account with this phone already exists'
           : 'An account with this email already exists',
+      );
+    }
+  }
+
+  private async getProfilesFromApplicationService(
+    userIds: string[],
+  ): Promise<any[]> {
+    if (userIds.length === 0) return [];
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    const url = `${base}/internal/users/profiles/batch`;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key,
+        },
+        body: JSON.stringify({ userIds }),
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const json = (await res.json()) as { success: boolean; data?: any[] };
+      return json.data || [];
+    } catch (e) {
+      this.logger.warn(
+        `Failed to fetch user profiles from application-service: ${e}`,
+      );
+      return [];
+    }
+  }
+
+  private async updateProfileFromApplicationService(
+    userId: string,
+    data: any,
+  ): Promise<any> {
+    try {
+      const base = this.config
+        .getOrThrow<string>('APPLICATION_SERVICE_URL')
+        .replace(/\/$/, '');
+      const key = this.config.getOrThrow<string>(
+        'APPLICATION_INTERNAL_API_KEY',
+      );
+      const url = `${base}/internal/users/${userId}/profile`;
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-api-key': key,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        return null;
+      }
+      const json = (await res.json()) as { success: boolean; data?: any };
+      return json.data || null;
+    } catch (e) {
+      this.logger.warn(
+        `Failed to update user profile from application-service: ${e}`,
+      );
+      return null;
+    }
+  }
+
+  private async getProfileSummaryForUser(
+    userId: string,
+  ): Promise<SocialProfileSummary> {
+    const profiles = await this.getProfilesFromApplicationService([userId]);
+    const profile = profiles[0];
+    return {
+      fullName: profile?.fullName ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+    };
+  }
+
+  private async syncSocialUserProfile(
+    userId: string,
+    hints: SocialProfileHints,
+  ): Promise<SocialProfileSummary | null> {
+    const payload: Record<string, string> = {};
+    if (hints.fullName) {
+      payload.fullName = hints.fullName;
+    }
+    if (hints.avatarUrl) {
+      payload.avatarUrl = hints.avatarUrl;
+    }
+    if (Object.keys(payload).length === 0) {
+      return null;
+    }
+
+    const updated = await this.updateProfileFromApplicationService(
+      userId,
+      payload,
+    );
+    if (!updated) {
+      return null;
+    }
+
+    return {
+      fullName: updated.fullName ?? null,
+      avatarUrl: updated.avatarUrl ?? null,
+    };
+  }
+
+  private async finalizeOauthSignIn(
+    userId: string,
+    claims: Record<string, unknown>,
+    profileOverrides?: SocialProfileHints,
+  ): Promise<MobileOAuthResponse> {
+    const email =
+      typeof claims.email === 'string'
+        ? claims.email
+        : typeof claims.preferred_username === 'string'
+          ? claims.preferred_username
+          : undefined;
+
+    if (email) {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: { emailVerifiedAt: true },
+      });
+      if (user && !user.emailVerifiedAt) {
+        await this.prisma.authUser.update({
+          where: { id: userId },
+          data: { emailVerifiedAt: new Date() },
+        });
+      }
+    }
+
+    const profileHints = extractSocialProfileHints(claims, profileOverrides);
+    const syncedProfile = await this.syncSocialUserProfile(
+      userId,
+      profileHints,
+    );
+    const profile =
+      syncedProfile ?? (await this.getProfileSummaryForUser(userId));
+    const tokenPair = await this.issuePairForUser(
+      userId,
+      'OAuth sign-in successful.',
+    );
+
+    return {
+      ...tokenPair,
+      profile,
+    };
+  }
+
+  private async searchProfilesInApplicationService(
+    search: string,
+  ): Promise<string[]> {
+    if (!search) return [];
+    const base = this.config
+      .getOrThrow<string>('APPLICATION_SERVICE_URL')
+      .replace(/\/$/, '');
+    const key = this.config.getOrThrow<string>('APPLICATION_INTERNAL_API_KEY');
+    const url = `${base}/internal/users/profiles/search?q=${encodeURIComponent(search)}`;
+    try {
+      const res = await fetch(url, {
+        headers: { 'x-internal-api-key': key },
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const json = (await res.json()) as { success: boolean; data?: any[] };
+      return (json.data || []).map((p: any) => p.userId);
+    } catch (e) {
+      this.logger.warn(
+        `Failed to search user profiles from application-service: ${e}`,
+      );
+      return [];
+    }
+  }
+
+  async getAllUsers(
+    search = '',
+    page = 1,
+    limit = 10,
+    sort = 'createdAt',
+    order = 'desc',
+  ) {
+    try {
+      const validSortFields = [
+        'id',
+        'email',
+        'phone',
+        'createdAt',
+        'updatedAt',
+        'referralCode',
+      ];
+      const orderByField = validSortFields.includes(sort) ? sort : 'createdAt';
+      const orderByOrder = ['asc', 'desc'].includes(order.toLowerCase())
+        ? order.toLowerCase()
+        : 'desc';
+
+      const skip = (page - 1) * limit;
+      const where: Prisma.AuthUserWhereInput = {};
+      if (search) {
+        const searchLower = search.toLowerCase();
+
+        // Search profiles in application-service
+        const matchedUserIds =
+          await this.searchProfilesInApplicationService(search);
+
+        where.OR = [
+          {
+            email: {
+              contains: searchLower,
+              mode: 'insensitive', // recommended for case-insensitive search
+            },
+          },
+          {
+            phone: {
+              contains: searchLower,
+              mode: 'insensitive',
+            },
+          },
+          ...(matchedUserIds.length > 0
+            ? [{ id: { in: matchedUserIds } }]
+            : []),
+        ];
+      }
+      const [users, total] = await Promise.all([
+        this.prisma.authUser.findMany({
+          skip,
+          take: limit,
+          where,
+          orderBy: {
+            [orderByField]: orderByOrder,
+          },
+          select: {
+            id: true,
+            identities: true,
+            email: true,
+            phone: true,
+            emailVerifiedAt: true,
+            phoneVerifiedAt: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+            roles: {
+              select: {
+                role: true,
+              }
+            },
+          },
+        }),
+        this.prisma.authUser.count({ where }),
+      ]);
+
+      const userIds = users.map((user) => user.id);
+      const profiles = await this.getProfilesFromApplicationService(userIds);
+      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+
+      const formattedUsers = users.map((user) => {
+        const profile = profileMap.get(user.id);
+        return {
+          id: user.id,
+          fullName: profile?.fullName || null,
+          avatarUrl: profile?.avatarUrl || null,
+          email: user.email,
+          phone: user.phone,
+          emailVerified: !!user.emailVerifiedAt,
+          phoneVerified: !!user.phoneVerifiedAt,
+          registeredDate: user.createdAt,
+          role: user.roles.some((role) => role.role.name.toLowerCase() === 'admin') ? 'ADMIN' : 'USER',
+          status: user.status,
+        };
+      });
+
+      return {
+        success: true,
+        message: 'Users retrieved successfully.',
+        data: {
+          users: formattedUsers,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  async getUsersByIds(userIds: string[]) {
+    const uniqueIds = [...new Set(userIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return {
+        success: true,
+        message: 'Users retrieved successfully.',
+        data: { users: [] },
+      };
+    }
+
+    const users = await this.prisma.authUser.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        status: true,
+      },
+    });
+    const profiles = await this.getProfilesFromApplicationService(
+      users.map((user) => user.id),
+    );
+    const profileMap = new Map(
+      profiles.map((profile) => [profile.userId, profile]),
+    );
+
+    return {
+      success: true,
+      message: 'Users retrieved successfully.',
+      data: {
+        users: users.map((user) => {
+          const profile = profileMap.get(user.id);
+          return {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            fullName: profile?.fullName ?? null,
+            avatarUrl: profile?.avatarUrl ?? null,
+            status: user.status,
+          };
+        }),
+      },
+    };
+  }
+
+  async getUserById(userId: string) {
+    try {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          emailVerifiedAt: true,
+          phoneVerifiedAt: true,
+          referralCode: true,
+          referredById: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+        },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      const profiles = await this.getProfilesFromApplicationService([userId]);
+      const profile = profiles[0] || null;
+
+      return {
+        success: true,
+        message: 'User retrived successfully.',
+        data: {
+          id: user.id,
+          fullName: profile?.fullName || null,
+          avatarUrl: profile?.avatarUrl || null,
+          email: user.email,
+          phone: user.phone,
+          emailVerified: !!user.emailVerifiedAt,
+          phoneVerified: !!user.phoneVerifiedAt,
+          address: profile?.address || null,
+          registeredDate: user.createdAt,
+          status: user.status,
+          onboardingCompleted: !!profile?.onboardingCompletedAt,
+        },
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  // Update User with profile fullname
+  async updateUser(userId: string, data: any) {
+    try {
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Update user
+      let updatedUser: any = await this.prisma.authUser.update({
+        where: { id: userId },
+        data: {
+          email: data.email,
+          phone: data.phone,
+          status: data.status,
+        },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+        },
+      });
+
+      if (data.fullName || data.avatarUrl || data.address) {
+        const profilePayload: Record<string, string> = {};
+        if (typeof data.fullName === 'string' && data.fullName.trim()) {
+          profilePayload.fullName = data.fullName.trim();
+        }
+        if (typeof data.avatarUrl === 'string' && data.avatarUrl.trim()) {
+          profilePayload.avatarUrl = data.avatarUrl.trim();
+        }
+        if (typeof data.address === 'string' && data.address.trim()) {
+          profilePayload.address = data.address.trim();
+        }
+        const profile = await this.updateProfileFromApplicationService(
+          userId,
+          profilePayload,
+        );
+        if (profile) {
+          updatedUser = {
+            ...updatedUser,
+            fullName: profile.fullName ?? updatedUser.fullName,
+            avatarUrl: profile.avatarUrl ?? updatedUser.avatarUrl,
+            address: profile.address ?? updatedUser.address,
+          };
+        }
+      }
+
+      return {
+        success: true,
+        message: 'User updated successfully.',
+        data: updatedUser,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  async toggleUserStatus(userId: string) {
+    try {
+      // Fetch user by ID
+      const user = await this.prisma.authUser.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Toggle status (ACTIVE -> INACTIVE, INACTIVE -> ACTIVE)
+      const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+      // Update user status
+      const updatedUser = await this.prisma.authUser.update({
+        where: { id: userId },
+        data: { status: newStatus },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: `User status toggled from ${user.status} to ${newStatus}.`,
+        data: updatedUser,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -1365,6 +2053,14 @@ export class AuthService implements OnModuleInit {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
+      const referralCode =
+        user.referralCode ?? (await this.generateUniqueReferralCode());
+      if (!user.referralCode) {
+        await this.prisma.authUser.update({
+          where: { id: user.id },
+          data: { referralCode },
+        });
+      }
       const verifiedReferrals = user.referrals.filter(
         (referral) => referral.emailVerifiedAt || referral.phoneVerifiedAt,
       );
@@ -1373,7 +2069,7 @@ export class AuthService implements OnModuleInit {
         message: 'Referral summary returned.',
         data: {
           userId: user.id,
-          referralCode: user.referralCode,
+          referralCode,
           friendsJoined: user.referrals.length,
           verifiedFriendsJoined: verifiedReferrals.length,
           referredUserIds: user.referrals.map((referral) => referral.id),
@@ -1409,7 +2105,9 @@ export class AuthService implements OnModuleInit {
     email: string | undefined | null,
     referralCode?: string,
   ) {
-    const existing = await this.prisma.authIdentity.findUnique({
+    const normalizedEmail = email?.trim().toLowerCase() || undefined;
+
+    const existingIdentity = await this.prisma.authIdentity.findUnique({
       where: {
         issuer_subject: { issuer, subject },
       },
@@ -1426,15 +2124,23 @@ export class AuthService implements OnModuleInit {
       // Update email if it changed at the provider side
       if (email && existing.user.email !== email) {
         await this.prisma.authUser.update({
-          where: { id: existing.userId },
-          data: { email },
+          where: { id: existingIdentity.userId },
+          data: {
+            email: normalizedEmail,
+            emailVerifiedAt:
+              existingIdentity.user.emailVerifiedAt ?? new Date(),
+          },
         });
         await this.prisma.authIdentity.update({
-          where: { id: existing.id },
-          data: { email },
+          where: { id: existingIdentity.id },
+          data: { email: normalizedEmail },
+        });
+        return this.prisma.authUser.findUniqueOrThrow({
+          where: { id: existingIdentity.userId },
+          include: { roles: { include: { role: true } } },
         });
       }
-      return existing.user;
+      return existingIdentity.user;
     }
 
     // --- New user: resolve referral ---
@@ -1468,19 +2174,73 @@ export class AuthService implements OnModuleInit {
             provider,
             issuer,
             subject,
-            email: email ?? undefined,
+            email: normalizedEmail,
+          },
+        });
+        if (!existingByEmail.emailVerifiedAt) {
+          await this.prisma.authUser.update({
+            where: { id: existingByEmail.id },
+            data: { emailVerifiedAt: new Date() },
+          });
+        }
+        return this.prisma.authUser.findUniqueOrThrow({
+          where: { id: existingByEmail.id },
+          include: { roles: { include: { role: true } } },
+        });
+      }
+    }
+
+    const referralCode = await this.generateUniqueReferralCode();
+    try {
+      return await this.prisma.authUser.create({
+        data: {
+          email: normalizedEmail,
+          emailVerifiedAt: normalizedEmail ? new Date() : undefined,
+          referralCode,
+          identities: {
+            create: {
+              issuer,
+              subject,
+              email: normalizedEmail,
+            },
+          },
+          roles: {
+            create: {
+              role: { connect: { name: 'user' } },
+            },
           },
         },
-        roles: {
-          create: {
-            role: { connect: { name: 'user' } },
-          },
+        include: {
+          roles: { include: { role: true } },
         },
-      },
-      include: {
-        roles: { include: { role: true } },
-      },
-    });
+      });
+    } catch (error) {
+      // Concurrent first login with same email: attach identity to the winner.
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        normalizedEmail
+      ) {
+        const raced = await this.prisma.authUser.findUnique({
+          where: { email: normalizedEmail },
+          include: { roles: { include: { role: true } } },
+        });
+        if (raced) {
+          await this.prisma.authIdentity.upsert({
+            where: { issuer_subject: { issuer, subject } },
+            create: {
+              userId: raced.id,
+              issuer,
+              subject,
+              email: normalizedEmail,
+            },
+            update: { email: normalizedEmail },
+          });
+          return raced;
+        }
+      }
+      throw error;
+    }
   }
 
   // --- PKCE (from PkceStateStore) ---

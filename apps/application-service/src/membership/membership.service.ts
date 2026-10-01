@@ -63,6 +63,26 @@ type MembershipDisplayPrice = {
   grandfatheredUntil: Date | null;
 };
 
+type MembershipAccessSource = 'subscription' | 'referral' | 'none';
+
+type MembershipStatusBanner = {
+  variant: 'trial' | 'referral' | 'active' | 'expired' | 'free';
+  title: string;
+  subtitle: string | null;
+};
+
+type ResolvedMembershipState = {
+  accessSource: MembershipAccessSource;
+  active: boolean;
+  status: EntitlementStatus | 'FREE';
+  expiresAt: Date | null;
+  trialDaysRemaining: number;
+  premiumDaysRemaining: number;
+  statusBanner: MembershipStatusBanner | null;
+  showCancelSubscription: boolean;
+  showManageSubscription: boolean;
+};
+
 const PLAN_FEATURES = [
   'Unlimited menu scans',
   'Personalized diet recommendations',
@@ -80,32 +100,53 @@ export class MembershipService {
 
   async getMembership(userId: string) {
     try {
+      const entitlementKey =
+        this.config.get<string>('REVENUECAT_ENTITLEMENT_ID') ?? 'premium';
+      const [row, usage] = await Promise.all([
+        this.prisma.userEntitlement.findUnique({
+          where: { userId_entitlementKey: { userId, entitlementKey } },
+        }),
+        this.ensureUsageCredit(userId),
+      ]);
       const entitlement = await this.getPremiumEntitlement(userId);
-      const usage = await this.ensureUsageCredit(userId);
       const displayPrice = await this.resolveDisplayPrice(entitlement);
-      const trialDaysRemaining =
-        entitlement.status === EntitlementStatus.TRIALING && entitlement.expiresAt
-          ? this.daysRemaining(entitlement.expiresAt)
-          : 0;
+      const resolved = this.resolveMembershipState(row, usage, displayPrice);
+      const isTrialing = resolved.status === EntitlementStatus.TRIALING;
+      const isReferral = resolved.accessSource === 'referral';
+      const isPaidSubscription =
+        resolved.accessSource === 'subscription' && !isTrialing;
 
       return {
         success: true,
         message: 'Membership retrieved successfully',
         data: {
-          status: entitlement.status,
-          membershipType:
-            entitlement.status === EntitlementStatus.TRIALING
-              ? '14-day free trial'
-              : entitlement.active
-                ? (displayPrice.planDisplayName ?? 'Premium membership')
-                : 'Free plan',
-          trialDaysRemaining,
-          nextBillingAt: entitlement.expiresAt,
-          priceLabel: displayPrice.priceLabel,
-          billingPeriodLabel: displayPrice.billingPeriodLabel,
-          currency: displayPrice.currency,
-          amountMinor: displayPrice.amountMinor,
-          willRenew: entitlement.willRenew,
+          status: resolved.status,
+          accessSource: resolved.accessSource,
+          membershipType: this.membershipTypeLabel(resolved, displayPrice),
+          trialDaysRemaining: resolved.trialDaysRemaining,
+          premiumDaysRemaining: resolved.premiumDaysRemaining,
+          expiresAt: resolved.expiresAt,
+          nextBillingAt: isPaidSubscription || isTrialing ? resolved.expiresAt : null,
+          premiumUntil: usage.premiumUntil,
+          billingStartsLabel:
+            isTrialing && resolved.expiresAt
+              ? `Starting on ${this.formatDisplayDate(resolved.expiresAt)}`
+              : isReferral && resolved.expiresAt
+                ? `Premium until ${this.formatDisplayDate(resolved.expiresAt)}`
+                : isPaidSubscription && resolved.expiresAt
+                  ? row?.willRenew
+                    ? `Renews on ${this.formatDisplayDate(resolved.expiresAt)}`
+                    : `Access until ${this.formatDisplayDate(resolved.expiresAt)}`
+                  : null,
+          priceLabel:
+            resolved.active && !isReferral ? displayPrice.priceLabel : null,
+          billingPeriodLabel:
+            resolved.active && !isReferral ? displayPrice.billingPeriodLabel : null,
+          currency: resolved.active && !isReferral ? displayPrice.currency : null,
+          amountMinor:
+            resolved.active && !isReferral ? displayPrice.amountMinor : null,
+          willRenew:
+            resolved.accessSource === 'subscription' ? (row?.willRenew ?? false) : false,
           productId: entitlement.productId,
           periodType: entitlement.periodType,
           planKey: displayPrice.planKey,
@@ -114,15 +155,18 @@ export class MembershipService {
           grandfathered: displayPrice.grandfathered,
           grandfatheredUntil: displayPrice.grandfatheredUntil,
           freeScanCredits: usage.freeScanCredits,
-          premiumUntil: usage.premiumUntil,
           planIncludes:
             displayPrice.features.length > 0 ? displayPrice.features : PLAN_FEATURES,
+          statusBanner: resolved.statusBanner,
+          showCancelSubscription: resolved.showCancelSubscription,
+          showManageSubscription: resolved.showManageSubscription,
           renewalReminder: {
-            enabled: true,
+            enabled: resolved.showManageSubscription,
             daysBeforeRenewal: 2,
           },
-          manageSubscriptionUrl:
-            this.config.get<string>('REVENUECAT_MANAGEMENT_URL') ?? null,
+          manageSubscriptionUrl: resolved.showManageSubscription
+            ? (this.config.get<string>('REVENUECAT_MANAGEMENT_URL') ?? null)
+            : null,
         },
       };
     } catch (error) {
@@ -168,10 +212,7 @@ export class MembershipService {
       }
 
       const userId = appUserId;
-      const entitlementKey =
-        this.stringValue(event, 'entitlement_id', 'entitlementId') ??
-        this.config.get<string>('REVENUECAT_ENTITLEMENT_ID') ??
-        'premium';
+      const entitlementKey = this.entitlementKeyFromEvent(event);
       const productId = this.stringValue(event, 'product_id', 'productId');
       const expiresAt = this.dateFromValue(
         this.value(event, 'expiration_at_ms', 'expires_at_ms', 'expiration_at'),
@@ -312,12 +353,12 @@ export class MembershipService {
     });
     const usage = await this.ensureUsageCredit(userId);
     const now = Date.now();
-    const localPremiumActive =
+    const referralActive =
       usage.premiumUntil !== null && usage.premiumUntil.getTime() > now;
     if (!row) {
       return {
-        active: localPremiumActive,
-        status: localPremiumActive ? EntitlementStatus.ACTIVE : 'FREE',
+        active: referralActive,
+        status: referralActive ? EntitlementStatus.ACTIVE : 'FREE',
         expiresAt: usage.premiumUntil,
         willRenew: false,
         productId: null,
@@ -337,11 +378,12 @@ export class MembershipService {
       row.status === EntitlementStatus.ACTIVE ||
       row.status === EntitlementStatus.TRIALING;
     const notExpired = !row.expiresAt || row.expiresAt.getTime() > now;
+    const subscriptionActive = activeStatus && notExpired;
     return {
-      active: (activeStatus && notExpired) || localPremiumActive,
-      status: row.status,
-      expiresAt: row.expiresAt,
-      willRenew: row.willRenew,
+      active: subscriptionActive || referralActive,
+      status: subscriptionActive ? row.status : referralActive ? EntitlementStatus.ACTIVE : row.status,
+      expiresAt: subscriptionActive ? row.expiresAt : usage.premiumUntil,
+      willRenew: subscriptionActive ? row.willRenew : false,
       productId: row.productId,
       periodType: row.periodType,
       entitlementKey: row.entitlementKey,
@@ -540,6 +582,21 @@ export class MembershipService {
     return Boolean(current.priceId || current.priceLabel);
   }
 
+  private entitlementKeyFromEvent(event: Record<string, unknown>): string {
+    const single = this.stringValue(event, 'entitlement_id', 'entitlementId');
+    if (single) {
+      return single;
+    }
+    const ids = this.value(event, 'entitlement_ids', 'entitlementIds');
+    if (Array.isArray(ids)) {
+      const first = ids.find((id) => typeof id === 'string' && id.trim());
+      if (typeof first === 'string') {
+        return first.trim();
+      }
+    }
+    return this.config.get<string>('REVENUECAT_ENTITLEMENT_ID') ?? 'premium';
+  }
+
   private assertRevenueCatAuthorized(authorization: string | undefined) {
     const expected = this.config.get<string>('REVENUECAT_WEBHOOK_SECRET');
     if (!expected) {
@@ -578,6 +635,156 @@ export class MembershipService {
       0,
       Math.ceil((date.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
     );
+  }
+
+  private formatDisplayDate(date: Date): string {
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  private membershipTypeLabel(
+    resolved: ResolvedMembershipState,
+    displayPrice: MembershipDisplayPrice,
+  ): string {
+    if (resolved.status === EntitlementStatus.TRIALING) {
+      return '14-day free trial';
+    }
+    if (resolved.accessSource === 'referral') {
+      return 'Referral premium';
+    }
+    if (resolved.active && resolved.accessSource === 'subscription') {
+      return displayPrice.planDisplayName ?? 'Premium membership';
+    }
+    return 'Free plan';
+  }
+
+  private resolveMembershipState(
+    row: Awaited<
+      ReturnType<PrismaService['userEntitlement']['findUnique']>
+    >,
+    usage: Awaited<ReturnType<MembershipService['ensureUsageCredit']>>,
+    displayPrice: MembershipDisplayPrice,
+  ): ResolvedMembershipState {
+    const now = Date.now();
+    const referralActive =
+      usage.premiumUntil !== null && usage.premiumUntil.getTime() > now;
+    const subscriptionExpiresAt = row?.expiresAt ?? null;
+    const subscriptionNotExpired =
+      subscriptionExpiresAt !== null && subscriptionExpiresAt.getTime() > now;
+    const hasSubscriptionRecord = row?.productId !== null;
+    const subscriptionTrialing =
+      row?.status === EntitlementStatus.TRIALING &&
+      subscriptionNotExpired &&
+      hasSubscriptionRecord;
+    const subscriptionActive =
+      row?.status === EntitlementStatus.ACTIVE &&
+      subscriptionNotExpired &&
+      hasSubscriptionRecord;
+
+    if (subscriptionTrialing && subscriptionExpiresAt) {
+      const trialDaysRemaining = this.daysRemaining(subscriptionExpiresAt);
+      const billingDate = this.formatDisplayDate(subscriptionExpiresAt);
+      return {
+        accessSource: 'subscription',
+        active: true,
+        status: EntitlementStatus.TRIALING,
+        expiresAt: subscriptionExpiresAt,
+        trialDaysRemaining,
+        premiumDaysRemaining: 0,
+        statusBanner: {
+          variant: 'trial',
+          title: `Free Trial - ${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'day' : 'days'} left`,
+          subtitle: `You will be charged ${displayPrice.priceLabel}/month on ${billingDate}`,
+        },
+        showCancelSubscription: true,
+        showManageSubscription: true,
+      };
+    }
+
+    if (subscriptionActive && subscriptionExpiresAt) {
+      const premiumDaysRemaining = this.daysRemaining(subscriptionExpiresAt);
+      const renewDate = this.formatDisplayDate(subscriptionExpiresAt);
+      return {
+        accessSource: 'subscription',
+        active: true,
+        status: EntitlementStatus.ACTIVE,
+        expiresAt: subscriptionExpiresAt,
+        trialDaysRemaining: 0,
+        premiumDaysRemaining,
+        statusBanner: {
+          variant: 'active',
+          title: displayPrice.planDisplayName ?? 'Premium membership',
+          subtitle: row?.willRenew
+            ? `Renews on ${renewDate}`
+            : `Access until ${renewDate}`,
+        },
+        showCancelSubscription: true,
+        showManageSubscription: true,
+      };
+    }
+
+    if (referralActive && usage.premiumUntil) {
+      const premiumDaysRemaining = this.daysRemaining(usage.premiumUntil);
+      const untilDate = this.formatDisplayDate(usage.premiumUntil);
+      return {
+        accessSource: 'referral',
+        active: true,
+        status: EntitlementStatus.ACTIVE,
+        expiresAt: usage.premiumUntil,
+        trialDaysRemaining: 0,
+        premiumDaysRemaining,
+        statusBanner: {
+          variant: 'referral',
+          title: `Referral Premium - ${premiumDaysRemaining} ${premiumDaysRemaining === 1 ? 'day' : 'days'} left`,
+          subtitle: `Earned by inviting friends. Premium until ${untilDate}. No auto-renewal.`,
+        },
+        showCancelSubscription: false,
+        showManageSubscription: false,
+      };
+    }
+
+    if (
+      hasSubscriptionRecord &&
+      !subscriptionActive &&
+      !subscriptionTrialing &&
+      (row?.status === EntitlementStatus.EXPIRED ||
+        row?.status === EntitlementStatus.CANCELED)
+    ) {
+      return {
+        accessSource: 'none',
+        active: false,
+        status: row.status,
+        expiresAt: subscriptionExpiresAt,
+        trialDaysRemaining: 0,
+        premiumDaysRemaining: 0,
+        statusBanner: {
+          variant: 'expired',
+          title: 'Subscription expired',
+          subtitle: 'Renew to continue premium access.',
+        },
+        showCancelSubscription: false,
+        showManageSubscription: true,
+      };
+    }
+
+    return {
+      accessSource: 'none',
+      active: false,
+      status: 'FREE',
+      expiresAt: null,
+      trialDaysRemaining: 0,
+      premiumDaysRemaining: 0,
+      statusBanner: {
+        variant: 'free',
+        title: 'Free plan',
+        subtitle: 'Upgrade to unlock unlimited scans and premium features.',
+      },
+      showCancelSubscription: false,
+      showManageSubscription: false,
+    };
   }
 
   private value(obj: Record<string, unknown>, ...keys: string[]) {

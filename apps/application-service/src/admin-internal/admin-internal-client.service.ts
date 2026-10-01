@@ -9,7 +9,6 @@ export type AdminOnboardingStep = {
   id: string;
   flowId: string;
   orderIndex: number;
-  type: string;
   title: string;
   subtitle: string | null;
   uiConfig: Record<string, unknown> | null;
@@ -96,8 +95,8 @@ export class AdminInternalClientService {
       data: {
         ...data,
         steps: Array.isArray(data.steps) ? data.steps : [],
-      } as AdminActiveFlowPayload
-    }
+      },
+    };
   }
 
   async getActiveSubscriptionCatalog(): Promise<AdminSubscriptionCatalogPayload> {

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AdminInternalClientService,
+  type AdminOnboardingStep,
+} from '../admin-internal/admin-internal-client.service';
 import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
+import { extractDietaryProfileAnswers } from '../users-me/extract-dietary-restrictions.util';
 
 export type DietaryContextPayload = {
   userId: string;
@@ -16,6 +21,10 @@ export type DietaryContextPayload = {
     value: unknown;
   }>;
   allergies: string[];
+  intolerances: string[];
+  cuisinePreferences: string[];
+  healthObjectives: string[];
+  nutritionTargets: Record<string, string | number | boolean>;
 };
 
 @Injectable()
@@ -23,35 +32,44 @@ export class InternalUsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
-  ) {}
+    private readonly admin: AdminInternalClientService,
+  ) { }
 
   async getDietaryContext(userId: string) {
-    const [preferences, answers] = await Promise.all([
+    const [preferences, answers, onboardingSteps] = await Promise.all([
       this.prisma.preferences.findUnique({ where: { userId } }),
       this.prisma.userOnboardingAnswer.findMany({
         where: { userId },
         orderBy: { answeredAt: 'asc' },
       }),
+      this.loadActiveOnboardingSteps(),
     ]);
 
-    const allergies = this.extractAllergies(answers);
+    const dietaryProfile = extractDietaryProfileAnswers(
+      answers,
+      onboardingSteps,
+    );
 
     const data: DietaryContextPayload = {
       userId,
       preferences: preferences
         ? {
-            dietType: preferences.dietType,
-            calorieTarget: preferences.calorieTarget,
-            spiceLevel: preferences.spiceLevel,
-            weightGoal: preferences.weightGoal,
-          }
+          dietType: preferences.dietType,
+          calorieTarget: preferences.calorieTarget,
+          spiceLevel: preferences.spiceLevel,
+          weightGoal: preferences.weightGoal,
+        }
         : null,
       onboardingAnswers: answers.map((a) => ({
         stepKey: a.stepKey,
         flowVersion: a.flowVersion,
         value: a.value,
       })),
-      allergies,
+      allergies: dietaryProfile.allergies,
+      intolerances: dietaryProfile.intolerances,
+      cuisinePreferences: dietaryProfile.cuisinePreferences,
+      healthObjectives: dietaryProfile.healthObjectives,
+      nutritionTargets: dietaryProfile.nutritionTargets,
     };
 
     return {
@@ -73,38 +91,82 @@ export class InternalUsersService {
     return this.membership.assertPremiumAccess(userId);
   }
 
-  private extractAllergies(
-    answers: Array<{ value: unknown }>,
-  ): string[] {
-    const out = new Set<string>();
-    for (const row of answers) {
-      const v = row.value;
-      if (Array.isArray(v)) {
-        for (const item of v) {
-          if (typeof item === 'string' && item.trim()) {
-            out.add(item.trim());
-          }
-        }
-        continue;
-      }
-      if (v && typeof v === 'object' && !Array.isArray(v)) {
-        const o = v as Record<string, unknown>;
-        if (Array.isArray(o.allergies)) {
-          for (const item of o.allergies) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-        if (typeof o.defaultValues === 'object' && Array.isArray(o.defaultValues)) {
-          for (const item of o.defaultValues) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-      }
+  async getUserProfile(userId: string) {
+    const profile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+    });
+    return {
+      success: true,
+      data: profile,
+    };
+  }
+
+  async updateUserProfile(userId: string, body: any) {
+    const create: { userId: string; fullName?: string; avatarUrl?: string; address?: string } = {
+      userId,
+    };
+    const update: { fullName?: string; avatarUrl?: string; address?: string } = {};
+
+    if (typeof body?.fullName === 'string' && body.fullName.trim()) {
+      create.fullName = body.fullName.trim();
+      update.fullName = body.fullName.trim();
     }
-    return [...out];
+    if (typeof body?.avatarUrl === 'string' && body.avatarUrl.trim()) {
+      create.avatarUrl = body.avatarUrl.trim();
+      update.avatarUrl = body.avatarUrl.trim();
+    }
+    if (typeof body?.address === 'string' && body.address.trim()) {
+      create.address = body.address.trim();
+      update.address = body.address.trim();
+    }
+
+    const profile = await this.prisma.userProfile.upsert({
+      where: { userId },
+      create,
+      update,
+    });
+    return {
+      success: true,
+      data: profile,
+    };
+  }
+
+  async getProfilesByUserIds(userIds: string[]) {
+    const profiles = await this.prisma.userProfile.findMany({
+      where: {
+        userId: { in: userIds },
+      },
+    });
+    return {
+      success: true,
+      data: profiles,
+    };
+  }
+
+  async searchUserProfiles(search: string) {
+    const profiles = await this.prisma.userProfile.findMany({
+      where: {
+        fullName: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+    });
+    return {
+      success: true,
+      data: profiles,
+    };
+  }
+
+
+  private async loadActiveOnboardingSteps(): Promise<AdminOnboardingStep[]> {
+    try {
+      const flow = await this.admin.getActiveFlow();
+      return flow.data.steps;
+    } catch {
+      // Explicit `{ allergies: [...] }` answers can still be extracted safely.
+      // Never treat unknown array answers as allergies when metadata is absent.
+      return [];
+    }
   }
 }

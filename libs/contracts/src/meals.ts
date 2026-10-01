@@ -20,6 +20,18 @@ export const MEAL_PORTION_FACTORS = MEAL_PORTION_OPTIONS.map(
   (option) => option.factor,
 );
 
+export type MealSlotOption = {
+  slot: MealSlot;
+  label: string;
+};
+
+export const MEAL_SLOT_OPTIONS: MealSlotOption[] = [
+  { slot: MealSlot.BREAKFAST, label: 'Breakfast' },
+  { slot: MealSlot.LUNCH, label: 'Lunch' },
+  { slot: MealSlot.DINNER, label: 'Dinner' },
+  { slot: MealSlot.SNACKS, label: 'Snacks' },
+];
+
 export type MealNutrition = {
   calories: number;
   proteinG: number | null;
@@ -41,6 +53,11 @@ export type MealPrefillDish = {
   imageUrl: string | null;
   tags: string[];
   description: string;
+  category: string;
+  baseNaiScore: number;
+  scoreLabel: string;
+  caloriesLabel: string;
+  isBookmarked: boolean;
 };
 
 export type MealTodayContext = {
@@ -49,13 +66,22 @@ export type MealTodayContext = {
   currentDailyNai: number | null;
 };
 
+export type MealDefaultNaiPreview = {
+  naiScore: number;
+  naiImpact: MealNaiImpact;
+};
+
 export type MealPrefillResponse = {
   dish: MealPrefillDish;
   baseNutrition: MealNutrition;
   portionOptions: PortionOption[];
+  mealSlotOptions: MealSlotOption[];
   defaultMealSlot: MealSlot;
   defaultPortionFactor: number;
   defaultNutrition: MealNutrition;
+  defaultLoggedAt: string;
+  defaultNaiPreview: MealDefaultNaiPreview;
+  portionCaloriesHint: string;
   todayContext: MealTodayContext;
 };
 

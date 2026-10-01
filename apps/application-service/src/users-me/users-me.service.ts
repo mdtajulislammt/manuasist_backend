@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
-import { SpiceLevel, WeightGoal } from '../../generated/prisma/enums';
 import {
   ProfileAvatarStorageService,
   type ProfileAvatarUpload,
@@ -18,46 +17,13 @@ import { PrismaService } from '../prisma.service';
 import { PatchPreferencesDto } from './dto/patch-preferences.dto';
 import { PatchProfileDto } from './dto/patch-profile.dto';
 import { PutOnboardingAnswersDto } from './dto/put-onboarding-answers.dto';
-
-function isSpiceLevel(v: string): v is SpiceLevel {
-  return (Object.values(SpiceLevel) as string[]).includes(v);
-}
-
-function isWeightGoal(v: string): v is WeightGoal {
-  return (Object.values(WeightGoal) as string[]).includes(v);
-}
-
-function projectPreferencesFromValue(
-  value: unknown,
-): Prisma.PreferencesUpdateInput {
-  const data: Prisma.PreferencesUpdateInput = {};
-  if (value === null || value === undefined) {
-    return data;
-  }
-  if (typeof value !== 'object' || Array.isArray(value)) {
-    return data;
-  }
-  const o = value as Record<string, unknown>;
-  if (typeof o.dietType === 'string') {
-    data.dietType = o.dietType;
-  }
-  if (typeof o.calorieTarget === 'number' && Number.isInteger(o.calorieTarget)) {
-    data.calorieTarget = o.calorieTarget;
-  }
-  if (typeof o.spiceLevel === 'string' && isSpiceLevel(o.spiceLevel)) {
-    data.spiceLevel = o.spiceLevel;
-  }
-  if (typeof o.weightGoal === 'string' && isWeightGoal(o.weightGoal)) {
-    data.weightGoal = o.weightGoal;
-  }
-  return data;
-}
-
-function mergePreferenceUpdates(
-  updates: Prisma.PreferencesUpdateInput[],
-): Prisma.PreferencesUpdateInput {
-  return updates.reduce((acc, u) => ({ ...acc, ...u }), {});
-}
+import { ProfileContactChangeService } from './profile-contact-change.service';
+import { DietaryPreferencesResolver } from './dietary-preferences.resolver';
+import {
+  mergePreferenceUpdates,
+  projectPreferencesFromValue,
+  toPreferencesUpdateInput,
+} from './project-preferences.util';
 
 @Injectable()
 export class UsersMeService {
@@ -68,6 +34,8 @@ export class UsersMeService {
     private readonly avatars: ProfileAvatarStorageService,
     private readonly admin: AdminInternalClientService,
     private readonly authInternal: AuthInternalClientService,
+    private readonly contactChange: ProfileContactChangeService,
+    private readonly dietary: DietaryPreferencesResolver,
   ) { }
 
   async getProfile(userId: string) {
@@ -76,10 +44,18 @@ export class UsersMeService {
       const profile = await this.prisma.userProfile.findUniqueOrThrow({
         where: { userId },
       });
+      const data = await this.withProfileResponse(profile);
+      const pendingVerification =
+        await this.contactChange.getPendingForUser(userId);
       return {
         success: true,
         message: 'Profile retrieved successfully',
-        data: await this.withContact(profile),
+        data: {
+          ...data,
+          ...(Object.keys(pendingVerification).length > 0
+            ? { pendingVerification }
+            : {}),
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -124,12 +100,13 @@ export class UsersMeService {
             identifier: dto.email,
             otp: dto.emailOtp,
           });
+          await this.contactChange.clearPending(userId, 'email');
         } else {
-          pendingVerification.email =
-            await this.authInternal.requestContactChange(userId, {
-              kind: 'email',
-              identifier: dto.email,
-            });
+          pendingVerification.email = await this.contactChange.requestOtp(
+            userId,
+            'email',
+            dto.email,
+          );
         }
       }
       if (dto.phone) {
@@ -139,16 +116,17 @@ export class UsersMeService {
             identifier: dto.phone,
             otp: dto.phoneOtp,
           });
+          await this.contactChange.clearPending(userId, 'phone');
         } else {
-          pendingVerification.phone =
-            await this.authInternal.requestContactChange(userId, {
-              kind: 'phone',
-              identifier: dto.phone,
-            });
+          pendingVerification.phone = await this.contactChange.requestOtp(
+            userId,
+            'phone',
+            dto.phone,
+          );
         }
       }
 
-      const profile = await this.withContact(updatedProfile);
+      const profile = await this.withProfileResponse(updatedProfile);
       return {
         success: true,
         message:
@@ -173,19 +151,76 @@ export class UsersMeService {
   async getPreferences(userId: string) {
     try {
       await this.ensureUserRows(userId);
-      const preferences = await this.prisma.preferences.findUniqueOrThrow({
-        where: { userId },
-      });
+      const [preferences, resolved] = await Promise.all([
+        this.prisma.preferences.findUniqueOrThrow({
+          where: { userId },
+        }),
+        this.dietary.resolve(userId),
+      ]);
       return {
         success: true,
         message: 'Preferences retrieved successfully',
-        data: preferences,
+        data: {
+          ...preferences,
+          calorieTarget: resolved.calorieTarget,
+          calorieTargetSource: resolved.calorieTargetSource,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to get preferences');
+    }
+  }
+
+  async getActiveFlowWithProgress(userId: string) {
+    try {
+      await this.ensureUserRows(userId);
+      const wrapped = await this.admin.getActiveFlow();
+      const flow = wrapped.data;
+      const steps = [...(flow.steps ?? [])].sort(
+        (a, b) => a.orderIndex - b.orderIndex,
+      );
+
+      const answers = await this.prisma.userOnboardingAnswer.findMany({
+        where: { userId, flowVersion: flow.version },
+      });
+      const answersByStepId = new Map(
+        answers.map((a) => [a.stepKey, a.value]),
+      );
+      const answered = new Set(answers.map((a) => a.stepKey));
+      const totalSteps = steps.length;
+      const stepsWithAnswers = steps.map((step) => {
+        const savedValue = answersByStepId.get(step.id);
+        return {
+          ...step,
+          progressPercent: this.computeStepPositionPercent(
+            step.orderIndex,
+            totalSteps,
+          ),
+          completed: savedValue !== undefined,
+          value: savedValue ?? null,
+        };
+      });
+      const answeredSteps = stepsWithAnswers.filter((s) => s.completed).length;
+      const progress = this.computeOnboardingAnswerPercent(steps, answered);
+
+      return {
+        success: true,
+        message: 'Active flow retrieved successfully',
+        data: {
+          ...flow,
+          steps: stepsWithAnswers,
+          progress,
+          lastCompletedSteps: answeredSteps,
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to get active flow');
     }
   }
 
@@ -254,7 +289,10 @@ export class UsersMeService {
             ? {
                 id: next.id,
                 orderIndex: next.orderIndex,
-                type: next.type,
+                progressPercent: this.computeStepPositionPercent(
+                  next.orderIndex,
+                  totalSteps,
+                ),
                 title: next.title,
                 subtitle: next.subtitle,
                 uiConfig: next.uiConfig,
@@ -295,10 +333,27 @@ export class UsersMeService {
         where: { userId },
         data,
       });
+
+      if (dto.calorieTarget === undefined && dto.weightGoal !== undefined) {
+        await this.dietary.syncComputedCalorieTargetToPreferences(userId);
+      }
+
+      const resolved = await this.dietary.resolve(userId);
+      const latestPreferences =
+        dto.calorieTarget === undefined && dto.weightGoal !== undefined
+          ? await this.prisma.preferences.findUniqueOrThrow({
+              where: { userId },
+            })
+          : updatedPreferences;
+
       return {
         success: true,
         message: 'Preferences updated successfully',
-        data: updatedPreferences,
+        data: {
+          ...latestPreferences,
+          calorieTarget: resolved.calorieTarget,
+          calorieTargetSource: resolved.calorieTargetSource,
+        },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -327,6 +382,17 @@ export class UsersMeService {
         projectPreferencesFromValue(a.value),
       );
       const prefMerged = mergePreferenceUpdates(prefUpdates);
+      const touchesBiometrics = dto.answers.some((answer) => {
+        const step = flow.data.steps.find((row) => row.id === answer.stepKey);
+        const kind =
+          step?.uiConfig &&
+          typeof step.uiConfig === 'object' &&
+          !Array.isArray(step.uiConfig) &&
+          typeof (step.uiConfig as Record<string, unknown>).kind === 'string'
+            ? String((step.uiConfig as Record<string, unknown>).kind)
+            : null;
+        return kind === 'multi_slider';
+      });
 
       await this.prisma.$transaction(async (tx) => {
         await this.ensureUserRowsTx(userId, tx);
@@ -351,11 +417,18 @@ export class UsersMeService {
         if (Object.keys(prefMerged).length > 0) {
           await tx.preferences.update({
             where: { userId },
-            data: prefMerged,
+            data: toPreferencesUpdateInput(prefMerged),
           });
         }
         await this.maybeCompleteOnboarding(userId, flow.data, dto.flowVersion, tx);
       });
+
+      if (
+        prefMerged.calorieTarget === undefined &&
+        (touchesBiometrics || prefMerged.weightGoal !== undefined)
+      ) {
+        await this.dietary.syncComputedCalorieTargetToPreferences(userId);
+      }
 
       return { success: true, message: 'Onboarding answers updated successfully' };
     } catch (error) {
@@ -374,8 +447,27 @@ export class UsersMeService {
     if (typeof uiConfig !== 'object' || Array.isArray(uiConfig)) {
       return true;
     }
-    const r = (uiConfig as { required?: boolean }).required;
-    return r !== false;
+    const config = uiConfig as {
+      required?: boolean;
+      selection?: { required?: boolean };
+    };
+    if (config.selection && typeof config.selection.required === 'boolean') {
+      return config.selection.required;
+    }
+    return config.required !== false;
+  }
+
+  private computeStepPositionPercent(
+    orderIndex: number,
+    totalSteps: number,
+  ): number {
+    if (totalSteps === 0) {
+      return 100;
+    }
+    return Math.min(
+      100,
+      Math.round(((orderIndex + 1) / totalSteps) * 100),
+    );
   }
 
   private async maybeCompleteOnboarding(
@@ -421,6 +513,50 @@ export class UsersMeService {
         phoneVerified: false,
       };
     }
+  }
+
+  private computeOnboardingAnswerPercent(
+    steps: Array<{ id: string }>,
+    answeredStepKeys: Set<string>,
+  ): number {
+    const totalSteps = steps.length;
+    if (totalSteps === 0) {
+      return 100;
+    }
+    const answeredSteps = steps.filter((s) => answeredStepKeys.has(s.id)).length;
+    return Math.min(100, Math.round((answeredSteps / totalSteps) * 100));
+  }
+
+  private async resolveProfileCompletePercent(userId: string): Promise<number> {
+    try {
+      const wrapped = await this.admin.getActiveFlow();
+      const flow = wrapped.data;
+      const steps = flow.steps ?? [];
+      const answers = await this.prisma.userOnboardingAnswer.findMany({
+        where: { userId, flowVersion: flow.version },
+        select: { stepKey: true },
+      });
+      const answered = new Set(answers.map((a) => a.stepKey));
+      return this.computeOnboardingAnswerPercent(steps, answered);
+    } catch (e) {
+      this.logger.warn(
+        `Profile completion lookup failed for user ${userId}: ${String(e)}`,
+      );
+      return 0;
+    }
+  }
+
+  private async withProfileResponse(
+    profile: Prisma.UserProfileGetPayload<Record<string, never>>,
+  ) {
+    const [contactProfile, profileCompletePercent] = await Promise.all([
+      this.withContact(profile),
+      this.resolveProfileCompletePercent(profile.userId),
+    ]);
+    return {
+      ...contactProfile,
+      profileCompletePercent,
+    };
   }
 
   private async withContact(

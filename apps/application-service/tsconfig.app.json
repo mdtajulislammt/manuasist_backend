@@ -2,14 +2,18 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/application-service",
+    "rootDir": "../..",
     "module": "CommonJS",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolvePackageJsonExports": false
   },
   "include": [
     "src/**/*.ts",
     "generated/**/*.ts",
     "../../libs/contracts/src/**/*.ts",
+    "../../libs/messaging/src/**/*.ts",
     "../../libs/ai-pipeline/src/**/*.ts"
-  ]
+  ],
+  "exclude": ["src/**/*.spec.ts"]
 }

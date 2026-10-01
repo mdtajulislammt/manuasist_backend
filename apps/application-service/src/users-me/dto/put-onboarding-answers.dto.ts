@@ -11,7 +11,7 @@ export class OnboardingAnswerItemDto {
   stepKey!: string;
 
   @ApiPropertyOptional({
-    description: 'Answer payload; shape depends on step type',
+    description: 'Answer payload; shape depends on uiConfig.kind',
     example: { dietType: 'vegetarian', calorieTarget: 1800 },
   })
   @Allow()

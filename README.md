@@ -70,7 +70,21 @@ pnpm run prisma:migrate:application
 pnpm run prisma:migrate:ai
 ```
 
-### 5) Run services in watch mode
+### 5) Seed local accounts (optional)
+
+```bash
+pnpm run seed:all
+```
+
+| Account | Email | Password | Notes |
+|---------|-------|----------|-------|
+| Admin | `admin@menuassist.local` | `Admin@123456` | roles: user + admin |
+| User | `user@menuassist.local` | `User@123456` | free tier |
+| Premium | `premium@menuassist.local` | `Premium@123456` | ACTIVE 1-month `premium` entitlement |
+
+Override with `AUTH_SEED_*` env vars in `apps/auth-service/.env`. Entitlement only: `pnpm run seed:application` (requires auth seed first).
+
+### 6) Run services in watch mode
 
 Start each service in its own terminal:
 
@@ -86,11 +100,11 @@ pnpm run start:dev:ai
 
 From `.env.example`:
 
-- API Gateway: `5000`
-- Auth Service: `5001`
-- Application Service: `5002`
-- Admin Service: `5003`
-- AI Ingestion Service: `5004`
+- API Gateway: `4000`
+- Auth Service: `4001`
+- Application Service: `4002`
+- Admin Service: `4003`
+- AI Ingestion Service: `4004`
 
 ## Common Commands
 
@@ -124,6 +138,15 @@ pnpm run start:ai
 
 ```bash
 pnpm run start:prod
+```
+
+If an upstream (auth/app/admin/ai) is down, the gateway returns **HTTP 502** JSON (`{ success: false, message, status: 502 }`) and **keeps running**. It should not exit the process.
+
+Quick check (gateway up, auth stopped):
+
+```bash
+curl -i http://localhost:4000/v1/auth/health
+# expect 502; gateway process still alive
 ```
 
 ### Lint and test
@@ -160,6 +183,8 @@ pnpm run prisma:generate:ai
 ```
 
 ## Docker
+
+Service ports come from root `.env` (`API_GATEWAY_PORT=4000`, etc.).
 
 Run only infrastructure:
 
@@ -200,6 +225,21 @@ pnpm run backfill:stored-files
 ```
 
 **Internal upload (other services):** `POST /internal/files` with header `x-internal-api-key` and multipart `file` + `namespace`.
+
+## RevenueCat webhooks (subscriptions)
+
+Flutter purchases sync to `application-service` via:
+
+`POST /v1/app/internal/revenuecat/webhook` with `Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>`
+
+Full dashboard setup, ngrok local testing, and verification steps:
+[`docs/revenuecat-webhook-setup.md`](docs/revenuecat-webhook-setup.md)
+
+Quick local smoke test (gateway on port 4000):
+
+```powershell
+.\scripts\test-revenuecat-webhook.ps1 -UserId "<auth-user-uuid>"
+```
 
 For a command-focused reference, see `commands.md`.
 

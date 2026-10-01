@@ -19,6 +19,17 @@ const sensitiveQueryKeys = [
 
 export function createRequestTraceMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Socket.IO long-polling / handshake is noisy and long-lived — skip tracing.
+    const url = req.originalUrl || req.url || '';
+    if (
+      url === '/socket.io' ||
+      url.startsWith('/socket.io/') ||
+      url.startsWith('/socket.io?')
+    ) {
+      next();
+      return;
+    }
+
     const startedAt = process.hrtime.bigint();
     const requestId = getOrCreateRequestId(req);
 
@@ -175,8 +186,12 @@ function decodeHeader(value?: string): string | undefined {
 function formatDate(date: Date, timeZone?: string): string {
   try {
     return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'medium',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
       timeZone,
       timeZoneName: 'short',
     }).format(date);

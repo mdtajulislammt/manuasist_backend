@@ -207,12 +207,25 @@ export class ReferralsService {
 
   async publishOffer(id: string) {
     const offer = await this.ensureDraftOffer(id);
-    const tierCount = await this.prisma.referralRewardTier.count({
+    const tiers = await this.prisma.referralRewardTier.findMany({
       where: { offerId: offer.id },
+      orderBy: [{ sortOrder: 'asc' }, { friendsRequired: 'asc' }],
     });
-    if (tierCount === 0) {
+    if (tiers.length === 0) {
       throw new BadRequestException(
         'At least one reward tier is required before publishing',
+      );
+    }
+    if (
+      tiers.some(
+        (tier, index) =>
+          (index > 0 &&
+            tier.friendsRequired <= tiers[index - 1].friendsRequired) ||
+          (tier.scanCredits === 0 && tier.premiumDays === 0),
+      )
+    ) {
+      throw new BadRequestException(
+        'Reward tiers must use increasing friend thresholds and grant scan credits or premium days',
       );
     }
     const now = new Date();

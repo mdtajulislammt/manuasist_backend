@@ -42,6 +42,7 @@ import { OtpVerifyDto } from './dto/otp-verify.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 // @ts-ignore
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MobileOAuthDto } from './dto/mobile-oauth.dto';
 import { InternalApiKeyGuard } from './internal-api-key.guard';
 
 function bearerTokenFromAuthorization(header: string | undefined): string {
@@ -77,7 +78,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register user with identifier and password' })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({
-    description: 'User registered. Returns pending OTP verification state.',
+    description:
+      'User registered or an unverified signup was resumed. Returns pending OTP verification state. Verified emails/phones still conflict.',
   })
   @ApiBadRequestResponse({ description: 'Invalid input or identifier format.' })
   register(@Body() body: RegisterDto) {
@@ -251,6 +253,25 @@ export class OAuthController {
     const data = await this.auth.handleCallback(url, query.provider as 'google' | 'apple');
     return res.status(200).json(data);
   }
+
+  @Post('mobile')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Exchange native Google/Apple ID token for app access tokens',
+  })
+  @ApiBody({ type: MobileOAuthDto })
+  @ApiOkResponse({ description: 'Returns the same token pair as password login.' })
+  @ApiBadRequestResponse({ description: 'Invalid provider payload or IdP not configured.' })
+  @ApiUnauthorizedResponse({ description: 'ID token invalid, expired, or nonce mismatch.' })
+  mobile(@Body() body: MobileOAuthDto) {
+    return this.auth.handleMobileOAuth({
+      provider: body.provider,
+      idToken: body.idToken,
+      nonce: body.nonce,
+      fullName: body.fullName,
+      avatarUrl: body.avatarUrl,
+    });
+  }
 }
 
 @Controller('.well-known')
@@ -276,6 +297,60 @@ export class WellKnownController {
 })
 export class InternalAuthController {
   constructor(private readonly auth: AuthService) { }
+
+  @Get('users')
+  @ApiOperation({ summary: 'Get all users paginated (internal)' })
+  @ApiOkResponse({ description: 'Users payload returned.' })
+  getAllUsers(
+    @Query('q') q?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
+    @Query('order') order?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.auth.getAllUsers(
+      q,
+      isNaN(pageNum) ? 1 : pageNum,
+      isNaN(limitNum) ? 10 : limitNum,
+      sort || 'createdAt',
+      order || 'desc',
+    );
+  }
+
+  @Post('users/batch')
+  @ApiOperation({ summary: 'Get users by ids (internal)' })
+  @ApiOkResponse({ description: 'Users payload returned.' })
+  getUsersByIds(@Body('userIds') userIds: string[]) {
+    return this.auth.getUsersByIds(userIds ?? []);
+  }
+
+  @Get('users/:userId')
+  @ApiOperation({ summary: 'Get user by id (internal)' })
+  @ApiOkResponse({ description: 'User payload returned.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  getUserById(@Param('userId') userId: string) {
+    return this.auth.getUserById(userId);
+  }
+
+  // Update Profile
+  @Patch('users/:userId')
+  @ApiOperation({ summary: 'Update user (internal)' })
+  @ApiOkResponse({ description: 'User updated.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  updateUser(@Param('userId') userId: string, @Body() data: any) {
+    return this.auth.updateUser(userId, data);
+  }
+
+  // Toogle User Status
+  @Patch('users/:userId/status')
+  @ApiOperation({ summary: 'Toggle user status (internal)' })
+  @ApiOkResponse({ description: 'User status toggled.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid internal API key or user not found.' })
+  toggleUserStatus(@Param('userId') userId: string) {
+    return this.auth.toggleUserStatus(userId);
+  }
 
   @Get('users/:userId/contact')
   @ApiOperation({ summary: 'Get auth contact/verification by user id (internal)' })

@@ -42,4 +42,21 @@ export class InternalUsersController {
   ) {
     return this.scans.getHomeSummaryForUser(userId, trackingRange);
   }
+
+  @Get(':userId/completed-scans')
+  @ApiOperation({ summary: 'List completed scans in a date range for analytics' })
+  @ApiQuery({ name: 'from', required: true, example: '2026-06-01T00:00:00.000Z' })
+  @ApiQuery({ name: 'to', required: true, example: '2026-06-24T00:00:00.000Z' })
+  @ApiOkResponse({ description: 'Completed scans returned.' })
+  getCompletedScans(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    return this.scans.getCompletedScansForUser(
+      userId,
+      new Date(from),
+      new Date(to),
+    );
+  }
 }

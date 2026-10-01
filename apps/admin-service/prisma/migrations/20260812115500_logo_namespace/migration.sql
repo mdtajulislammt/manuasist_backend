@@ -1,0 +1,1 @@
+ALTER TYPE "StoredFileNamespace" ADD VALUE IF NOT EXISTS 'LOGO';

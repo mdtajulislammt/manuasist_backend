@@ -6,10 +6,20 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
 } from 'class-validator';
 
 export class CreateStepDto {
+  @ApiPropertyOptional({
+    description:
+      'Existing step id. When set, updates that step instead of creating a new one.',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({
     description: 'Order index within the flow (0-based)',
     minimum: 0,
@@ -19,14 +29,6 @@ export class CreateStepDto {
   @IsInt()
   @Min(0)
   orderIndex!: number;
-
-  @ApiProperty({
-    description: 'Step type key',
-    example: 'GOAL',
-  })
-  @IsString()
-  @IsNotEmpty()
-  type!: string;
 
   @ApiProperty({
     description: 'Step title shown to user',
@@ -47,12 +49,12 @@ export class CreateStepDto {
   @ApiPropertyOptional({
     description:
       'UI config (JSON). Supported `kind` values: single_select | multi_slider | single_select_cards | multi_select_cards | multi_scale. ' +
-      'For card kinds, each option may include optional `icon` (string: asset key or image URL). See repo `steps.txt` for full payload examples.',
+      'Field keys (`fields[].key`) and option values (`options[].value`) are auto-generated from labels when omitted. ' +
+      'For card kinds, each option may include optional `icon`. For `multi_slider`, each field may include optional `icon` (asset key, image URL, or stored filename). See repo `steps.txt` for full payload examples.',
     type: 'object',
     additionalProperties: true,
     example: {
       kind: 'single_select_cards',
-      progressPercent: 30,
       selection: { mode: 'single', required: true },
       options: [
         { value: 'weight_loss', label: 'Weight Loss', icon: 'weight_loss' },

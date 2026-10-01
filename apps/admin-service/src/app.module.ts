@@ -8,6 +8,11 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaModule } from './prisma.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { UsersModule } from './users/users.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ProfileModule } from './profile/profile.module';
+import { SubscriptionListModule } from './subscription-list/subscription-list.module';
+import { BrandingModule } from './branding/branding.module';
 
 const envFilePaths = [
   join(process.cwd(), '.env'),
@@ -34,6 +39,11 @@ const envFilePaths = [
     OnboardingModule,
     ReferralsModule,
     SubscriptionsModule,
+    UsersModule,
+    AnalyticsModule,
+    ProfileModule,
+    SubscriptionListModule,
+    BrandingModule,
   ],
   controllers: [HealthController],
   providers: [],

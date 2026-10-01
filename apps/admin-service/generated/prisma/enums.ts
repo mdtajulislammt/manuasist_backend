@@ -18,6 +18,23 @@ export const OnboardingFlowStatus = {
 export type OnboardingFlowStatus = (typeof OnboardingFlowStatus)[keyof typeof OnboardingFlowStatus]
 
 
+export const AppLaunchContentStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type AppLaunchContentStatus = (typeof AppLaunchContentStatus)[keyof typeof AppLaunchContentStatus]
+
+
+export const AppLaunchAssetKind = {
+  SPLASH: 'SPLASH',
+  INTRO_SLIDE: 'INTRO_SLIDE'
+} as const
+
+export type AppLaunchAssetKind = (typeof AppLaunchAssetKind)[keyof typeof AppLaunchAssetKind]
+
+
 export const StorageProvider = {
   LOCAL: 'LOCAL',
   S3: 'S3'
@@ -29,6 +46,10 @@ export type StorageProvider = (typeof StorageProvider)[keyof typeof StorageProvi
 export const StoredFileNamespace = {
   ONBOARDING_ICON: 'ONBOARDING_ICON',
   MENU_SCAN: 'MENU_SCAN',
+  DISH_IMAGE: 'DISH_IMAGE',
+  LOGO: 'LOGO',
+  SPLASH: 'SPLASH',
+  INTRO_IMAGE: 'INTRO_IMAGE',
   USER_AVATAR: 'USER_AVATAR',
   GENERIC: 'GENERIC'
 } as const

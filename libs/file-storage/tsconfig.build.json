@@ -5,9 +5,11 @@
     "rootDir": "./src",
     "module": "CommonJS",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolvePackageJsonExports": false,
     "declaration": true,
-    "noEmit": false
+    "noEmit": false,
+    "incremental": false
   },
   "include": ["src/**/*.ts"]
 }

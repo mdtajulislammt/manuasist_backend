@@ -28,22 +28,29 @@ model AuthUser {
   phoneVerifiedAt DateTime? @map("phone_verified_at")
   /// Unique code a user can share with others.
   /// When another user registers with this code, they get `referredById` set.
-  referralCode   String?   @unique @map("referral_code")
+  referralCode    String?   @unique @map("referral_code")
 
   /// Referrer user id (if this user signed up using a referral code).
-  referredById   String?   @map("referred_by_id") @db.Uuid
-  referredBy     AuthUser? @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals      AuthUser[] @relation("UserReferrals")
+  referredById String?    @map("referred_by_id") @db.Uuid
+  referredBy   AuthUser?  @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals    AuthUser[] @relation("UserReferrals")
 
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  otpTokens    AuthOtpToken[]
-  identities   AuthIdentity[]
+  otpTokens     AuthOtpToken[]
+  identities    AuthIdentity[]
   refreshTokens AuthRefreshToken[]
-  roles        UserRole[]
+  roles         UserRole[]
+
+  status UserStatus @default(ACTIVE) @map("status")
 
   @@map("auth_users")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
 }
 
 /// OIDC subject bound to a user (issuer + sub unique per IdP account).
@@ -65,19 +72,19 @@ model AuthIdentity {
 }
 
 model AuthRefreshToken {
-  id            String    @id @default(uuid()) @db.Uuid
-  userId        String    @map("user_id") @db.Uuid
-  familyId      String    @map("family_id") @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  familyId     String    @map("family_id") @db.Uuid
   /// SHA-256 hex of opaque refresh token (indexed lookup).
-  tokenLookup   String    @unique @map("token_lookup")
-  expiresAt     DateTime  @map("expires_at")
-  replacedById  String?   @map("replaced_by_id") @db.Uuid
-  revokedAt     DateTime? @map("revoked_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
+  tokenLookup  String    @unique @map("token_lookup")
+  expiresAt    DateTime  @map("expires_at")
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  revokedAt    DateTime? @map("revoked_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
-  user         AuthUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  replacedBy   AuthRefreshToken? @relation("TokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
-  replaces     AuthRefreshToken[] @relation("TokenRotation")
+  user       AuthUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy AuthRefreshToken?  @relation("TokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   AuthRefreshToken[] @relation("TokenRotation")
 
   @@index([familyId])
   @@index([expiresAt])
@@ -85,8 +92,8 @@ model AuthRefreshToken {
 }
 
 model Role {
-  id    String @id @default(uuid()) @db.Uuid
-  name  String @unique
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
 
   users UserRole[]
 
@@ -105,16 +112,16 @@ model UserRole {
 }
 
 model AuthOtpToken {
-  id         String     @id @default(uuid()) @db.Uuid
-  userId     String     @map("user_id") @db.Uuid
-  codeHash   String     @map("code_hash")
-  channel    OtpChannel
-  purpose    OtpPurpose
-  targetIdentifier String? @map("target_identifier")
-  expiresAt  DateTime   @map("expires_at")
-  consumedAt DateTime?  @map("consumed_at")
-  attempts   Int        @default(0)
-  createdAt  DateTime   @default(now()) @map("created_at")
+  id               String     @id @default(uuid()) @db.Uuid
+  userId           String     @map("user_id") @db.Uuid
+  codeHash         String     @map("code_hash")
+  channel          OtpChannel
+  purpose          OtpPurpose
+  targetIdentifier String?    @map("target_identifier")
+  expiresAt        DateTime   @map("expires_at")
+  consumedAt       DateTime?  @map("consumed_at")
+  attempts         Int        @default(0)
+  createdAt        DateTime   @default(now()) @map("created_at")
 
   user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 

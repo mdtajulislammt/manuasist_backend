@@ -3,6 +3,7 @@ export * from './llm-client';
 export * from './menu-extraction';
 export * from './classification';
 export * from './embedding-client';
+export * from './image-generation-client';
 export * from './nutrition/types';
 export * from './nutrition/usda';
 export * from './nutrition/openfoodfacts';

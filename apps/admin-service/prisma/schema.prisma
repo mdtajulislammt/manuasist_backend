@@ -13,6 +13,17 @@ enum OnboardingFlowStatus {
   ARCHIVED
 }
 
+enum AppLaunchContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AppLaunchAssetKind {
+  SPLASH
+  INTRO_SLIDE
+}
+
 enum StorageProvider {
   LOCAL
   S3
@@ -21,6 +32,10 @@ enum StorageProvider {
 enum StoredFileNamespace {
   ONBOARDING_ICON
   MENU_SCAN
+  DISH_IMAGE
+  LOGO
+  SPLASH
+  INTRO_IMAGE
   USER_AVATAR
   GENERIC
 }
@@ -56,27 +71,64 @@ enum ReferralOfferStatus {
 }
 
 model PlatformStorageSettings {
-  id             String           @id @default("default")
-  activeProvider StorageProvider  @default(LOCAL) @map("active_provider")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  id             String          @id @default("default")
+  activeProvider StorageProvider @default(LOCAL) @map("active_provider")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   @@map("platform_storage_settings")
 }
 
 model StoredFile {
-  id           String              @id @default(uuid()) @db.Uuid
-  storedName   String              @unique @map("stored_name")
-  namespace    StoredFileNamespace
-  provider     StorageProvider
-  contentType  String              @map("content_type")
-  sizeBytes    Int                 @map("size_bytes")
-  objectKey    String              @map("object_key")
-  displayName  String?             @map("display_name")
-  createdAt    DateTime            @default(now()) @map("created_at")
+  id          String              @id @default(uuid()) @db.Uuid
+  storedName  String              @unique @map("stored_name")
+  namespace   StoredFileNamespace
+  provider    StorageProvider
+  contentType String              @map("content_type")
+  sizeBytes   Int                 @map("size_bytes")
+  objectKey   String              @map("object_key")
+  displayName String?             @map("display_name")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  launchAssets AppLaunchAsset[]
 
   @@unique([namespace, storedName])
   @@index([namespace])
   @@map("stored_files")
+}
+
+model AppLaunchContentBundle {
+  id          String                 @id @default(uuid()) @db.Uuid
+  name        String
+  status      AppLaunchContentStatus @default(DRAFT)
+  isActive    Boolean                @default(false) @map("is_active")
+  publishedAt DateTime?              @map("published_at")
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  assets AppLaunchAsset[]
+
+  @@index([status, isActive])
+  @@map("admin_app_launch_content_bundles")
+}
+
+model AppLaunchAsset {
+  id           String             @id @default(uuid()) @db.Uuid
+  bundleId     String             @map("bundle_id") @db.Uuid
+  kind         AppLaunchAssetKind
+  orderIndex   Int                @map("order_index")
+  title        String?
+  subtitle     String?
+  storedFileId String             @map("stored_file_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  bundle     AppLaunchContentBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  storedFile StoredFile             @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+
+  @@unique([bundleId, kind, orderIndex])
+  @@index([bundleId, kind, orderIndex])
+  @@index([storedFileId])
+  @@map("admin_app_launch_assets")
 }
 
 model OnboardingFlow {
@@ -99,7 +151,6 @@ model OnboardingStep {
   id         String   @id @default(uuid()) @db.Uuid
   flowId     String   @map("flow_id") @db.Uuid
   orderIndex Int      @map("order_index")
-  type       String
   title      String
   subtitle   String?
   uiConfig   Json?    @map("ui_config")
@@ -177,15 +228,15 @@ model RevenueCatSyncLog {
 }
 
 model ReferralOffer {
-  id          String              @id @default(uuid()) @db.Uuid
-  name        String
-  status      ReferralOfferStatus @default(DRAFT)
-  isActive    Boolean             @default(false) @map("is_active")
-  shareBaseUrl String?            @map("share_base_url")
-  publishedAt DateTime?           @map("published_at")
-  archivedAt  DateTime?           @map("archived_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  id           String              @id @default(uuid()) @db.Uuid
+  name         String
+  status       ReferralOfferStatus @default(DRAFT)
+  isActive     Boolean             @default(false) @map("is_active")
+  shareBaseUrl String?             @map("share_base_url")
+  publishedAt  DateTime?           @map("published_at")
+  archivedAt   DateTime?           @map("archived_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
 
   tiers ReferralRewardTier[]
 

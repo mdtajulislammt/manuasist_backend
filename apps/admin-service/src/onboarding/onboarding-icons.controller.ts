@@ -232,12 +232,13 @@ export class OnboardingIconsController {
     };
   }
 
-  @Delete(':filename')
+  @Delete(':id')
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Delete an onboarding icon file',
-    description: 'Optional query `stepId` for draft-flow check (same as upload).',
+    summary: 'Delete an onboarding icon by stored file id',
+    description:
+      '`:id` is the stored-file UUID from GET `/onboarding/icons` (`data.icons[].id`). A stored filename (`uuid.ext`) is still accepted. Optional query `stepId` for draft-flow check (same as upload).',
   })
   @ApiOkResponse({ description: 'Icon deleted.' })
   @ApiQuery({
@@ -247,10 +248,10 @@ export class OnboardingIconsController {
     format: 'uuid',
   })
   async remove(
-    @Param('filename') filename: string,
+    @Param('id') id: string,
     @Query() query: DeleteOnboardingIconQueryDto,
   ) {
-    const data = await this.icons.deleteIcon(filename, query.stepId);
+    const data = await this.icons.deleteIconByIdOrFilename(id, query.stepId);
     return {
       success: true,
       message: 'Icon deleted successfully',

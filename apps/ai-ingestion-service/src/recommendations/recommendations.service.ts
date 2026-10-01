@@ -5,7 +5,6 @@ import {
   buildDishTags,
   type DishPresentationSource,
 } from '../dishes/dish-presentation.util';
-import { ApplicationClientService } from '../clients/application-client.service';
 import { PrismaService } from '../prisma.service';
 import {
   GetScanRecommendationsQueryDto,
@@ -17,17 +16,13 @@ type DishCardSource = DishPresentationSource;
 
 @Injectable()
 export class RecommendationsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly applicationClient: ApplicationClientService,
-  ) { }
+  constructor(private readonly prisma: PrismaService) { }
 
   async getScanRecommendations(
     userId: string,
     scanId: string,
     query: GetScanRecommendationsQueryDto = {},
   ) {
-    await this.applicationClient.assertPremiumAccess(userId);
     const scan = await this.prisma.menuScan.findFirst({
       where: { id: scanId, userId },
       include: { dishes: true },
@@ -81,7 +76,6 @@ export class RecommendationsService {
   }
 
   async getMyRecommendations(userId: string) {
-    await this.applicationClient.assertPremiumAccess(userId);
     const recent = await this.prisma.menuScan.findMany({
       where: { userId, status: MenuScanStatus.COMPLETED },
       orderBy: { scanTime: 'desc' },
@@ -189,7 +183,6 @@ export class RecommendationsService {
 
   async getBookmarks(userId: string) {
     try {
-      await this.applicationClient.assertPremiumAccess(userId);
       const bookmarks = await this.prisma.dishBookmark.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },

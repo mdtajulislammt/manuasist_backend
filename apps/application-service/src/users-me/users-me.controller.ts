@@ -35,10 +35,14 @@ type MulterFile = {
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
 export class UsersMeController {
-  constructor(private readonly usersMe: UsersMeService) {}
+  constructor(private readonly usersMe: UsersMeService) { }
 
   @Get('profile')
-  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description:
+      'Includes profileCompletePercent (0-100) based on saved onboarding answers for the active flow.',
+  })
   @ApiOkResponse({ type: UserProfileResponseDto })
   getProfile(@CurrentUserId() userId: string | undefined) {
     const id = this.requireUserId(userId);
@@ -49,7 +53,7 @@ export class UsersMeController {
   @ApiOperation({
     summary: 'Update profile fields, avatar, and contact change OTP flow',
     description:
-      'Single edit-profile endpoint. Sends OTP when email/phone changes without otp fields; verifies and applies when emailOtp/phoneOtp are provided. Avatar accepts multipart field `avatar` or `file`.',
+      'Single edit-profile endpoint. Sends OTP via BullMQ when email/phone changes without otp fields (pending state in Redis with resend cooldown); verifies and applies when emailOtp/phoneOtp are provided. Avatar accepts multipart field `avatar` or `file`.',
   })
   @ApiConsumes('application/json', 'multipart/form-data')
   @ApiBody({
@@ -82,9 +86,9 @@ export class UsersMeController {
     @UploadedFiles()
     files:
       | {
-          avatar?: MulterFile[];
-          file?: MulterFile[];
-        }
+        avatar?: MulterFile[];
+        file?: MulterFile[];
+      }
       | undefined,
   ) {
     const id = this.requireUserId(userId);

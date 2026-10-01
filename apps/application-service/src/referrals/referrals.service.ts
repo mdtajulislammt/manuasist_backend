@@ -5,6 +5,7 @@ import {
   AdminReferralRewardTier,
 } from '../admin-internal/admin-internal-client.service';
 import { AuthInternalClientService } from '../auth-internal/auth-internal-client.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma.service';
 
 type ReferralTier = {
@@ -34,7 +35,8 @@ export class ReferralsService {
     private readonly adminInternal: AdminInternalClientService,
     private readonly authInternal: AuthInternalClientService,
     private readonly prisma: PrismaService,
-  ) { }
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async getMyReferrals(userId: string) {
     try {
@@ -77,6 +79,7 @@ export class ReferralsService {
             code: referralCode,
             shareLink: this.buildShareLink(referralCode, offer),
           },
+          verifiedFriendsJoined,
           rewardsCard,
           rewardTiers: {
             title: 'Reward Tiers:',
@@ -96,51 +99,69 @@ export class ReferralsService {
     }
   }
 
+  async handleVerifiedReferral(referrerId: string, referredUserId: string) {
+    const summary = await this.getMyReferrals(referrerId);
+    this.notifications.emitReferralUpdated(
+      referrerId,
+      referredUserId,
+      summary.data.verifiedFriendsJoined,
+    );
+    return summary;
+  }
+
   private async applyNewRewards(
     userId: string,
     verifiedFriendsJoined: number,
     tiers: ReferralTierProgress[],
   ) {
-    const current = await this.prisma.userUsageCredit.upsert({
-      where: { userId },
-      create: { userId },
-      update: {},
-    });
-    const newTiers = tiers.filter(
-      (tier) =>
-        tier.requiredTotal > current.referralFriendsRewarded &&
-        verifiedFriendsJoined >= tier.requiredTotal,
-    );
-    if (newTiers.length === 0) {
-      return current;
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.userUsageCredit.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      });
+      const newTiers = tiers.filter(
+        (tier) =>
+          tier.requiredTotal > current.referralFriendsRewarded &&
+          verifiedFriendsJoined >= tier.requiredTotal,
+      );
+      if (newTiers.length === 0) {
+        return current;
+      }
 
-    const scanCredits = newTiers.reduce(
-      (sum, tier) => sum + tier.scanCredits,
-      0,
-    );
-    const premiumDays = newTiers.reduce(
-      (sum, tier) => sum + tier.premiumDays,
-      0,
-    );
-    const premiumBase =
-      current.premiumUntil && current.premiumUntil.getTime() > Date.now()
-        ? current.premiumUntil
-        : new Date();
-    const premiumUntil =
-      premiumDays > 0
-        ? new Date(premiumBase.getTime() + premiumDays * 24 * 60 * 60 * 1000)
-        : current.premiumUntil;
-    const maxAwarded = Math.max(...newTiers.map((tier) => tier.requiredTotal));
+      const scanCredits = newTiers.reduce(
+        (sum, tier) => sum + tier.scanCredits,
+        0,
+      );
+      const premiumDays = newTiers.reduce(
+        (sum, tier) => sum + tier.premiumDays,
+        0,
+      );
+      const premiumBase =
+        current.premiumUntil && current.premiumUntil.getTime() > Date.now()
+          ? current.premiumUntil
+          : new Date();
+      const premiumUntil =
+        premiumDays > 0
+          ? new Date(premiumBase.getTime() + premiumDays * 24 * 60 * 60 * 1000)
+          : current.premiumUntil;
+      const maxAwarded = Math.max(
+        ...newTiers.map((tier) => tier.requiredTotal),
+      );
 
-    return this.prisma.userUsageCredit.update({
-      where: { userId },
-      data: {
-        freeScanCredits: { increment: scanCredits },
-        totalReferralScanCredits: { increment: scanCredits },
-        referralFriendsRewarded: maxAwarded,
-        premiumUntil,
-      },
+      await tx.userUsageCredit.updateMany({
+        where: {
+          userId,
+          referralFriendsRewarded: current.referralFriendsRewarded,
+        },
+        data: {
+          freeScanCredits: { increment: scanCredits },
+          totalReferralScanCredits: { increment: scanCredits },
+          referralFriendsRewarded: maxAwarded,
+          premiumUntil,
+        },
+      });
+      return tx.userUsageCredit.findUniqueOrThrow({ where: { userId } });
     });
   }
 
@@ -172,17 +193,14 @@ export class ReferralsService {
     let requiredTotal = 0;
     return tiers.map((tier) => {
       const previousRequiredTotal = requiredTotal;
-      requiredTotal += tier.friendsRequired;
+      requiredTotal = tier.friendsRequired;
       return {
         ...tier,
         previousRequiredTotal,
         requiredTotal,
         currentProgress: Math.max(
           0,
-          Math.min(
-            tier.friendsRequired,
-            verifiedFriendsJoined - previousRequiredTotal,
-          ),
+          Math.min(tier.friendsRequired, verifiedFriendsJoined),
         ),
         achieved: verifiedFriendsJoined >= requiredTotal,
       };

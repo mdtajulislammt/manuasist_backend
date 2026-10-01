@@ -21,14 +21,6 @@ export class UpdateStepDto {
   orderIndex?: number;
 
   @ApiPropertyOptional({
-    description: 'Updated step type',
-    example: 'DIET',
-  })
-  @IsOptional()
-  @IsString()
-  type?: string;
-
-  @ApiPropertyOptional({
     description: 'Updated step title',
     example: 'Choose dietary preferences',
   })
@@ -46,12 +38,11 @@ export class UpdateStepDto {
 
   @ApiPropertyOptional({
     description:
-      'Updated UI config (JSON). Same `kind` rules as create step; optional `icon` per option on card kinds. See `steps.txt` for examples.',
+      'Updated UI config (JSON). Same `kind` rules as create step; optional `icon` per card option and per `multi_slider` field. See `steps.txt` for examples.',
     type: 'object',
     additionalProperties: true,
     example: {
       kind: 'multi_select_cards',
-      progressPercent: 50,
       selection: {
         mode: 'multiple',
         required: false,

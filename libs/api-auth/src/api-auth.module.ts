@@ -15,7 +15,7 @@ import { API_AUTH_OPTIONS, type ApiAuthModuleOptions } from './tokens';
 
 export type ApiAuthModuleAsyncOptions = {
   imports?: Type<unknown>[];
-  useFactory: (...args: unknown[]) => ApiAuthModuleOptions | Promise<ApiAuthModuleOptions>;
+  useFactory: (...args: any[]) => ApiAuthModuleOptions | Promise<ApiAuthModuleOptions>;
   inject?: (InjectionToken | OptionalFactoryDependency)[];
 };
 

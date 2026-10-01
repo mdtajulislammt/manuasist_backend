@@ -14,7 +14,7 @@ import { FILE_STORAGE_OPTIONS, LOCAL_FILE_STORAGE, S3_FILE_STORAGE } from './tok
 
 export type FileStorageModuleAsyncOptions = {
   imports?: Type<unknown>[];
-  useFactory: (...args: unknown[]) => FileStorageModuleOptions | Promise<FileStorageModuleOptions>;
+  useFactory: (...args: any[]) => FileStorageModuleOptions | Promise<FileStorageModuleOptions>;
   inject?: (InjectionToken | OptionalFactoryDependency)[];
 };
 

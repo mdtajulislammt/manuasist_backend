@@ -1,76 +1,94 @@
 import { HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { MealsService } from '../meals/meals.service';
+import { DietaryPreferencesResolver } from '../users-me/dietary-preferences.resolver';
 import {
-  AiHomeSummaryPayload,
   AiIngestionHomeClientService,
 } from './ai-ingestion-home-client.service';
-import { MealsService } from '../meals/meals.service';
 import { GetHomeQueryDto } from './dto/get-home-query.dto';
+
+type CalorieDataSource = 'meals' | 'none';
+type NaiScoreDataSource = 'meals' | 'scan' | 'none';
 
 @Injectable()
 export class HomeService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly dietary: DietaryPreferencesResolver,
     private readonly aiHome: AiIngestionHomeClientService,
     private readonly meals: MealsService,
-  ) { }
+  ) {}
 
   async getHome(userId: string, query: GetHomeQueryDto = {}) {
     try {
       const trackingRange = query.trackingRange ?? 'weekly';
-      const [profile, preferences, aiSummary, mealStats] = await Promise.all([
-        this.prisma.userProfile.findUnique({ where: { userId } }),
-        this.prisma.preferences.findUnique({ where: { userId } }),
-        this.aiHome.getHomeSummary(userId, trackingRange),
-        this.meals.getTodayMealStats(userId),
-      ]);
+      const [dietary, aiSummary, mealStats, yesterdayMealStats] =
+        await Promise.all([
+          this.dietary.resolve(userId),
+          this.aiHome.getHomeSummary(userId, trackingRange),
+          this.meals.getTodayMealStats(userId),
+          this.meals.getYesterdayMealStats(userId),
+        ]);
 
-      const displayName = this.displayName(profile?.fullName);
-      const calorieTarget = preferences?.calorieTarget ?? 1050;
+      const calorieTarget = dietary.calorieTarget;
       const usesMealLogs = mealStats.mealCount > 0;
-      const dailyCalories = usesMealLogs
-        ? mealStats.calories
-        : aiSummary.todayCalories > 0
-          ? aiSummary.todayCalories
-          : aiSummary.latestCalories;
-      const dailyProgress = this.percent(dailyCalories, calorieTarget);
+      const hasTodayScan = aiSummary.todayScore !== null;
+      // Intake only counts logged meals — a menu scan is analysis, not consumption.
+      const dailyCalories = usesMealLogs ? mealStats.calories : 0;
+      const calorieDataSource: CalorieDataSource = usesMealLogs
+        ? 'meals'
+        : 'none';
       const todayNaiScore = usesMealLogs
         ? mealStats.dailyNai
-        : aiSummary.latestScore;
+        : hasTodayScan
+          ? aiSummary.todayScore
+          : null;
+      const naiScoreDataSource = this.resolveNaiScoreDataSource(
+        usesMealLogs,
+        hasTodayScan,
+      );
+      const dailyProgress = this.percent(dailyCalories, calorieTarget);
+      const changeText = usesMealLogs
+        ? this.mealChangeText(todayNaiScore, yesterdayMealStats)
+        : hasTodayScan && aiSummary.scoreChangePercent !== null
+          ? `${aiSummary.scoreChangePercent >= 0 ? '+' : ''}${aiSummary.scoreChangePercent}% from last scan`
+          : null;
+      const hasTodayData = usesMealLogs || hasTodayScan;
 
       return {
         success: true,
         message: 'Home screen retrieved successfully',
         data: {
-          header: {
-            greeting: this.greeting(),
-            title: `Hello ${displayName}`,
-            avatarUrl: profile?.avatarUrl ?? null,
-            notificationCount: 0,
+          calorieTarget,
+          calorieTargetSource: dietary.calorieTargetSource,
+          dataSource: {
+            calories: calorieDataSource,
+            naiScore: naiScoreDataSource,
           },
           todayNai: this.todayNai(
-            aiSummary,
             dailyCalories,
             calorieTarget,
             todayNaiScore,
             usesMealLogs,
+            hasTodayScan,
+            changeText,
           ),
           naiTracking: {
             selectedRange: aiSummary.trackingRange,
             warning: aiSummary.warning,
-            scoreLabel: this.scoreHeadline(aiSummary.latestScore),
+            scoreLabel: this.scoreHeadline(todayNaiScore),
             points: aiSummary.chartPoints,
           },
-          emptyTodayNai: aiSummary.hasCompletedScan
+          emptyTodayNai: hasTodayData
             ? null
             : {
-              dailyIntake: {
-                value: 0,
-                target: calorieTarget,
-                progressPercent: 0,
+                dailyIntake: {
+                  value: 0,
+                  target: calorieTarget,
+                  progressPercent: 0,
+                },
               },
-            },
           nutritionProgress: {
+            totalCaloriesNeeded: calorieTarget,
+            totalCaloriesConsumed: dailyCalories,
             progressPercent: dailyProgress,
           },
         },
@@ -85,11 +103,12 @@ export class HomeService {
   }
 
   private todayNai(
-    summary: AiHomeSummaryPayload,
     dailyCalories: number,
-    calorieTarget: number,
+    calorieTarget: number | null,
     score: number | null,
     usesMealLogs: boolean,
+    hasTodayScan: boolean,
+    changeText: string | null,
   ) {
     return {
       title: "Today's NAI Score",
@@ -98,13 +117,10 @@ export class HomeService {
       rating: this.scoreRating(score),
       subtitle: usesMealLogs
         ? "Based on today's logged meals"
-        : summary.hasCompletedScan
-          ? 'Based on your latest menu scan'
-          : 'Scan your first menu',
-      changeText:
-        summary.scoreChangePercent === null
-          ? null
-          : `${summary.scoreChangePercent >= 0 ? '+' : ''}${summary.scoreChangePercent}% from last scan`,
+        : hasTodayScan
+          ? "Based on today's menu scan"
+          : 'Log meals or scan a menu today',
+      changeText,
       dailyIntake: {
         value: dailyCalories,
         target: calorieTarget,
@@ -113,27 +129,39 @@ export class HomeService {
     };
   }
 
-  private displayName(fullName: string | null | undefined): string {
-    const clean = fullName?.trim();
-    if (!clean) {
-      return 'there';
+
+  private resolveNaiScoreDataSource(
+    usesMealLogs: boolean,
+    hasTodayScan: boolean,
+  ): NaiScoreDataSource {
+    if (usesMealLogs) {
+      return 'meals';
     }
-    return clean.split(/\s+/)[0] ?? clean;
+    if (hasTodayScan) {
+      return 'scan';
+    }
+    return 'none';
   }
 
-  private greeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      return 'Good morning!';
+  private mealChangeText(
+    todayScore: number | null,
+    yesterdayStats: { mealCount: number; dailyNai: number | null },
+  ): string | null {
+    if (yesterdayStats.mealCount === 0) {
+      return null;
     }
-    if (hour < 18) {
-      return 'Good afternoon!';
+    const yesterdayScore = yesterdayStats.dailyNai;
+    if (todayScore === null || yesterdayScore === null || yesterdayScore === 0) {
+      return null;
     }
-    return 'Good evening!';
+    const pct = Math.round(
+      ((todayScore - yesterdayScore) / yesterdayScore) * 100,
+    );
+    return `${pct >= 0 ? '+' : ''}${pct}% from yesterday`;
   }
 
-  private percent(value: number, target: number): number {
-    if (target <= 0) {
+  private percent(value: number, target: number | null): number {
+    if (target === null || target <= 0) {
       return 0;
     }
     return Math.max(0, Math.min(100, Math.round((value / target) * 100)));

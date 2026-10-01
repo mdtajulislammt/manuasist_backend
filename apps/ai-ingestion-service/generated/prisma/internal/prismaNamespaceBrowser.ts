@@ -55,6 +55,7 @@ export const ModelName = {
   Dish: 'Dish',
   DishBookmark: 'DishBookmark',
   NutritionCache: 'NutritionCache',
+  DishImageCache: 'DishImageCache',
   UserDietPattern: 'UserDietPattern'
 } as const
 
@@ -89,6 +90,9 @@ export const MenuScanScalarFieldEnum = {
   naiScore: 'naiScore',
   naiBreakdown: 'naiBreakdown',
   summary: 'summary',
+  restaurantName: 'restaurantName',
+  restaurantPlaceId: 'restaurantPlaceId',
+  restaurantAddress: 'restaurantAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -140,6 +144,24 @@ export const NutritionCacheScalarFieldEnum = {
 } as const
 
 export type NutritionCacheScalarFieldEnum = (typeof NutritionCacheScalarFieldEnum)[keyof typeof NutritionCacheScalarFieldEnum]
+
+
+export const DishImageCacheScalarFieldEnum = {
+  id: 'id',
+  fingerprint: 'fingerprint',
+  dishName: 'dishName',
+  description: 'description',
+  imageUrl: 'imageUrl',
+  storedFileName: 'storedFileName',
+  source: 'source',
+  prompt: 'prompt',
+  model: 'model',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DishImageCacheScalarFieldEnum = (typeof DishImageCacheScalarFieldEnum)[keyof typeof DishImageCacheScalarFieldEnum]
 
 
 export const UserDietPatternScalarFieldEnum = {

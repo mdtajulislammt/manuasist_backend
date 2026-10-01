@@ -85,7 +85,8 @@ export const AuthUserScalarFieldEnum = {
   referralCode: 'referralCode',
   referredById: 'referredById',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  status: 'status'
 } as const
 
 export type AuthUserScalarFieldEnum = (typeof AuthUserScalarFieldEnum)[keyof typeof AuthUserScalarFieldEnum]

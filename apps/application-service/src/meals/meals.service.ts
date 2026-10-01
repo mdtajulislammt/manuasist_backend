@@ -1,6 +1,7 @@
 import { computeDishNai } from '../../../../libs/ai-pipeline/src/nai/compute-nai';
 import {
   MEAL_PORTION_OPTIONS,
+  MEAL_SLOT_OPTIONS,
   MealSlot,
   type MealLogEntrySummary,
   type MealNutrition,
@@ -11,9 +12,13 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { MealLogEntry } from '../../generated/prisma/client';
+import {
+  AdminInternalClientService,
+  type AdminOnboardingStep,
+} from '../admin-internal/admin-internal-client.service';
 import { AiIngestionHomeClientService } from '../home/ai-ingestion-home-client.service';
-import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../prisma.service';
+import { extractDietaryRestrictions } from '../users-me/extract-dietary-restrictions.util';
 import {
   AiIngestionDishesClientService,
   type IngestionDishPayload,
@@ -32,25 +37,34 @@ type UserMealContext = {
 export class MealsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly membership: MembershipService,
     private readonly aiDishes: AiIngestionDishesClientService,
     private readonly aiHome: AiIngestionHomeClientService,
+    private readonly admin: AdminInternalClientService,
   ) { }
 
   async getPrefill(userId: string, dishId: string) {
-    await this.membership.assertPremiumAccess(userId);
-    const [dish, todayMeals] = await Promise.all([
+    const now = new Date();
+    const defaultMealSlot = this.defaultMealSlot(now);
+    const defaultPortionFactor = 1.0;
+
+    const [dish, todayMeals, userContext, scanBaselineNai] = await Promise.all([
       this.aiDishes.getDishForMealPrefill(userId, dishId),
       this.getTodayMeals(userId),
+      this.loadUserMealContext(userId),
+      this.getScanBaselineNai(userId),
     ]);
 
-    const defaultPortionFactor = 1.0;
     const defaultNutrition = this.scaleNutrition(
       dish.baseNutrition,
       defaultPortionFactor,
     );
-    const scanBaselineNai = await this.getScanBaselineNai(userId);
     const currentDailyNai = this.computeDailyNai(todayMeals, scanBaselineNai);
+    const naiScore = this.computeMealNai(dish, defaultNutrition, userContext);
+    const naiImpact = this.computeNaiImpact(
+      todayMeals,
+      { calories: defaultNutrition.calories, naiScore },
+      currentDailyNai,
+    );
 
     return {
       success: true,
@@ -63,12 +77,24 @@ export class MealsService {
           imageUrl: dish.imageUrl,
           tags: dish.tags,
           description: dish.description,
+          category: dish.category,
+          baseNaiScore: dish.baseNaiScore,
+          scoreLabel: dish.scoreLabel ?? `${dish.baseNaiScore}% match`,
+          caloriesLabel: `${defaultNutrition.calories} kcal`,
+          isBookmarked: dish.isBookmarked,
         },
         baseNutrition: dish.baseNutrition,
         portionOptions: MEAL_PORTION_OPTIONS,
-        defaultMealSlot: this.defaultMealSlot(),
+        mealSlotOptions: MEAL_SLOT_OPTIONS,
+        defaultMealSlot,
         defaultPortionFactor,
         defaultNutrition,
+        defaultLoggedAt: now.toISOString(),
+        defaultNaiPreview: {
+          naiScore,
+          naiImpact,
+        },
+        portionCaloriesHint: `Approx. ${defaultNutrition.calories} calories for this portion.`,
         todayContext: {
           loggedMealCount: todayMeals.length,
           currentDailyCalories: this.sumCalories(todayMeals),
@@ -79,7 +105,6 @@ export class MealsService {
   }
 
   async preview(userId: string, dto: MealPreviewDto) {
-    await this.membership.assertPremiumAccess(userId);
     const computed = await this.computeMealState(userId, dto);
 
     return {
@@ -94,7 +119,6 @@ export class MealsService {
   }
 
   async logToday(userId: string, dto: MealLogDto) {
-    await this.membership.assertPremiumAccess(userId);
     const computed = await this.computeMealState(userId, dto);
     const loggedAt = dto.loggedAt ? new Date(dto.loggedAt) : new Date();
     const mealDate = this.toMealDate(loggedAt);
@@ -135,7 +159,6 @@ export class MealsService {
   }
 
   async getToday(userId: string) {
-    await this.membership.assertPremiumAccess(userId);
     const mealDate = this.toMealDate(new Date());
     const meals = await this.getTodayMeals(userId, mealDate);
     const slots = Object.values(MealSlot);
@@ -173,6 +196,33 @@ export class MealsService {
 
   async getTodayMealStats(userId: string) {
     const mealDate = this.toMealDate(new Date());
+    return this.getMealStatsForDate(userId, mealDate);
+  }
+
+  async getYesterdayMealStats(userId: string) {
+    const now = new Date();
+    const yesterday = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1),
+    );
+    return this.getMealStatsForDate(userId, yesterday);
+  }
+
+  async getMealsInRange(userId: string, from: Date, to: Date) {
+    const fromDate = this.toMealDate(from);
+    const toDate = this.toMealDate(to);
+    return this.prisma.mealLogEntry.findMany({
+      where: {
+        userId,
+        mealDate: {
+          gte: fromDate,
+          lt: toDate,
+        },
+      },
+      orderBy: [{ mealDate: 'asc' }, { loggedAt: 'asc' }],
+    });
+  }
+
+  private async getMealStatsForDate(userId: string, mealDate: Date) {
     const meals = await this.getTodayMeals(userId, mealDate);
     const scanBaselineNai = await this.getScanBaselineNai(userId);
 
@@ -211,15 +261,16 @@ export class MealsService {
   }
 
   private async loadUserMealContext(userId: string): Promise<UserMealContext> {
-    const [preferences, answers] = await Promise.all([
+    const [preferences, answers, onboardingSteps] = await Promise.all([
       this.prisma.preferences.findUnique({ where: { userId } }),
       this.prisma.userOnboardingAnswer.findMany({ where: { userId } }),
+      this.loadActiveOnboardingSteps(),
     ]);
 
     return {
       calorieTarget: preferences?.calorieTarget ?? null,
       weightGoal: preferences?.weightGoal ?? null,
-      allergies: this.extractAllergies(answers),
+      allergies: extractDietaryRestrictions(answers, onboardingSteps),
     };
   }
 
@@ -385,31 +436,12 @@ export class MealsService {
     };
   }
 
-  private extractAllergies(
-    answers: Array<{ value: unknown }>,
-  ): string[] {
-    const out = new Set<string>();
-    for (const row of answers) {
-      const v = row.value;
-      if (Array.isArray(v)) {
-        for (const item of v) {
-          if (typeof item === 'string' && item.trim()) {
-            out.add(item.trim());
-          }
-        }
-        continue;
-      }
-      if (v && typeof v === 'object' && !Array.isArray(v)) {
-        const o = v as Record<string, unknown>;
-        if (Array.isArray(o.allergies)) {
-          for (const item of o.allergies) {
-            if (typeof item === 'string' && item.trim()) {
-              out.add(item.trim());
-            }
-          }
-        }
-      }
+  private async loadActiveOnboardingSteps(): Promise<AdminOnboardingStep[]> {
+    try {
+      const flow = await this.admin.getActiveFlow();
+      return flow.data.steps;
+    } catch {
+      return [];
     }
-    return [...out];
   }
 }

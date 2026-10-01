@@ -10,6 +10,8 @@
  */
 export type * from './models/PlatformStorageSettings.js'
 export type * from './models/StoredFile.js'
+export type * from './models/AppLaunchContentBundle.js'
+export type * from './models/AppLaunchAsset.js'
 export type * from './models/OnboardingFlow.js'
 export type * from './models/OnboardingStep.js'
 export type * from './models/SubscriptionPlan.js'
