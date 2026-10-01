@@ -59,6 +59,8 @@ model AuthIdentity {
   userId    String   @map("user_id") @db.Uuid
   issuer    String
   subject   String   @map("subject")
+  /// Social provider name: "google" | "apple" | "oidc". Nullable for backward compatibility.
+  provider  String?
   email     String?
   createdAt DateTime @default(now()) @map("created_at")
 

@@ -914,6 +914,7 @@ export const AuthIdentityScalarFieldEnum = {
   userId: 'userId',
   issuer: 'issuer',
   subject: 'subject',
+  provider: 'provider',
   email: 'email',
   createdAt: 'createdAt'
 } as const

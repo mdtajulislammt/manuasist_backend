@@ -219,8 +219,14 @@ export class OAuthController {
   @Get('authorize')
   @ApiOperation({ summary: 'Start OAuth authorization redirect flow' })
   @ApiOkResponse({ description: 'Redirect response to identity provider.' })
-  async authorize(@Res() res: Response) {
-    const href = await this.auth.buildAuthorizationRedirect();
+  // use another things insted of body beaucse its a get request
+  async authorize(@Res() res: Response, @Query() query: { provider: string }) {
+    // if query.provider not found, throw error
+    if (!query.provider) {
+      throw new BadRequestException('Provider is required');
+    }
+
+    const href = await this.auth.buildAuthorizationRedirect(query.provider as 'google' | 'apple');
     return res.redirect(302, href);
   }
 
@@ -228,7 +234,11 @@ export class OAuthController {
   @ApiOperation({ summary: 'OAuth callback endpoint' })
   @ApiOkResponse({ description: 'OAuth callback success. Returns token pair.' })
   @ApiBadRequestResponse({ description: 'OAuth callback contains error or invalid state.' })
-  async callback(@Req() req: Request, @Res() res: Response) {
+  async callback(@Req() req: Request, @Res() res: Response, @Query() query: { provider: string }) {
+    // if query.provider not found, throw error
+    if (!query.provider) {
+      throw new BadRequestException('Provider is required');
+    }
     const err = req.query['error'];
     if (typeof err === 'string') {
       const desc = req.query['error_description'];
@@ -237,8 +247,11 @@ export class OAuthController {
       );
     }
     const url = callbackUrlFromRequest(req);
-    const body = await this.auth.handleCallback(url);
-    return res.status(200).json(body);
+    if (!query.provider) {
+      throw new BadRequestException('Provider is required');
+    }
+    const data = await this.auth.handleCallback(url, query.provider as 'google' | 'apple');
+    return res.status(200).json(data);
   }
 
   @Post('mobile')
